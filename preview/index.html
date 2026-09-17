@@ -1,0 +1,145 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>YouDO Preview</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+
+<style>
+  /* The YouDO system is deliberately single-theme — warm paper and ink, no dark
+     variant exists in tokens/colors.css. Every colour below is painted explicitly
+     from those tokens so the page holds on either host ground. */
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    background: var(--paper-200);
+    color: var(--ink-900);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .chrome {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 40;
+    flex: none;
+    background: var(--paper-100);
+    border-bottom: var(--border-width) solid var(--ink-900);
+  }
+  .chrome-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-block: 10px;
+    padding-inline: 16px;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: var(--weight-black);
+    font-size: var(--text-2xl);
+    letter-spacing: var(--tracking-display);
+    line-height: 1;
+    flex: none;
+  }
+  .wordmark span {
+    background: var(--lime-500);
+    border: var(--border-hair) solid var(--ink-900);
+    border-radius: 6px;
+    padding: 0 5px;
+    margin-left: 1px;
+  }
+  .chrome-note {
+    flex: 1 1 200px;
+    min-width: 0;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: var(--text-3xs);
+    color: var(--ink-400);
+  }
+
+  .main {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-block: 22px 40px;
+    padding-inline: 16px;
+  }
+  .main-app {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+
+  /* Phone frame. Bordered on desktop; full-bleed on a phone so the prototype
+     reads as an app rather than a picture of one. */
+  .frame {
+    width: var(--app-frame-width);
+    height: 740px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: var(--surface-page);
+    border: var(--border-thick) solid var(--ink-900);
+    border-radius: 36px;
+    box-shadow: var(--shadow-sticker-lg);
+  }
+  .toasts {
+    position: absolute;
+    left: var(--gutter-screen);
+    right: var(--gutter-screen);
+    bottom: calc(var(--tabbar-height) + 12px);
+    z-index: 50;
+  }
+
+  /* Children of a scrolling flex column must keep their natural height —
+     the default flex-shrink:1 silently crushes cards instead of scrolling. */
+  .screen-body > * { flex-shrink: 0; }
+
+  @media (max-width: 620px) {
+    .chrome-note { display: none; }
+    .chrome-tabs {
+      flex: 1 1 100% !important;
+      max-width: none !important;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .main-app { padding: 0; }
+    .main-app .frame {
+      width: 100%;
+      height: auto;
+      flex: 1 1 auto;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<!-- The design-system bundle. Source of truth is project/_ds_bundle.js; it is
+     published here as ds-bundle.js because the artifact service reserves the
+     leading underscore for its own filenames. -->
+<script src="ds-bundle.js"></script>
+<script src="icon-names.js"></script>
+<script src="data.taiwan.js"></script>
+<script src="app.js"></script>
+
+</body></html>

@@ -1,0 +1,3 @@
+/* Generated from components/core/Icon.jsx — iconNames is an unexposed export
+   of the bundle, so the glyph list is derived from source at build time. */
+window.YOUDO_ICON_NAMES = [ "search", "plus", "x", "check", "check-circle", "map-pin", "map", "clock", "calendar", "star", "heart", "wallet", "coins", "credit-card", "briefcase", "package", "chevron-right", "chevron-left", "chevron-down", "chevron-up", "arrow-right", "arrow-left", "message-circle", "message-square", "send", "bell", "user", "users", "sliders-horizontal", "filter", "home", "list-checks", "shield-check", "zap", "sparkles", "thumbs-up", "camera", "image", "pencil", "trash", "eye", "lock", "info", "alert-triangle", "flag", "share", "more-horizontal" ];

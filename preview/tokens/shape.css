@@ -1,0 +1,24 @@
+:root{
+/* radii — cards are generously rounded, controls are pills */
+--radius-xs:6px;--radius-sm:10px;--radius-md:14px;--radius-lg:20px;--radius-xl:28px;--radius-2xl:36px;--radius-pill:999px;
+--radius-card:20px;--radius-card-inner:12px;--radius-control:999px;--radius-field:14px;--radius-sheet:28px;--radius-avatar:999px;
+
+/* strokes — the ink outline is the signature of the system */
+--border-hair:1px;--border-width:1.5px;--border-thick:2.5px;
+--stroke-ink:var(--border-width) solid var(--border-strong);
+--stroke-soft:var(--border-hair) solid var(--border-default);
+
+/* shadows — hard offset "sticker" shadows, no blur, ink coloured */
+--shadow-sticker-sm:2px 2px 0 var(--ink-900);
+--shadow-sticker:3px 3px 0 var(--ink-900);
+--shadow-sticker-lg:5px 5px 0 var(--ink-900);
+--shadow-sticker-lime:3px 3px 0 var(--lime-700);
+--shadow-pressed:1px 1px 0 var(--ink-900);
+/* soft shadows only for floating/overlay layers */
+--shadow-soft:0 6px 18px -8px rgba(20,21,15,.24);
+--shadow-overlay:0 24px 48px -16px rgba(20,21,15,.38);
+--shadow-inset-field:inset 0 1px 0 rgba(20,21,15,.06);
+
+/* elevation ladder */
+--elevation-flat:none;--elevation-card:var(--shadow-sticker);--elevation-raised:var(--shadow-sticker-lg);--elevation-float:var(--shadow-soft);--elevation-modal:var(--shadow-overlay);
+}

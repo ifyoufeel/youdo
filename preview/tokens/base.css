@@ -1,0 +1,17 @@
+/* Minimal global base. Components carry their own styling via inline styles
+   sourced from the tokens above; this file only sets page defaults. */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--surface-page);color:var(--text-primary);font-family:var(--font-text);font-size:var(--type-body-size);line-height:var(--type-body-leading);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:var(--tracking-heading);line-height:var(--leading-snug);margin:0 0 var(--space-3)}
+h1{font-size:var(--text-4xl);font-weight:var(--weight-black);letter-spacing:var(--tracking-display)}
+h2{font-size:var(--text-3xl);font-weight:var(--weight-bold)}
+h3{font-size:var(--text-xl);font-weight:var(--weight-bold)}
+p{margin:0 0 var(--space-3);text-wrap:pretty}
+a{color:var(--text-link);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:2px}
+a:hover{text-decoration-color:var(--lime-700)}
+a:active{color:var(--ink-700)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:var(--border-thick) solid var(--focus-ring);outline-offset:2px}
+code,kbd{font-family:var(--font-mono);font-size:.92em}
+::selection{background:var(--lime-300)}

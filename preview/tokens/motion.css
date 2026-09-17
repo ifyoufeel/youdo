@@ -1,0 +1,13 @@
+:root{
+--duration-instant:90ms; /* @kind other */
+--duration-fast:140ms; /* @kind other */
+--duration-base:200ms; /* @kind other */
+--duration-slow:320ms; /* @kind other */
+--duration-sheet:420ms; /* @kind other */
+--ease-out:cubic-bezier(.2,.8,.2,1); /* @kind other */
+--ease-in-out:cubic-bezier(.5,0,.5,1); /* @kind other */
+--ease-snap:cubic-bezier(.34,1.5,.64,1); /* @kind other */
+--transition-control:transform var(--duration-fast) var(--ease-snap),box-shadow var(--duration-fast) var(--ease-out),background-color var(--duration-fast) var(--ease-out);
+--press-translate:2px;   /* controls slide into their shadow on press */
+--hover-lift:-1px;
+}

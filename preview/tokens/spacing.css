@@ -1,0 +1,13 @@
+:root{
+--space-0:0px;--space-05:2px;--space-1:4px;--space-15:6px;--space-2:8px;--space-25:10px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--space-20:80px;
+
+/* layout */
+--gutter-screen:20px;          /* phone side padding */
+--gutter-screen-wide:32px;
+--stack-tight:8px;--stack-default:12px;--stack-loose:20px;--stack-section:32px;
+--card-padding:16px;--card-padding-lg:20px;--card-gap:12px;
+--control-height-sm:36px;--control-height-md:44px;--control-height-lg:52px;
+--hit-target-min:44px;
+--tabbar-height:64px;--topbar-height:56px;
+--max-content-width:720px;--app-frame-width:390px;
+}

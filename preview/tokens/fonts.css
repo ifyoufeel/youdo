@@ -1,0 +1,5 @@
+/* YouDO webfonts.
+   NOTE: no font binaries were supplied with the brief, so these are the closest
+   Google Fonts matches, served from the Google Fonts CDN. Swap this file for
+   local @font-face rules once real files exist. */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap");
