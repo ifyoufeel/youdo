@@ -120,3 +120,56 @@ Short records of settled decisions, so they don't get re-argued. Each states the
 **Delivery.** Two surfaces per milestone — EAS Update preview channel on device, Vercel static export as a shareable link. The web link is a review aid; typography, shadows and gestures are signed off on device.
 
 **Acceptance.** The M0 component gallery is diffed against the existing `project/**/*.card.html` renders — the web design system becomes the port's acceptance test rather than dead reference material.
+
+---
+
+## ADR-009 · The preview owns an actor switcher and a movable clock
+
+**Decision.** `app/(preview)/` carries two controls that ship in the preview and
+never in the product: a switcher that changes which of the six seeded people you
+are, and three buttons that move the preview's clock forward by an hour, a day
+or three days. Both sit outside the phone frame.
+
+**Why.** ADR-008 already said the actor switcher is not optional — a poster-side
+offer inbox cannot be reviewed without flipping identity. The clock is the same
+argument applied to time. The 72-hour confirm window, quest expiry and the
+auto-release that stops a doer being stranded by an unresponsive poster are
+three of the product's load-bearing promises, and none of them can be looked at
+in a session that lasts ten minutes. A state you cannot reach is a state nobody
+reviews, which is exactly how the prototype ended up with one empty state across
+five screens.
+
+**Consequence.** Time is a value in the store, never `Date.now()`. Every
+duration, countdown and "Today, 6pm" is computed against it. That is a
+constraint on all future feature code, and a good one: it makes time testable.
+The system transitions (expire, auto-release) live in one pure function that
+runs whenever the clock moves, so they behave identically whether a person
+advanced the clock or three days actually passed.
+
+**Cost.** Two controls to strip — or rather, to gate — before a public build,
+and a discipline that is easy to break with one careless `new Date()`.
+
+---
+
+## ADR-010 · Ink on flare, not paper
+
+**Decision.** The three places the design system put `--paper-000` text on
+`--flare-500` — the Badge "hot" tone, the `IconButton` counter and the `TabBar`
+counter — now use `--ink-900`.
+
+**Why.** PRD §10 already flagged paper-on-flare as failing WCAG AA at body size
+and restricted it to headline scale. All three of these were small bold text at
+10–12px, which is well under body size. Measured, paper on flare is **3.11:1**;
+AA wants 4.5:1 for text this size. Ink on flare is **5.90:1**.
+
+It also makes the system more consistent rather than less: `--lime-500` and
+`--coin-500`, the other two bright fills, already carry ink text. Paper on flare
+was the odd one out.
+
+**Where this has to go.** The change was made in the published `ds-bundle.js`,
+which is a generated export. It needs carrying back into `project/_ds_bundle.js`
+or it will be lost on the next regeneration.
+
+**Enforcement.** `test/rules.js` now fails if paper-on-flare reappears at body
+scale, along with the rest of the content rules, so this cannot silently
+regress.

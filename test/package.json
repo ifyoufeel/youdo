@@ -1,0 +1,11 @@
+{
+  "name": "youdo-preview-tests",
+  "private": true,
+  "description": "Drives the YouDO preview in jsdom and checks it against the PRD.",
+  "scripts": { "test": "node all.js" },
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

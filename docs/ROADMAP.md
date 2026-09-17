@@ -80,13 +80,13 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** a posted quest really exists and is discoverable.
 
-- [ ] Multi-step wizard: what → details/photos → where → when → budget → review
-- [ ] Validation that **blocks** submit, with errors written as fixes
-- [ ] Draft autosave surviving app restart
+- [x] Multi-step wizard: what → details/photos → where → when → budget → review
+- [x] Validation that **blocks** submit, with errors written as fixes
+- [x] Draft autosave surviving app restart
 - [ ] Photo picker (`expo-image-picker`), date/time picker, currency input, address entry
-- [ ] Fixed vs hourly budget; hourly shows estimated total
-- [ ] Fee disclosure before submission
-- [ ] Posted quest appears in the feed and My quests immediately
+- [x] Fixed vs hourly budget; hourly shows estimated total
+- [x] Fee disclosure before submission
+- [x] Posted quest appears in the feed and My quests immediately
 - [ ] **Supabase spike (throwaway):** prove the PostGIS radius query and the chat RLS policy now, not at M7
 
 **Exit:** post a quest, find it in the feed by search and by filter, open it as the other actor.
@@ -99,14 +99,14 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** the marketplace actually closes the loop. Both sides, end to end.
 
-- [ ] **Per-thread messages** — fixes the prototype's shared-global-thread bug
-- [ ] Composer with keyboard handling; unread counts cleared on open
-- [ ] **Poster-side offer inbox** — accept / decline, which does not exist today
-- [ ] Accepting one offer auto-declines the others and reveals the address
-- [ ] The state machine from PRD §8, with actor guards enforced in the repository layer
-- [ ] "Mark as done" works; 72h confirm window with auto-release
-- [ ] Cancel with reason, from both sides
-- [ ] `StatusTrack` driven by real quest status
+- [x] **Per-thread messages** — fixes the prototype's shared-global-thread bug
+- [x] Composer with keyboard handling; unread counts cleared on open
+- [x] **Poster-side offer inbox** — accept / decline, which does not exist today
+- [x] Accepting one offer auto-declines the others and reveals the address
+- [x] The state machine from PRD §8, with actor guards enforced in the repository layer
+- [x] "Mark as done" works; 72h confirm window with auto-release
+- [x] Cancel with reason, from both sides
+- [x] `StatusTrack` driven by real quest status
 
 **Exit:** post as actor A, offer as B, accept, start, complete, confirm — the status agrees on both sides at every step. Illegal transitions are rejected.
 
@@ -137,12 +137,12 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** close every unreachable-screen gap the prototype left.
 
-- [ ] Profile: own and public; ratings, quests completed, verification, cancellation rate
-- [ ] **Ratings capture** after `paid` — today the system only displays them
-- [ ] Saved-quests list (saves are tracked today but never listed)
+- [x] Profile: own and public; ratings, quests completed, verification, cancellation rate
+- [x] **Ratings capture** after `paid` — today the system only displays them
+- [x] Saved-quests list (saves are tracked today but never listed)
 - [ ] Notification inbox + push registration; per-category toggles
-- [ ] Report / block on users and quests
-- [ ] Settings, including account deletion
+- [x] Report / block on users and quests
+- [x] Settings, including account deletion
 - [ ] Decision point: does Chinese localisation block launch?
 
 **Exit:** no dead ends — every screen in the app is reachable from navigation.
@@ -197,3 +197,37 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 - M5 can be built in parallel with M4 but cannot be *demonstrated* until M4's acceptance transition exists.
 - M7 depends on the ports being honest since M0 — async, cursor-paginated, geo-aware, subscription-shaped.
 - M8's legal review has external lead time. Start it during M5.
+
+---
+
+## Where this actually stands
+
+M4 is built and previewable; M3 and M6 came along with it, because the loop
+could not be reviewed with holes on either side of it.
+
+**Landed.** The §8 state machine with per-actor guards in the store · poster-side
+offer inbox with accept, decline and auto-decline of the rest · escrow held on
+acceptance and released on confirm, minus the fee, on an append-only ledger
+whose entries sum to zero · refund on cancellation · the 72-hour confirm window
+with auto-release · dispute · expiry · per-thread messages that go read-only
+when the quest closes · address revealed only on acceptance · ratings capture ·
+saved list · notification inbox · report and block · the posting wizard with
+blocking validation and draft autosave.
+
+**Two preview affordances**, both dev-only and outside the phone frame: an
+actor switcher (ADR-008 — two-sided software cannot be reviewed from one chair)
+and a clock you can wind forward (a 72-hour window cannot be reviewed at all
+without reaching the far side of it). See ADR-009.
+
+**Still open in these milestones.**
+
+- Photo picker on the posting wizard (M3) — no image handling anywhere yet.
+- Notification *delivery* (M6): the inbox and the per-category toggles are
+  built, but the toggles are screen state, not stored preference, and there is
+  no push registration. That is M7/M8 work.
+- Auth and onboarding (M1) are still absent — the preview starts signed in.
+- The `disputed` → `paid` / `cancelled` edges exist in the transition table and
+  are rejected for everyone, because they need an admin actor the product does
+  not have yet. The frozen-escrow state itself is reachable and designed.
+- Supabase (M7) is untouched, as planned. The store's shape is what the ports
+  have to match; nothing in the screens reaches past it into a table.

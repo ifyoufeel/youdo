@@ -206,7 +206,7 @@ const TONES = {
   },
   hot: {
     bg: "var(--flare-500)",
-    fg: "var(--paper-000)"
+    fg: "var(--ink-900)"
   },
   success: {
     bg: "var(--success-200)",
@@ -481,7 +481,7 @@ function IconButton({
       display: "grid",
       placeItems: "center",
       background: "var(--flare-500)",
-      color: "var(--paper-000)",
+      color: "var(--ink-900)",
       border: "var(--border-width) solid var(--border-strong)",
       borderRadius: "var(--radius-pill)",
       fontFamily: "var(--font-text)",
@@ -1112,7 +1112,7 @@ function TabBar({
         display: "grid",
         placeItems: "center",
         background: "var(--flare-500)",
-        color: "var(--paper-000)",
+        color: "var(--ink-900)",
         border: "var(--border-hair) solid var(--border-strong)",
         borderRadius: "var(--radius-pill)",
         fontSize: 10,
