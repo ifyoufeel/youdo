@@ -1868,7 +1868,12 @@ function QuestDetailScreen(props) {
                 return h(Badge, { key: bd.label, tone: bd.tone, icon: bd.icon, size: "sm" }, bd.label);
               })
             : h(StatusBadge, { status: quest.status }),
-          h(Tag, { size: "sm" }, categoryLabel(quest.categoryId))),
+          /* The category sits in the same row as the status and the urgency
+             badges, so it has to be the same object. A Tag is 30px of
+             sentence case and a Badge is 20px of caps — side by side that
+             reads as two different systems. Neutral keeps it the quiet,
+             black-and-white one against the coloured ones. */
+          h(Badge, { tone: "neutral", size: "sm" }, categoryLabel(quest.categoryId))),
         h("h2", {
           style: {
             margin: "2px 0 0",
@@ -2649,7 +2654,8 @@ function PostQuestScreen(props) {
 
       key === "review" ? h(Fragment, null,
         h(Card, { padding: "lg" },
-          h(Tag, { size: "sm" }, categoryLabel(form.categoryId)),
+          /* Same grammar as the detail screen this step is previewing. */
+          h(Badge, { tone: "neutral", size: "sm" }, categoryLabel(form.categoryId)),
           h("h2", {
             style: {
               margin: "8px 0 0",

@@ -69,6 +69,16 @@ console.log("\n== doer: send and withdraw an offer ==");
 clickLabel("Browse");
 clickHas("Assemble a wardrobe");
 ok("detail opens", H.has(root, "Assemble a wardrobe"));
+/* The category shares a row with the status and urgency badges, so it has to
+   be the same component — a Tag beside a Badge is two scales in one row. */
+(function () {
+  const cat = H.all(root, "*").filter((e) => H.text(e) === "Assembly").pop();
+  const st = cat ? (cat.getAttribute("style") || "") : "";
+  ok("category renders as a badge, not a tag",
+     /text-transform:\s*uppercase/i.test(st) && /--text-3xs/.test(st), st.slice(0, 90));
+  ok("category stays black and white beside the coloured badges",
+     /--paper-200/.test(st) && /--ink-800/.test(st), st.slice(0, 90));
+})();
 ok("address is gated before acceptance", H.has(root, "shared the moment your offer is accepted"));
 ok("an existing offer is shown with a way out", H.has(root, "Waiting to hear back"));
 clickText("Withdraw offer");
