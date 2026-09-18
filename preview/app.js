@@ -2437,16 +2437,22 @@ function loadDraft() {
 function saveDraft(form) {
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch (e) {}
 }
+/* A draft is only a draft once something has been typed into it. Without this
+   an emptied form counts as one, and the screen greets you with "picked up
+   where you left off" over a blank wizard. */
+function draftHasContent(d) {
+  if (!d) return false;
+  return !!((d.title || "").trim() || (d.details || "").trim() ||
+            (d.address || "").trim() || (d.budget || "").trim() || d.date || d.time);
+}
 function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
 }
 
 function StepHeader(props) {
   return h("div", { style: { display: "flex", flexDirection: "column", gap: 8, flex: "none" } },
-    h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-      h(Eyebrow, { style: { flex: 1 } },
-        "Step " + (props.index + 1) + " of " + POST_STEPS.length + " · " + POST_STEPS[props.index].label),
-      props.onDiscard ? h(Button, { size: "sm", variant: "ghost", onClick: props.onDiscard }, "Start over") : null),
+    h(Eyebrow, null,
+      "Step " + (props.index + 1) + " of " + POST_STEPS.length + " · " + POST_STEPS[props.index].label),
     h("div", { style: { display: "flex", gap: 4 } },
       POST_STEPS.map(function (s, i) {
         return h("span", {
@@ -2479,9 +2485,11 @@ function PostQuestScreen(props) {
   var dateSheet = ds[0], setDateSheet = ds[1];
   var tsh = React.useState(false);
   var timeSheet = tsh[0], setTimeSheet = tsh[1];
-  var resumed = React.useRef(!!loadDraft());
+  var resumed = React.useRef(draftHasContent(loadDraft()));
 
-  React.useEffect(function () { saveDraft(form); }, [form]);
+  React.useEffect(function () {
+    if (draftHasContent(form)) saveDraft(form); else clearDraft();
+  }, [form]);
   function set(k, v) {
     var o = {};
     o[k] = v;
@@ -2536,14 +2544,6 @@ function PostQuestScreen(props) {
     resumed.current = false;
     props.onPosted(id);
   }
-  function discard() {
-    clearDraft();
-    setForm(Object.assign({}, EMPTY_FORM));
-    setStep(0);
-    setTried({});
-    resumed.current = false;
-  }
-
   var key = POST_STEPS[step].key;
   var whenLabel = form.date && form.time ? formatWhenAt(tpeISO(form.date, form.time), app.now) : "";
 
@@ -2553,7 +2553,7 @@ function PostQuestScreen(props) {
       onBack: step > 0 ? function () { setStep(step - 1); } : undefined
     }),
     h(Body, null,
-      h(StepHeader, { index: step, onDiscard: form.title || form.budget ? discard : null }),
+      h(StepHeader, { index: step }),
 
       resumed.current && step === 0 ? h(Card, { variant: "sunken", padding: "sm" },
         h("div", { style: { display: "flex", gap: 8, alignItems: "center" } },

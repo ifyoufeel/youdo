@@ -54,16 +54,25 @@ ok("reaches review", H.has(root, "Step 4 of 4"));
 ok("review restates the address gate", H.has(root, "only after you accept"));
 clickText("Post quest");
 ok("lands in my quests after posting", H.has(root, "Water the balcony plants"));
+ok("posting clears the draft",
+   !(w.localStorage.getItem("youdo-quest-draft") || "").includes("Water the balcony"));
 clickLabel("Browse");
 ok("posted quest is discoverable in the feed", H.has(root, "Water the balcony plants"));
 
 console.log("\n== draft autosave ==");
 clickLabel("Post");
+/* The step header is a label, not a toolbar — no control competes with it. */
+ok("step header carries no control", !byText("Start over"));
 type("What needs doing", "Carry a bookcase up one floor");
 const stored = w.localStorage.getItem("youdo-quest-draft");
 ok("draft written to storage", !!stored && stored.includes("bookcase"));
-clickText("Start over");
-ok("start over clears the draft", !(w.localStorage.getItem("youdo-quest-draft") || "").includes("bookcase"));
+clickLabel("Browse");
+clickLabel("Post");
+const resumedField = H.field(root, "What needs doing");
+ok("draft survives leaving the screen",
+   !!resumedField && resumedField.value === "Carry a bookcase up one floor",
+   resumedField ? resumedField.value : "field not found");
+ok("and says where it picked up from", H.has(root, "Picked up where you left off"));
 
 console.log("\n== doer: send and withdraw an offer ==");
 clickLabel("Browse");
