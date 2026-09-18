@@ -214,6 +214,14 @@ when the quest closes · address revealed only on acceptance · ratings capture 
 saved list · notification inbox · report and block · the posting wizard with
 blocking validation and draft autosave.
 
+**Money moves both ways.** The wallet had cash-out and no way in, which made
+the accept sheet's "add NT$X to hold this offer" a dead end. Adding money is now
+the mirror transaction (`external_bank` → `user_available`), offered beside
+cash-out on the profile and again, prefilled with the exact shortfall, at the
+point where a poster is short. `pending` for both directions is still M5 — no
+payment in the mock passes through it yet, which ADR-005 says it eventually
+must.
+
 **Two preview affordances**, both dev-only and outside the phone frame: an
 actor switcher (ADR-008 — two-sided software cannot be reviewed from one chair)
 and a clock you can wind forward (a 72-hour window cannot be reviewed at all
@@ -222,6 +230,9 @@ without reaching the far side of it). See ADR-009.
 **Still open in these milestones.**
 
 - Photo picker on the posting wizard (M3) — no image handling anywhere yet.
+- Deposits and cash-outs settle instantly. ADR-005 requires every payment to
+  pass through `pending` even in the mock, because Stripe's transitions are
+  webhook-driven; that is M5 and applies to both directions.
 - Notification *delivery* (M6): the inbox and the per-category toggles are
   built, but the toggles are screen state, not stored preference, and there is
   no push registration. That is M7/M8 work.

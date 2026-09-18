@@ -142,8 +142,23 @@ clickLabel("Browse");
 const heart = H.byLabel(root, "Save quest") || H.all(root, "[aria-label='Save quest']")[0];
 click(heart, "save heart");
 clickLabel("Profile");
-ok("profile shows the wallet", H.has(root, "Available to spend"));
+ok("profile shows identity and balance in one block", H.has(root, "Available") && H.has(root, "Alex L."));
+ok("rating shows as a bare number, not a labelled stat", H.has(root, "4.8") && !H.has(root, "Rating"));
 ok("wallet shows the ledger", H.has(root, "Money in and out"));
+
+/* Money has to go both ways. */
+ok("both money directions are offered", !!byText("Add money") && !!byText("Cash out"));
+const beforeBalance = H.text(root);
+clickText("Add money");
+ok("deposit sheet opens", H.has(root, "Or set your own") && H.has(root, "Wallet after this"));
+ok("deposit names the source account", H.has(root, "CTBC"));
+clickText("NT$1,000");
+clickText("Add to wallet");
+ok("deposit lands in the wallet", H.has(root, "NT$6,355"));
+ok("deposit is recorded in the ledger as added", H.has(root, "Added"));
+/* A hold is money leaving the spendable balance, so it must not read as a credit. */
+ok("a hold reads as money going out, not coming in",
+   /\u2212NT\$300/.test(H.text(root)) && H.has(root, "Held"));
 clickHas("Saved quests");
 ok("saved list reachable and populated", H.has(root, "km") || H.has(root, "Nothing saved"));
 clickLabel("Back");
@@ -154,9 +169,19 @@ clickText("Cancel");
 clickLabel("Settings");
 ok("settings reachable", H.has(root, "Notifications"));
 ok("payment notifications are stated as always on", H.has(root, "always on"));
+ok("contact details are editable, not just displayed", !!H.field(root, "Phone") && !!H.field(root, "Email"));
+ok("area can be changed", !!H.field(root, "Area"));
+ok("locate me is offered", !!byText("Locate me"));
+ok("verification status is shown", H.has(root, "verified"));
+ok("payment method is listed", H.has(root, "Bank account"));
 ok("account deletion is offered", H.has(root, "Delete account"));
 ok("deletion explains what happens to the counterparty", H.has(root, "anonymises"));
+/* Changing area moves the point distances are measured from. */
+const areaSel = H.field(root, "Area");
+if (areaSel) act(() => H.choose(areaSel, "Nangang"));
+ok("area change is reflected back", H.has(root, "Nangang"));
 clickText("Done");
+ok("profile follows the new area", H.has(root, "Nangang"));
 
 clickLabel("Browse");
 clickLabel("Notifications");

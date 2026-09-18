@@ -621,6 +621,7 @@ function initialState() {
     reviews: D.reviews,
     notifications: D.notifications,
     saved: D.savedByUser,
+    profileEdits: {},
     readAt: (function () {
       var out = {};
       var src = D.threadReadAt || {};
@@ -724,7 +725,16 @@ function useApp() {
   };
 
   /* ---- identity ---- */
-  app.me = function () { return userOf(actorId); };
+  app.me = function () {
+    return Object.assign({}, userOf(actorId), state.profileEdits[actorId] || {});
+  };
+  app.updateProfile = function (patch) {
+    setState(function (s) {
+      var next = Object.assign({}, s.profileEdits);
+      next[actorId] = Object.assign({}, next[actorId] || {}, patch);
+      return Object.assign({}, s, { profileEdits: next });
+    });
+  };
   app.switchActor = function (id) {
     setActorId(id);
     flash("neutral", "Now viewing as " + userOf(id).name);
@@ -741,7 +751,7 @@ function useApp() {
 
   /* ---- discovery ---- */
   app.distanceTo = function (quest) {
-    return distanceBetween(userOf(actorId).home, quest.point);
+    return distanceBetween(app.me().home, quest.point);
   };
   app.toggleSave = function (questId) {
     var on = savedFor(state, actorId).indexOf(questId) > -1;
@@ -1038,6 +1048,20 @@ function useApp() {
   };
 
   /* ---- wallet ---- */
+  app.deposit = function (minor) {
+    if (minor <= 0) { flash("danger", "Add an amount above zero"); return; }
+    var bank = app.me().bank;
+    setState(function (s) {
+      var tx = txnId("tx-topup");
+      return Object.assign({}, s, {
+        ledger: postTxn(s.ledger, tx, isoAt(s.now), [
+          { account: "external_bank", userId: actorId, questId: null, amountMinor: -minor, memo: "Added from " + bank },
+          { account: "user_available", userId: actorId, questId: null, amountMinor: minor, memo: "Added from " + bank }
+        ])
+      });
+    });
+    flash("money", formatMoney(minor) + " added — it's in your wallet now");
+  };
   app.cashOut = function (minor) {
     if (minor <= 0 || minor > availableOf(state, actorId)) { flash("danger", "Cash out an amount you have available"); return; }
     setState(function (s) {
@@ -1415,6 +1439,77 @@ function AddressBlock(props) {
         h("div", {
           style: { fontSize: "var(--text-2xs)", color: "var(--text-secondary)", marginTop: 2, lineHeight: "var(--leading-normal)" }
         }, "The exact address is shared the moment your offer is accepted."))));
+}
+
+/* The rating, as the profile wants it: a tilted gold star and the number, no
+   label. Playful rather than a stat tile — the number is the whole point. */
+function RatingStar(props) {
+  var size = props.size === "lg" ? 22 : 17;
+  return h("div", { style: { display: "flex", alignItems: "center", gap: 5, flex: "none" } },
+    h("span", { style: { display: "grid", placeItems: "center", transform: "rotate(-12deg)" } },
+      h(Icon, { name: "star", size: size, filled: true, color: "var(--coin-500)", strokeWidth: 2 })),
+    h("span", {
+      style: {
+        fontFamily: "var(--font-display)", fontWeight: "var(--weight-black)",
+        fontSize: props.size === "lg" ? "var(--text-xl)" : "var(--text-md)",
+        letterSpacing: "var(--tracking-heading)", lineHeight: 1,
+        fontFeatureSettings: '"tnum" 1'
+      }
+    }, Number(props.value).toFixed(1)));
+}
+
+/* Adding money. The mirror of cash-out, and the thing the accept sheet needs
+   when the hold is bigger than the wallet. */
+/* Three fit on one row at phone width, and they bracket what a poster
+   actually needs: quests here run NT$200-600, so NT$2,000 covers a few at
+   once. Anything larger goes in the field. */
+var TOPUP_AMOUNTS = [50000, 100000, 200000];
+function DepositSheet(props) {
+  var app = props.app;
+  var me = app.me();
+  var a = React.useState("");
+  var amount = a[0], setAmount = a[1];
+  React.useEffect(function () {
+    if (props.open) setAmount(props.presetMinor ? String(Math.ceil(props.presetMinor / 100)) : "");
+  }, [props.open, props.presetMinor]);
+  var minor = Math.max(0, Math.round(parseFloat(amount || "0") * 100));
+  return h(Dialog, {
+    open: props.open, onClose: props.onClose,
+    title: "Add money",
+    subtitle: "From " + me.bank + ", ready to hold straight away",
+    actions: h(Fragment, null,
+      h(Button, { variant: "ghost", onClick: props.onClose }, "Cancel"),
+      h(Button, {
+        variant: "money", fullWidth: true, icon: "plus", disabled: minor <= 0,
+        onClick: function () { props.onClose(); app.deposit(minor); }
+      }, "Add to wallet"))
+  },
+    props.reason ? h(Card, { variant: "sunken", padding: "md" },
+      h("div", { style: { display: "flex", gap: 8, alignItems: "flex-start" } },
+        h(Icon, { name: "info", size: 16, color: "var(--ink-500)", style: { marginTop: 1 } }),
+        h("span", {
+          style: { fontSize: "var(--text-2xs)", lineHeight: "var(--leading-normal)", color: "var(--text-secondary)" }
+        }, props.reason))) : null,
+    h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+      TOPUP_AMOUNTS.map(function (v) {
+        return h(Tag, {
+          key: v, selected: minor === v,
+          onSelect: function () { setAmount(String(v / 100)); }
+        }, formatMoney(v));
+      })),
+    h(Input, {
+      label: "Or set your own", prefix: "NT$", value: amount,
+      onChange: function (ev) { setAmount(ev.target.value.replace(/[^0-9.]/g, "")); }
+    }),
+    h(Card, { variant: "sunken", padding: "md" },
+      h(InfoRow, { icon: "credit-card", label: "From", value: me.bank }),
+      h(InfoRow, {
+        icon: "wallet", label: "Wallet after this", last: true,
+        value: formatMoney(app.available + minor)
+      })),
+    h("p", {
+      style: { margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-secondary)", lineHeight: "var(--leading-normal)" }
+    }, "Money in your wallet is yours until you accept someone. Nothing is held until then, and you can cash it back out whenever you like."));
 }
 
 /* ---------------- Browse ---------------- */
@@ -2633,6 +2728,8 @@ function OfferInboxScreen(props) {
   var decided = offersFor(state, quest.id).filter(function (o) { return o.status !== "pending"; });
   var cf = React.useState(null);
   var confirming = cf[0], setConfirming = cf[1];
+  var dp = React.useState(false);
+  var depositSheet = dp[0], setDepositSheet = dp[1];
   var available = app.available;
   var short = confirming ? confirming.amountMinor - available : 0;
 
@@ -2716,12 +2813,24 @@ function OfferInboxScreen(props) {
         h("div", { style: { display: "flex", gap: 8, alignItems: "flex-start" } },
           h(Icon, { name: "alert-triangle", size: 17, color: "var(--danger-600)", style: { marginTop: 1 } }),
           h("span", { style: { fontSize: "var(--text-sm)", lineHeight: "var(--leading-normal)" } },
-            "Add " + formatMoney(short) + " to your wallet and you can hold this offer."))) : null,
+            "Add " + formatMoney(short) + " to your wallet and you can hold this offer.")),
+        h(Button, {
+          variant: "money", size: "sm", icon: "plus", fullWidth: true, style: { marginTop: 10 },
+          onClick: function () { setDepositSheet(true); }
+        }, "Add money")) : null,
       h("p", {
         style: { margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-secondary)", lineHeight: "var(--leading-normal)" }
       }, "The other " + (pendingOffersFor(state, quest.id).length - 1) + " " +
         (pendingOffersFor(state, quest.id).length - 1 === 1 ? "offer is" : "offers are") +
-        " declined automatically, and everyone is told.")) : null));
+        " declined automatically, and everyone is told.")) : null),
+
+    h(DepositSheet, {
+      open: depositSheet, app: app, presetMinor: short > 0 ? short : 0,
+      reason: short > 0
+        ? "You're " + formatMoney(short) + " short of holding this offer. Adding at least that much lets you accept it."
+        : undefined,
+      onClose: function () { setDepositSheet(false); }
+    }));
 }
 
 /* ---------------- My quests ----------------
@@ -3078,11 +3187,22 @@ function walletRowsFor(state, userId) {
   return order.map(function (id) { return byTxn[id]; })
     .sort(function (a, b) { return ms(b.at) - ms(a.at); });
 }
+/* What a row did to the viewer's spendable money, and how to sign it.
+   A hold is a debit: the money left your available balance, even though it is
+   still yours. The matching release is a status change on money you already
+   watched leave, so it carries no sign — signing it again would read as a
+   second NT$300 going out. */
 function walletRowFace(row) {
-  if (row.held > 0) return { amount: row.held, word: "Held", tone: "warning" };
-  if (row.held < 0 && row.available === 0) return { amount: row.held, word: "Released", tone: "success" };
-  if (row.available > 0) return { amount: row.available, word: /refund/i.test(row.memo) ? "Refunded" : "Paid in", tone: "success" };
-  return { amount: row.available, word: /cash out/i.test(row.memo) ? "Sent" : "Out", tone: "neutral" };
+  if (row.held > 0) return { amount: row.available, word: "Held", tone: "warning", signed: true };
+  if (row.held < 0 && row.available === 0) return { amount: -row.held, word: "Released", tone: "success", signed: false };
+  if (row.available > 0) return {
+    amount: row.available, signed: true, tone: "success",
+    word: /refund/i.test(row.memo) ? "Refunded" : /added from/i.test(row.memo) ? "Added" : "Paid in"
+  };
+  return {
+    amount: row.available, signed: true, tone: "neutral",
+    word: /cash out/i.test(row.memo) ? "Sent" : "Out"
+  };
 }
 
 /* PRD §7.9. Payment notifications are transactional and cannot be turned off,
@@ -3101,21 +3221,22 @@ function ProfileScreen(props) {
   var me = app.me();
   var cs = React.useState(false);
   var cashSheet = cs[0], setCashSheet = cs[1];
+  var dp = React.useState(false);
+  var depositSheet = dp[0], setDepositSheet = dp[1];
   var se = React.useState(false);
   var settings = se[0], setSettings = se[1];
   var am = React.useState("");
   var amount = am[0], setAmount = am[1];
   var nf = React.useState({ offers: true, messages: true, reminders: true, payments: true });
   var notifPrefs = nf[0], setNotifPrefs = nf[1];
+  var jl = React.useState(false);
+  var justLocated = jl[0], setJustLocated = jl[1];
 
   var rows = walletRowsFor(state, app.actorId);
   var saved = savedFor(state, app.actorId);
   var mine = reviewsOf(state, app.actorId).filter(function (r) { return reviewVisible(state, r, app.now); });
   var cashMinor = Math.max(0, Math.round(parseFloat(amount || "0") * 100));
   var canCash = cashMinor > 0 && cashMinor <= app.available;
-  var doneCount = state.quests.filter(function (q) {
-    return q.status === "paid" && roleOn(state, q, app.actorId) !== "visitor";
-  }).length;
 
   React.useEffect(function () {
     if (cashSheet) setAmount(String(Math.floor(app.available / 100)));
@@ -3130,60 +3251,58 @@ function ProfileScreen(props) {
       })
     }),
     h(Body, null,
+      /* Identity and balance are one block, not two stacked cards: who you are
+         and what you're owed are the same question on this screen. */
       h(Card, { padding: "lg" },
         h("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
           h(Avatar, { name: me.name, size: "lg", verified: me.verified }),
           h("div", { style: { flex: 1, minWidth: 0 } },
             h("div", {
               style: {
-                font: "var(--weight-black) var(--text-xl)/1.15 var(--font-display)",
+                fontFamily: "var(--font-display)", fontSize: "var(--text-xl)",
+                fontWeight: "var(--weight-black)", lineHeight: 1.15,
                 letterSpacing: "var(--tracking-heading)"
               }
             }, me.name),
             h("div", {
-              style: { fontSize: "var(--text-2xs)", color: "var(--text-secondary)", marginTop: 2 }
-            }, me.area + " · joined " + formatStamp(me.joined, app.now)))),
+              style: { fontSize: "var(--text-2xs)", color: "var(--text-secondary)", marginTop: 3 }
+            }, me.area + " · " + me.questsCompleted + " quests · " +
+               Math.round(me.cancelRate * 100) + "% cancelled")),
+          h(RatingStar, { value: me.rating, size: "lg" })),
         me.bio ? h("p", {
           style: {
             margin: "12px 0 0", fontSize: "var(--text-sm)",
             lineHeight: "var(--leading-normal)", color: "var(--ink-700)"
           }
         }, me.bio) : null,
-        /* Trust language is factual — numbers, not reassurance. */
-        h("div", {
-          style: {
-            display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12, paddingTop: 12,
-            borderTop: "var(--border-hair) solid var(--border-subtle)"
-          }
-        },
-          me.verified ? h(Badge, { tone: "success", icon: "shield-check", size: "sm" }, "ID verified") : null,
-          h(Badge, { tone: "money", icon: "star", size: "sm" }, me.rating.toFixed(1)),
-          h(Badge, { size: "sm" }, me.questsCompleted + " quests"),
-          h(Badge, { size: "sm" }, Math.round(me.cancelRate * 100) + "% cancelled"))),
 
-      h(Card, { variant: "money", padding: "lg" },
-        h(Eyebrow, { style: { color: "var(--ink-700)" } }, "Wallet"),
         h("div", {
-          style: {
-            font: "var(--weight-black) var(--type-display-size)/var(--leading-tight) var(--font-display)",
-            letterSpacing: "var(--tracking-display)", fontFeatureSettings: '"tnum" 1', marginTop: 4
-          }
-        }, formatMoney(app.available)),
-        h("div", { style: { fontSize: "var(--text-2xs)", marginTop: 2 } }, "Available to spend or cash out"),
-        h("div", {
-          style: {
-            display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 12,
-            borderTop: "var(--border-hair) solid var(--ink-900)"
-          }
+          style: { marginTop: 14, paddingTop: 14, borderTop: "var(--border-hair) solid var(--border-subtle)" }
         },
-          app.held ? h(Badge, { tone: "warning", icon: "lock", size: "sm" }, formatMoney(app.held) + " held") : null,
-          app.incoming ? h(Badge, { tone: "success", icon: "coins", size: "sm" }, formatMoney(app.incoming) + " coming") : null,
-          !app.held && !app.incoming ? h(Badge, { size: "sm" }, "Nothing held") : null),
-        h(Button, {
-          variant: "inverse", size: "md", icon: "wallet", fullWidth: true,
-          style: { marginTop: 12 }, disabled: app.available <= 0,
-          onClick: function () { setCashSheet(true); }
-        }, "Cash out")),
+          h(Eyebrow, null, "Available"),
+          h("div", {
+            style: {
+              fontFamily: "var(--font-display)", fontSize: "var(--type-display-size)",
+              fontWeight: "var(--weight-black)", lineHeight: "var(--leading-tight)",
+              letterSpacing: "var(--tracking-display)", fontFeatureSettings: '"tnum" 1',
+              marginTop: 4
+            }
+          }, formatMoney(app.available)),
+          h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 } },
+            app.held ? h(Badge, { tone: "warning", icon: "lock", size: "sm" }, formatMoney(app.held) + " held") : null,
+            app.incoming ? h(Badge, { tone: "success", icon: "coins", size: "sm" }, formatMoney(app.incoming) + " coming") : null,
+            !app.held && !app.incoming ? h(Badge, { size: "sm" }, "Nothing held") : null),
+          /* Money has to go both ways, so the two directions sit side by side. */
+          h("div", { style: { display: "flex", gap: 8, marginTop: 14 } },
+            h(Button, {
+              variant: "money", size: "md", icon: "plus", fullWidth: true,
+              onClick: function () { setDepositSheet(true); }
+            }, "Add money"),
+            h(Button, {
+              variant: "secondary", size: "md", icon: "wallet", fullWidth: true,
+              disabled: app.available <= 0,
+              onClick: function () { setCashSheet(true); }
+            }, "Cash out")))),
 
       h(Card, { padding: "md", onClick: props.onSaved },
         h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
@@ -3216,11 +3335,12 @@ function ProfileScreen(props) {
                 h("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 } },
                   h("span", {
                     style: {
-                      font: "var(--weight-black) var(--text-md)/1 var(--font-display)",
+                      fontFamily: "var(--font-display)", fontSize: "var(--text-md)",
+                      fontWeight: "var(--weight-black)", lineHeight: 1,
                       fontFeatureSettings: '"tnum" 1',
-                      color: face.amount > 0 ? "var(--success-600)" : "var(--ink-900)"
+                      color: face.signed && face.amount > 0 ? "var(--success-600)" : "var(--ink-900)"
                     }
-                  }, (face.amount > 0 ? "+" : "") + formatMoney(face.amount)),
+                  }, (face.signed && face.amount > 0 ? "+" : "") + formatMoney(face.amount)),
                   h(Badge, { tone: face.tone, size: "sm" }, face.word))));
           }),
 
@@ -3232,7 +3352,7 @@ function ProfileScreen(props) {
             h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
               h(Avatar, { name: rater.name, size: "sm" }),
               h("span", { style: { flex: 1, fontSize: "var(--text-sm)", fontWeight: "var(--weight-semibold)" } }, rater.name),
-              h(Badge, { tone: "money", icon: "star", size: "sm" }, String(r.rating))),
+              h(RatingStar, { value: r.rating })),
             r.comment ? h("p", {
               style: {
                 margin: "8px 0 0", fontSize: "var(--text-sm)",
@@ -3240,6 +3360,11 @@ function ProfileScreen(props) {
               }
             }, r.comment) : null);
         })) : null),
+
+    h(DepositSheet, {
+      open: depositSheet, app: app,
+      onClose: function () { setDepositSheet(false); }
+    }),
 
     h(Dialog, {
       open: cashSheet, onClose: function () { setCashSheet(false); },
@@ -3283,17 +3408,57 @@ function ProfileScreen(props) {
           }
         });
       }),
-      h(Eyebrow, { style: { marginTop: 8 } }, "You"),
+
+      h(Eyebrow, { style: { marginTop: 8 } }, "Account"),
+      h(Input, {
+        label: "Phone", icon: "message-square", value: me.phone,
+        onChange: function (ev) { app.updateProfile({ phone: ev.target.value }); }
+      }),
+      h(Input, {
+        label: "Email", icon: "send", value: me.email,
+        onChange: function (ev) { app.updateProfile({ email: ev.target.value }); }
+      }),
+
+      h(Eyebrow, { style: { marginTop: 8 } }, "Where you are"),
+      h(Select, {
+        label: "Area",
+        options: Object.keys(D.areas).map(function (a) { return { value: a, label: a }; }),
+        value: me.area,
+        onChange: function (ev) {
+          /* Moving your area moves the point every distance is measured from,
+             so the feed genuinely re-sorts. */
+          app.updateProfile({ area: ev.target.value, home: D.areas[ev.target.value] });
+          setJustLocated(false);
+        },
+        hint: justLocated ? "Found you in " + me.area + " — the feed is sorted from there now"
+                          : "Quests are ranked by how far they are from here"
+      }),
+      h(Button, {
+        variant: "secondary", fullWidth: true, icon: "map-pin",
+        onClick: function () {
+          app.updateProfile({ area: userOf(app.actorId).area, home: D.areas[userOf(app.actorId).area] });
+          setJustLocated(true);
+        }
+      }, "Locate me"),
+
+      h(Eyebrow, { style: { marginTop: 8 } }, "Verification"),
       h(Card, { variant: "sunken", padding: "md" },
-        h(InfoRow, { icon: "user", label: "Name", value: me.name }),
-        h(InfoRow, { icon: "message-square", label: "Phone", value: me.phone }),
-        h(InfoRow, { icon: "send", label: "Email", value: me.email }),
-        h(InfoRow, { icon: "map-pin", label: "Area", value: me.area }),
-        h(InfoRow, {
-          icon: "shield-check", label: "Verification", last: true,
-          value: me.verified ? "ID verified" : "Not verified yet"
-        })),
-      h(Button, { variant: "secondary", fullWidth: true, icon: "trash" }, "Delete account"),
+        h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+          h(Icon, { name: "shield-check", size: 18, color: me.verified ? "var(--success-600)" : "var(--ink-400)" }),
+          h("span", { style: { flex: 1, fontSize: "var(--text-sm)" } },
+            me.verified ? "Your ID is verified" : "Your ID isn't verified yet"),
+          h(Badge, { tone: me.verified ? "success" : "neutral", size: "sm" },
+            me.verified ? "Verified" : "Not yet"))),
+      !me.verified ? h(Button, {
+        variant: "secondary", fullWidth: true, icon: "shield-check",
+        onClick: function () { app.flash("neutral", "We'll email you the steps within a day"); }
+      }, "Verify identity") : null,
+
+      h(Eyebrow, { style: { marginTop: 8 } }, "Payment method"),
+      h(Card, { variant: "sunken", padding: "md" },
+        h(InfoRow, { icon: "credit-card", label: "Bank account", value: me.bank, last: true })),
+
+      h(Button, { variant: "secondary", fullWidth: true, icon: "trash", style: { marginTop: 8 } }, "Delete account"),
       h("p", {
         style: { margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-secondary)", lineHeight: "var(--leading-normal)" }
       }, "Deleting your account anonymises the quests you were part of. The other side keeps their record of them.")));

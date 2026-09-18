@@ -105,6 +105,19 @@ ok("an open quest past its expiry expires", expiredQuest.status === "expired", e
 ok("its pending offers expire with it",
    after.offers.filter((o) => o.questId === "q2").every((o) => o.status === "expired"));
 
+console.log("\n== money moves both ways ==");
+const topup = postTxn([], "tx-topup-1", "2026-09-18T09:00:00+08:00", [
+  { account: "external_bank", userId: "u0", amountMinor: -100000, memo: "Added from CTBC \u2022\u2022\u2022\u2022 4417" },
+  { account: "user_available", userId: "u0", amountMinor: 100000, memo: "Added from CTBC \u2022\u2022\u2022\u2022 4417" }
+]);
+ok("a deposit is a balanced transaction", topup.length === 2 &&
+   topup.reduce((s2, e) => s2 + e.amountMinor, 0) === 0);
+ok("a deposit is the exact mirror of a cash-out",
+   topup.find((e) => e.account === "user_available").amountMinor === 100000 &&
+   topup.find((e) => e.account === "external_bank").amountMinor === -100000);
+ok("it uses the same sign convention as the opening balance",
+   D.ledger.filter((e) => e.txnId === "tx-open" && e.account === "external_bank")[0].amountMinor < 0);
+
 console.log("\n== the one formatting boundary ==");
 ok('TWD drops zero minor units: NT$400', formatMoney(40000) === "NT$400", formatMoney(40000));
 ok('and keeps them when they are not zero', formatMoney(40050) === "NT$400.50", formatMoney(40050));
