@@ -63,8 +63,23 @@ ok("the chosen expiry shows in the field", H.has(root, "In 24 hours"));
 clickText("Keep going");
 ok("advances to budget", H.has(root, "Step 3 of 4"));
 ok("budget offers fixed and hourly", H.has(root, "Per hour"));
-clickText("NT$300");
+ok("no preset amounts are offered", !byText("NT$300") && !byText("NT$500"));
+type("Price", "300");
 ok("fee is disclosed before the commitment", H.has(root, "Platform fee"));
+ok("the slab carries only Back and the forward action",
+   !!byText("Back") && !!byText("Keep going") && !/Back\s*NT\$/.test(H.text(root)));
+
+/* An hourly quest shows where its total came from, inside the disclosure
+   rather than in a card of its own. */
+clickText("Per hour");
+type("Hourly rate", "350");
+ok("hourly derivation appears in the disclosure",
+   H.has(root, "All day at NT$350 an hour"), H.text(root).slice(0, 200));
+ok("and the total is the rate against the estimate", H.has(root, "NT$2,800"));
+ok("the derivation is not a separate card",
+   (H.text(root).match(/All day at NT\$350 an hour/g) || []).length === 1);
+clickText("Fixed price");
+type("Price", "300");
 clickText("Keep going");
 ok("reaches review", H.has(root, "Step 4 of 4"));
 ok("review restates the address gate", H.has(root, "only after you accept"));

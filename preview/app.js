@@ -1146,7 +1146,7 @@ function FeeBreakdown(props) {
   var fee = feeOn(gross);
   return h(Card, { variant: "sunken", padding: "md" },
     h(Eyebrow, null, props.title || "Before you commit"),
-    h(InfoRow, { label: "Quest price", value: formatMoney(gross) }),
+    h(InfoRow, { label: props.priceLabel || "Quest price", value: formatMoney(gross) }),
     h(InfoRow, { label: "Platform fee (" + feeRateLabel() + ")", value: "−" + formatMoney(fee) }),
     h(InfoRow, {
       label: props.doerSide ? "You receive" : "The doer receives",
@@ -2572,6 +2572,11 @@ function PostQuestScreen(props) {
   var minutes = durOpt.minutes;
   /* An hourly budget is a rate; the total is what the poster actually holds. */
   var totalMinor = form.unit === "hourly" ? Math.round(budgetMinor * minutes / 60) : budgetMinor;
+  /* For an hourly quest the price row shows where the number came from, so the
+     arithmetic lives in the disclosure rather than in a card of its own. */
+  var priceLabel = form.unit === "hourly" && budgetMinor > 0
+    ? durOpt.label + " at " + formatMoney(budgetMinor) + " an hour"
+    : "Quest price";
 
   var errors = {
     title: form.title.trim().length < 8 ? "Give it a few more words so doers know what's involved" : null,
@@ -2703,27 +2708,18 @@ function PostQuestScreen(props) {
           value: form.unit, onChange: function (v) { set("unit", v); },
           items: [{ value: "fixed", label: "Fixed price" }, { value: "hourly", label: "Per hour" }]
         }),
-        h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-          (form.unit === "hourly" ? [30000, 35000, 40000, 50000] : [20000, 30000, 40000, 60000]).map(function (p) {
-            return h(Tag, {
-              key: p, selected: budgetMinor === p,
-              onSelect: function () { set("budget", String(p / 100)); }
-            }, formatMoney(p));
-          })),
         h(Input, {
-          label: form.unit === "hourly" ? "Or set your own rate" : "Or set your own",
+          label: form.unit === "hourly" ? "Hourly rate" : "Price",
           prefix: "NT$", suffix: form.unit === "hourly" ? "per hour" : undefined,
           value: form.budget,
           onChange: function (ev) { set("budget", ev.target.value.replace(/[^0-9.]/g, "")); },
+          hint: show("budget") ? undefined
+            : form.unit === "hourly" ? "Charged against the estimate you picked" : "What the whole quest pays",
           error: show("budget")
         }),
-        form.unit === "hourly" && budgetMinor > 0 ? h(Card, { variant: "sunken", padding: "md" },
-          h(InfoRow, {
-            icon: "coins", label: durOpt.label + " at " + formatMoney(budgetMinor) + " an hour",
-            value: formatMoney(totalMinor), last: true
-          })) : null,
         budgetMinor > 0 ? h(FeeBreakdown, {
           amountMinor: totalMinor, title: "What this costs you",
+          priceLabel: priceLabel,
           note: "Nothing leaves your wallet now. We hold " + formatMoney(totalMinor) + " when you accept someone, and it comes straight back if the quest is cancelled."
         }) : null) : null,
 
@@ -2757,7 +2753,7 @@ function PostQuestScreen(props) {
             value: form.date && form.time ? formatWhenAt(expiryISO(tpeISO(form.date, form.time)), app.now) : "—"
           })),
         h(FeeBreakdown, {
-          amountMinor: totalMinor, title: "Before you post",
+          amountMinor: totalMinor, title: "Before you post", priceLabel: priceLabel,
           note: "Nothing leaves your wallet now. We hold " + formatMoney(totalMinor) + " when you accept someone, and it comes straight back if the quest is cancelled."
         }),
         h(Card, { variant: "sunken", padding: "md" },
@@ -2810,7 +2806,6 @@ function PostQuestScreen(props) {
         variant: "secondary", size: "lg", style: { padding: "0 16px" },
         onClick: function () { setStep(step - 1); }
       }, "Back") : null,
-      totalMinor > 0 ? h(RewardPill, { amount: formatMoney(totalMinor), unit: null }) : null,
       key === "review"
         ? h(Button, { size: "lg", fullWidth: true, icon: "plus", onClick: submit }, "Post quest")
         : h(Button, { size: "lg", fullWidth: true, iconRight: "arrow-right", onClick: next }, "Keep going")));
