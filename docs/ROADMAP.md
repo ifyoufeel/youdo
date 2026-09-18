@@ -84,7 +84,7 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 - [x] Validation that **blocks** submit, with errors written as fixes
 - [x] Draft autosave surviving app restart
 - [ ] Photo picker (`expo-image-picker`), date/time picker, currency input, address entry
-- [x] Fixed vs hourly budget; hourly shows estimated total
+- [x] ~~Fixed vs hourly budget~~ — one agreed amount per quest (ADR-011)
 - [x] Fee disclosure before submission
 - [x] Posted quest appears in the feed and My quests immediately
 - [ ] **Supabase spike (throwaway):** prove the PostGIS radius query and the chat RLS policy now, not at M7

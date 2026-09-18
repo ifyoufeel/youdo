@@ -996,7 +996,7 @@ function useApp() {
     setState(function (s) {
       var quest = {
         id: id, posterId: actorId, title: form.title, details: form.details || "",
-        payoutMinor: form.payoutMinor, payoutUnit: form.payoutUnit || "fixed",
+        payoutMinor: form.payoutMinor, payoutUnit: "fixed",
         categoryId: form.categoryId, estimatedMinutes: form.estimatedMinutes || 60,
         durationLabel: form.durationLabel || null,
         point: form.point, area: form.area, addressLine: form.addressLine,
@@ -1146,7 +1146,7 @@ function FeeBreakdown(props) {
   var fee = feeOn(gross);
   return h(Card, { variant: "sunken", padding: "md" },
     h(Eyebrow, null, props.title || "Before you commit"),
-    h(InfoRow, { label: props.priceLabel || "Quest price", value: formatMoney(gross) }),
+    h(InfoRow, { label: "Quest price", value: formatMoney(gross) }),
     h(InfoRow, { label: "Platform fee (" + feeRateLabel() + ")", value: "−" + formatMoney(fee) }),
     h(InfoRow, {
       label: props.doerSide ? "You receive" : "The doer receives",
@@ -1890,10 +1890,7 @@ function QuestDetailScreen(props) {
             letterSpacing: "var(--tracking-heading)"
           }
         }, quest.title),
-        h(RewardPill, {
-          amount: formatMoney(quest.payoutMinor), size: "lg",
-          unit: quest.payoutUnit === "hourly" ? "per hour" : null
-        }),
+        h(RewardPill, { amount: formatMoney(quest.payoutMinor), size: "lg" }),
         h("p", {
           style: {
             margin: 0, fontSize: "var(--text-sm)",
@@ -2456,9 +2453,10 @@ var POST_STEPS = [
   { key: "budget", label: "Budget" },
   { key: "review", label: "Review" }
 ];
-/* `minutes` is what the hourly total is computed from; `open` marks the
-   estimates that are a floor rather than a figure, so they keep their own
-   label instead of being printed back as "~6 hr". */
+/* `minutes` is what the app stores; `open` marks the estimates that are a
+   floor rather than a figure, so they keep their own label instead of being
+   printed back as "~6 hr". The estimate tells a doer what they're taking on;
+   it does not price the quest (ADR-011). */
 var DURATIONS = [
   { value: "20", label: "~20 min", minutes: 20 },
   { value: "30", label: "~30 min", minutes: 30 },
@@ -2537,7 +2535,7 @@ function StepHeader(props) {
 var EMPTY_FORM = {
   title: "", details: "", categoryId: "delivery",
   address: "", area: "Da'an", date: "", time: "", minutes: "60",
-  expiry: "before", unit: "fixed", budget: ""
+  expiry: "before", budget: ""
 };
 
 function PostQuestScreen(props) {
@@ -2570,13 +2568,9 @@ function PostQuestScreen(props) {
   var budgetMinor = Math.max(0, Math.round(parseFloat(form.budget || "0") * 100));
   var durOpt = durationOption(form.minutes);
   var minutes = durOpt.minutes;
-  /* An hourly budget is a rate; the total is what the poster actually holds. */
-  var totalMinor = form.unit === "hourly" ? Math.round(budgetMinor * minutes / 60) : budgetMinor;
-  /* For an hourly quest the price row shows where the number came from, so the
-     arithmetic lives in the disclosure rather than in a card of its own. */
-  var priceLabel = form.unit === "hourly" && budgetMinor > 0
-    ? durOpt.label + " at " + formatMoney(budgetMinor) + " an hour"
-    : "Quest price";
+  /* Every quest is one agreed amount. The duration estimate is information
+     for the doer, not a multiplier — see ADR-011. */
+  var totalMinor = budgetMinor;
 
   var errors = {
     title: form.title.trim().length < 8 ? "Give it a few more words so doers know what's involved" : null,
@@ -2609,7 +2603,7 @@ function PostQuestScreen(props) {
     var scheduled = tpeISO(form.date, form.time);
     var id = app.postQuest({
       title: form.title.trim(), details: form.details.trim(),
-      categoryId: form.categoryId, payoutMinor: totalMinor, payoutUnit: form.unit,
+      categoryId: form.categoryId, payoutMinor: totalMinor,
       estimatedMinutes: minutes, durationLabel: durOpt.open ? durOpt.label : null,
       addressLine: form.address.trim(), area: form.area,
       point: D.areas[form.area], scheduledFor: scheduled, expiresAt: expiryISO(scheduled),
@@ -2704,22 +2698,14 @@ function PostQuestScreen(props) {
 
       key === "budget" ? h(Card, { padding: "lg" },
         h(Eyebrow, null, "What's it worth"),
-        h(Tabs, {
-          value: form.unit, onChange: function (v) { set("unit", v); },
-          items: [{ value: "fixed", label: "Fixed price" }, { value: "hourly", label: "Per hour" }]
-        }),
         h(Input, {
-          label: form.unit === "hourly" ? "Hourly rate" : "Price",
-          prefix: "NT$", suffix: form.unit === "hourly" ? "per hour" : undefined,
-          value: form.budget,
+          label: "Price", prefix: "NT$", value: form.budget,
           onChange: function (ev) { set("budget", ev.target.value.replace(/[^0-9.]/g, "")); },
-          hint: show("budget") ? undefined
-            : form.unit === "hourly" ? "Charged against the estimate you picked" : "What the whole quest pays",
+          hint: show("budget") ? undefined : "One agreed amount for the whole quest",
           error: show("budget")
         }),
         budgetMinor > 0 ? h(FeeBreakdown, {
           amountMinor: totalMinor, title: "What this costs you",
-          priceLabel: priceLabel,
           note: "Nothing leaves your wallet now. We hold " + formatMoney(totalMinor) + " when you accept someone, and it comes straight back if the quest is cancelled."
         }) : null) : null,
 
@@ -2734,10 +2720,7 @@ function PostQuestScreen(props) {
               letterSpacing: "var(--tracking-heading)"
             }
           }, form.title),
-          h(RewardPill, {
-            amount: formatMoney(totalMinor), size: "lg",
-            unit: form.unit === "hourly" ? formatMoney(budgetMinor) + " an hour" : null
-          }),
+          h(RewardPill, { amount: formatMoney(totalMinor), size: "lg" }),
           form.details ? h("p", {
             style: {
               margin: 0, fontSize: "var(--text-sm)",
@@ -2753,7 +2736,7 @@ function PostQuestScreen(props) {
             value: form.date && form.time ? formatWhenAt(expiryISO(tpeISO(form.date, form.time)), app.now) : "—"
           })),
         h(FeeBreakdown, {
-          amountMinor: totalMinor, title: "Before you post", priceLabel: priceLabel,
+          amountMinor: totalMinor, title: "Before you post",
           note: "Nothing leaves your wallet now. We hold " + formatMoney(totalMinor) + " when you accept someone, and it comes straight back if the quest is cancelled."
         }),
         h(Card, { variant: "sunken", padding: "md" },
@@ -4249,19 +4232,19 @@ function ComponentsTab() {
     }
   }, /*#__PURE__*/React.createElement(Radio, {
     name: "g",
-    label: "Fixed price",
-    description: "One agreed amount",
+    label: "Take it at NT$400",
+    description: "Accept the asking price",
     checked: rd === "fixed",
     onChange: function () {
       setRd("fixed");
     }
   }), /*#__PURE__*/React.createElement(Radio, {
     name: "g",
-    label: "Per hour",
-    description: "Track time in chat",
-    checked: rd === "hourly",
+    label: "Offer a different price",
+    description: "Say what you'd do it for",
+    checked: rd === "custom",
     onChange: function () {
-      setRd("hourly");
+      setRd("custom");
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {

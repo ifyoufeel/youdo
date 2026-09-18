@@ -173,3 +173,36 @@ or it will be lost on the next regeneration.
 **Enforcement.** `test/rules.js` now fails if paper-on-flare reappears at body
 scale, along with the rest of the content rules, so this cannot silently
 regress.
+
+---
+
+## ADR-011 · One price per quest, no hourly rate
+
+**Decision.** Every quest is a single agreed amount. Hourly pricing is removed
+from the product: no fixed-versus-hourly switch, no rate, no total derived from
+the duration. The field is labelled "Price" — not "Fixed price", because there
+is nothing to distinguish it from.
+
+**Why.** Hourly made the poster commit to a number they could not actually
+predict, and it made the escrow hold a guess. Everything downstream depended on
+that guess: the amount held on acceptance, the fee, the payout, what the doer
+saw on the card. Two people agreeing one number up front is the thing the
+escrow model is built for, and it is what makes "the money is held, always"
+mean something specific. It also removes the only place in the app where the
+price shown and the price charged could differ.
+
+**What survives.** The duration estimate stays, with a wider set of options
+including the open-ended ones (6+ hr, 12+ hr, All day). It tells a doer what
+they are taking on; it no longer multiplies anything. That separation is the
+point: information for the doer, not an input to the money.
+
+**Cost.** Long or unpredictable jobs are harder to price, and a poster who
+guesses low has no mechanism to top up mid-quest. If that turns out to bite,
+the answer is a "revise the price" transition both sides accept — a lifecycle
+change, not a return to rate-based billing.
+
+**Consequences.** `payout_unit` is kept in the data model and written as
+`fixed`, so reintroducing a second mode would not need a migration. The one
+hourly fixture (a 3-hour wardrobe assembly at NT$350/hr) became one agreed
+NT$1,050, and the two offers on it moved with it. PRD §5's pricing anchors and
+§7.4's budget rule are amended to match.

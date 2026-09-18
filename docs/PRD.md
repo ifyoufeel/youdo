@@ -56,7 +56,7 @@ One account, two roles. The same person posts a quest on Tuesday and completes o
 Launching in **Taipei**, expanding to other Taiwanese cities.
 
 - **Currency: TWD.** Stored as integer minor units; displayed as whole dollars (`NT$400`, not `NT$400.00`) because TWD is transacted in whole dollars despite a nominal two-decimal exponent.
-- **Realistic pricing anchors:** parcel run NT$200 · dog walk NT$400 · printer setup NT$400 · sofa carry NT$600 · furniture assembly NT$350/hr. Seed fixtures must use these ranges.
+- **Realistic pricing anchors:** parcel run NT$200 · dog walk NT$400 · printer setup NT$400 · sofa carry NT$600 · wardrobe assembly NT$1,050. Seed fixtures must use these ranges.
 - **Language: English at launch**, with all user-facing strings behind an i18n layer from M1 so Traditional Chinese is a translation pass rather than a refactor.
 - **Distance in metric**, coarse units (`1.2 km`, `600 m`).
 - **Phone numbers:** +886 format.
@@ -109,7 +109,7 @@ Launching in **Taipei**, expanding to other Taiwanese cities.
 - Multi-step: what → details and photos → where → when → budget → review.
 - Validation **blocks** submission: title ≥ 8 characters, category, location, budget > 0, schedule present.
 - Drafts autosave and survive app restart.
-- Budget is fixed or hourly; hourly shows an estimated total from the duration.
+- Budget is **one agreed amount** for the whole quest. Hourly pricing was removed — see ADR-011.
 - Fee disclosure appears before submission.
 - The posted quest appears immediately in discovery and in My quests.
 
@@ -175,7 +175,7 @@ Replaces the prototype's preformatted strings with real types. Money is always `
 
 **profiles** — `id` · `display_name` · `avatar_url` · `bio` · `verified_at` · `rating_avg` (derived) · `quests_completed` (derived) · `cancellation_rate` (derived) · `home_area` · `created_at`
 
-**quests** — `id` · `poster_id` · `title` · `description` · `category_id` · `payout_minor` · `currency` · `payout_unit` (`fixed`|`hourly`) · `estimated_minutes` · `scheduled_for` (timestamptz) · `address_line` *(private until assigned)* · `location` (geography point) · `status` (enum) · `accepted_offer_id` · `expires_at` · `photos[]` · `requirements[]` · `created_at` · `updated_at`
+**quests** — `id` · `poster_id` · `title` · `description` · `category_id` · `payout_minor` · `currency` · `payout_unit` (`fixed` only — ADR-011) · `estimated_minutes` · `scheduled_for` (timestamptz) · `address_line` *(private until assigned)* · `location` (geography point) · `status` (enum) · `accepted_offer_id` · `expires_at` · `photos[]` · `requirements[]` · `created_at` · `updated_at`
 
 **offers** — `id` · `quest_id` · `doer_id` · `amount_minor` · `message` · `status` (enum) · `created_at` · `responded_at` · unique on (`quest_id`, `doer_id`) where pending
 

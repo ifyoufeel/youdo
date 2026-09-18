@@ -90,7 +90,7 @@ window.YOUDO_DATA = (function () {
       requirements: ["Bring a bag"] },
 
     { id: "q3", posterId: "u3", title: "Assemble a wardrobe (2 boxes)",
-      payoutMinor: 35000, payoutUnit: "hourly", categoryId: "assembly",
+      payoutMinor: 105000, payoutUnit: "fixed", categoryId: "assembly",
       point: at("Songshan", 260, -180), estimatedMinutes: 180,
       scheduledFor: "2026-09-19T11:00:00+08:00", expiresAt: "2026-09-19T10:00:00+08:00",
       createdAt: "2026-09-14T18:45:00+08:00",
@@ -201,10 +201,10 @@ window.YOUDO_DATA = (function () {
       note: "I pass that post office on the way to work.",
       createdAt: "2026-09-16T08:11:00+08:00", respondedAt: null },
 
-    { id: "o3", questId: "q3", doerId: "u0", amountMinor: 35000, status: "pending",
+    { id: "o3", questId: "q3", doerId: "u0", amountMinor: 105000, status: "pending",
       note: "I have a drill and I'm free all Saturday morning.",
       createdAt: "2026-09-16T08:44:00+08:00", respondedAt: null },
-    { id: "o4", questId: "q3", doerId: "u4", amountMinor: 40000, status: "pending",
+    { id: "o4", questId: "q3", doerId: "u4", amountMinor: 120000, status: "pending",
       note: "Two wardrobes' experience. I'd want a bit more for a Saturday.",
       createdAt: "2026-09-15T19:30:00+08:00", respondedAt: null },
 
