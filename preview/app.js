@@ -362,6 +362,14 @@ function confirmDeadline(quest) {
   return quest.completedAt ? isoAt(ms(quest.completedAt) + CONFIRM_WINDOW_MS) : null;
 }
 
+/* Open-ended estimates ("6+ hr", "All day") can't be derived from a minute
+   count — formatDuration(360) would print "~6 hr" and lose the "+". A quest
+   that carries its own label uses it; everything else derives as before, so
+   older records need no migration. */
+function questDuration(quest) {
+  return quest.durationLabel || formatDuration(quest.estimatedMinutes);
+}
+
 /* ---------------- Geography ----------------
    Straight-line metres on the flat grid the fixture uses. Coarse by the time
    it reaches a screen (formatDistance), never rounded in our favour. */
@@ -990,6 +998,7 @@ function useApp() {
         id: id, posterId: actorId, title: form.title, details: form.details || "",
         payoutMinor: form.payoutMinor, payoutUnit: form.payoutUnit || "fixed",
         categoryId: form.categoryId, estimatedMinutes: form.estimatedMinutes || 60,
+        durationLabel: form.durationLabel || null,
         point: form.point, area: form.area, addressLine: form.addressLine,
         scheduledFor: form.scheduledFor, expiresAt: form.expiresAt,
         createdAt: isoAt(s.now), status: "open", acceptedOfferId: null,
@@ -1661,7 +1670,7 @@ function BrowseScreen(props) {
               key: x.id, variant: mine ? "spacious-meta" : "spacious", title: x.title,
               payout: formatMoney(x.payoutMinor),
               distance: mine ? x.area : formatDistance(row.distanceM),
-              duration: formatDuration(x.estimatedMinutes),
+              duration: questDuration(x),
               when: formatWhenAt(x.scheduledFor, app.now),
               category: categoryLabel(x.categoryId),
               badges: mine
@@ -1901,7 +1910,7 @@ function QuestDetailScreen(props) {
       h(AddressBlock, { quest: quest, visible: addressShown, distanceM: distanceM }),
 
       h(Card, null,
-        h(InfoRow, { icon: "clock", label: "How long", value: formatDuration(quest.estimatedMinutes) }),
+        h(InfoRow, { icon: "clock", label: "How long", value: questDuration(quest) }),
         h(InfoRow, { icon: "calendar", label: "When", value: formatWhenAt(quest.scheduledFor, app.now) }),
         quest.status === "open" && quest.expiresAt && ms(quest.expiresAt) > app.now
           ? h(InfoRow, { icon: "zap", label: "Offers close", value: "in " + formatRemaining(quest.expiresAt, app.now) })
@@ -2398,6 +2407,44 @@ function TimeWheelPicker(props) {
 /* ---------------- Post a quest ---------------- */
 
 
+/* ---------------- Option list picker ----------------
+   A single-choice list in the same bottom sheet as the calendar and the time
+   wheel, so the four fields in "Where & when" all behave the same way: tap to
+   open, tap to choose, Done to close. Selected carries the same lime fill and
+   ink border as a selected calendar day. */
+function OptionListPicker(props) {
+  return h("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+    props.options.map(function (o) {
+      var selected = String(o.value) === String(props.value);
+      return h("button", {
+        key: o.value, type: "button",
+        "aria-pressed": selected,
+        onClick: function () { props.onChange(o.value); },
+        style: {
+          display: "flex", alignItems: "center", gap: 10, width: "100%",
+          minHeight: "var(--hit-target-min)", padding: "0 14px",
+          background: selected ? "var(--lime-500)" : "transparent",
+          border: selected
+            ? "var(--border-width) solid var(--ink-900)"
+            : "var(--border-hair) solid var(--ink-200)",
+          borderRadius: "var(--radius-field)",
+          color: "var(--ink-900)", cursor: "pointer", textAlign: "left",
+          fontFamily: "var(--font-text)", fontSize: "var(--text-md)",
+          fontWeight: selected ? "var(--weight-bold)" : "var(--weight-medium)",
+          transition: "background-color var(--duration-fast) var(--ease-out)"
+        }
+      },
+        h("span", { style: { flex: 1, minWidth: 0 } }, o.label),
+        o.hint ? h("span", {
+          style: {
+            fontSize: "var(--text-2xs)", fontFamily: "var(--font-mono)",
+            color: selected ? "var(--ink-700)" : "var(--ink-400)"
+          }
+        }, o.hint) : null,
+        selected ? h(Icon, { name: "check", size: 17, strokeWidth: 3 }) : null);
+    }));
+}
+
 /* ---------------- Post a quest ----------------
    The multi-step wizard from PRD §7.4: what → where & when → budget → review.
    Validation blocks the step it belongs to rather than failing at the end, and
@@ -2409,11 +2456,31 @@ var POST_STEPS = [
   { key: "budget", label: "Budget" },
   { key: "review", label: "Review" }
 ];
+/* `minutes` is what the hourly total is computed from; `open` marks the
+   estimates that are a floor rather than a figure, so they keep their own
+   label instead of being printed back as "~6 hr". */
 var DURATIONS = [
-  { value: "20", label: "~20 min" }, { value: "30", label: "~30 min" },
-  { value: "45", label: "~45 min" }, { value: "60", label: "~1 hr" },
-  { value: "120", label: "~2 hr" }, { value: "180", label: "~3 hr" }
+  { value: "20", label: "~20 min", minutes: 20 },
+  { value: "30", label: "~30 min", minutes: 30 },
+  { value: "45", label: "~45 min", minutes: 45 },
+  { value: "60", label: "~1 hr", minutes: 60 },
+  { value: "120", label: "~2 hr", minutes: 120 },
+  { value: "180", label: "~3 hr", minutes: 180 },
+  { value: "240", label: "~4 hr", minutes: 240 },
+  { value: "300", label: "~5 hr", minutes: 300 },
+  { value: "360", label: "~6 hr", minutes: 360 },
+  { value: "360plus", label: "6+ hr", minutes: 360, open: true },
+  { value: "720plus", label: "12+ hr", minutes: 720, open: true },
+  { value: "allday", label: "All day", minutes: 480, open: true }
 ];
+function durationOption(value) {
+  for (var i = 0; i < DURATIONS.length; i++) if (DURATIONS[i].value === value) return DURATIONS[i];
+  return DURATIONS[3];
+}
+function expiryOption(value) {
+  for (var i = 0; i < EXPIRY_OPTIONS.length; i++) if (EXPIRY_OPTIONS[i].value === value) return EXPIRY_OPTIONS[i];
+  return EXPIRY_OPTIONS[0];
+}
 /* PRD §14.4 has not settled the default expiry window, so it is a choice here
    rather than a hidden constant — whichever way it lands, this is the screen
    that changes. */
@@ -2485,6 +2552,10 @@ function PostQuestScreen(props) {
   var dateSheet = ds[0], setDateSheet = ds[1];
   var tsh = React.useState(false);
   var timeSheet = tsh[0], setTimeSheet = tsh[1];
+  var dur = React.useState(false);
+  var durSheet = dur[0], setDurSheet = dur[1];
+  var exp = React.useState(false);
+  var expSheet = exp[0], setExpSheet = exp[1];
   var resumed = React.useRef(draftHasContent(loadDraft()));
 
   React.useEffect(function () {
@@ -2497,7 +2568,8 @@ function PostQuestScreen(props) {
   }
 
   var budgetMinor = Math.max(0, Math.round(parseFloat(form.budget || "0") * 100));
-  var minutes = parseInt(form.minutes, 10) || 60;
+  var durOpt = durationOption(form.minutes);
+  var minutes = durOpt.minutes;
   /* An hourly budget is a rate; the total is what the poster actually holds. */
   var totalMinor = form.unit === "hourly" ? Math.round(budgetMinor * minutes / 60) : budgetMinor;
 
@@ -2533,7 +2605,8 @@ function PostQuestScreen(props) {
     var id = app.postQuest({
       title: form.title.trim(), details: form.details.trim(),
       categoryId: form.categoryId, payoutMinor: totalMinor, payoutUnit: form.unit,
-      estimatedMinutes: minutes, addressLine: form.address.trim(), area: form.area,
+      estimatedMinutes: minutes, durationLabel: durOpt.open ? durOpt.label : null,
+      addressLine: form.address.trim(), area: form.area,
       point: D.areas[form.area], scheduledFor: scheduled, expiresAt: expiryISO(scheduled),
       requirements: []
     });
@@ -2612,15 +2685,17 @@ function PostQuestScreen(props) {
             error: tried.where && errors.when && !form.time ? errors.when : undefined,
             onClick: function () { setTimeSheet(true); }
           }),
-          h(Select, {
-            label: "How long will it take?", options: DURATIONS,
-            value: form.minutes, onChange: function (ev) { set("minutes", ev.target.value); }
+          h(PickerField, {
+            label: "How long will it take?", icon: "clock", value: durOpt.label,
+            onClick: function () { setDurSheet(true); }
           }),
-          h(Select, {
-            label: "Offers close", options: EXPIRY_OPTIONS,
-            value: form.expiry, onChange: function (ev) { set("expiry", ev.target.value); },
-            hint: "After that it stops showing in the feed and any offers expire."
-          }))) : null,
+          h(PickerField, {
+            label: "Offers close", icon: "zap", value: expiryOption(form.expiry).label,
+            onClick: function () { setExpSheet(true); }
+          }),
+          h("span", {
+            style: { fontSize: "var(--text-2xs)", color: "var(--text-secondary)", lineHeight: "var(--leading-normal)" }
+          }, "After that it stops showing in the feed and any offers expire."))) : null,
 
       key === "budget" ? h(Card, { padding: "lg" },
         h(Eyebrow, null, "What's it worth"),
@@ -2644,7 +2719,7 @@ function PostQuestScreen(props) {
         }),
         form.unit === "hourly" && budgetMinor > 0 ? h(Card, { variant: "sunken", padding: "md" },
           h(InfoRow, {
-            icon: "coins", label: formatDuration(minutes) + " at " + formatMoney(budgetMinor) + " an hour",
+            icon: "coins", label: durOpt.label + " at " + formatMoney(budgetMinor) + " an hour",
             value: formatMoney(totalMinor), last: true
           })) : null,
         budgetMinor > 0 ? h(FeeBreakdown, {
@@ -2676,7 +2751,7 @@ function PostQuestScreen(props) {
         h(Card, null,
           h(InfoRow, { icon: "map-pin", label: "Where", value: form.area }),
           h(InfoRow, { icon: "calendar", label: "When", value: whenLabel }),
-          h(InfoRow, { icon: "clock", label: "How long", value: formatDuration(minutes) }),
+          h(InfoRow, { icon: "clock", label: "How long", value: durOpt.label }),
           h(InfoRow, {
             icon: "zap", label: "Offers close", last: true,
             value: form.date && form.time ? formatWhenAt(expiryISO(tpeISO(form.date, form.time)), app.now) : "—"
@@ -2710,6 +2785,24 @@ function PostQuestScreen(props) {
       actions: h(Button, { fullWidth: true, onClick: function () { setTimeSheet(false); } }, "Done")
     }, h(TimeWheelPicker, {
       value: form.time || "18:00", onChange: function (t) { set("time", t); }
+    })),
+    h(Dialog, {
+      open: durSheet, onClose: function () { setDurSheet(false); },
+      title: "How long will it take?",
+      subtitle: "A rough estimate is fine — doers just need to plan around it",
+      actions: h(Button, { fullWidth: true, onClick: function () { setDurSheet(false); } }, "Done")
+    }, h(OptionListPicker, {
+      options: DURATIONS, value: form.minutes,
+      onChange: function (v) { set("minutes", v); }
+    })),
+    h(Dialog, {
+      open: expSheet, onClose: function () { setExpSheet(false); },
+      title: "When do offers close?",
+      subtitle: "After that it leaves the feed and any offers expire",
+      actions: h(Button, { fullWidth: true, onClick: function () { setExpSheet(false); } }, "Done")
+    }, h(OptionListPicker, {
+      options: EXPIRY_OPTIONS, value: form.expiry,
+      onChange: function (v) { set("expiry", v); }
     })),
 
     h(Slab, null,
@@ -3491,7 +3584,7 @@ function SavedScreen(props) {
               key: x.id, variant: "spacious", title: x.title,
               payout: formatMoney(x.payoutMinor),
               distance: formatDistance(app.distanceTo(x)),
-              duration: formatDuration(x.estimatedMinutes),
+              duration: questDuration(x),
               when: formatWhenAt(x.scheduledFor, app.now),
               badges: gone
                 ? [{ label: statusMeta(x.status).label, tone: statusMeta(x.status).tone }]
@@ -3615,7 +3708,7 @@ function PublicProfileScreen(props) {
             key: x.id, variant: "compact", title: x.title,
             payout: formatMoney(x.payoutMinor),
             distance: formatDistance(app.distanceTo(x)),
-            duration: formatDuration(x.estimatedMinutes),
+            duration: questDuration(x),
             when: formatWhenAt(x.scheduledFor, app.now),
             onClick: function () { props.onOpenQuest(x.id); }
           });

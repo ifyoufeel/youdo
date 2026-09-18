@@ -44,6 +44,22 @@ clickText("Done");
 clickHas("Choose a time");
 ok("time sheet opens", H.has(root, "Pick a time"));
 clickText("Done");
+
+/* Duration and offers-close are sheets now, same as the date and time ones. */
+clickHas("~1 hr");
+ok("duration opens as a sheet, not a dropdown", H.has(root, "rough estimate is fine"));
+ok("long and open-ended estimates are offered",
+   H.has(root, "~4 hr") && H.has(root, "~5 hr") && H.has(root, "~6 hr") &&
+   H.has(root, "6+ hr") && H.has(root, "12+ hr") && H.has(root, "All day"));
+clickText("All day");
+clickText("Done");
+ok("the chosen estimate shows in the field", H.has(root, "All day"));
+clickHas("An hour before it starts");
+ok("offers-close opens as a sheet", H.has(root, "When do offers close"));
+clickText("In 24 hours");
+clickText("Done");
+ok("the chosen expiry shows in the field", H.has(root, "In 24 hours"));
+
 clickText("Keep going");
 ok("advances to budget", H.has(root, "Step 3 of 4"));
 ok("budget offers fixed and hourly", H.has(root, "Per hour"));
@@ -52,12 +68,15 @@ ok("fee is disclosed before the commitment", H.has(root, "Platform fee"));
 clickText("Keep going");
 ok("reaches review", H.has(root, "Step 4 of 4"));
 ok("review restates the address gate", H.has(root, "only after you accept"));
+/* An open-ended estimate must keep its label, not come back as "~8 hr". */
+ok("review keeps the open-ended estimate", H.has(root, "All day") && !H.has(root, "~8 hr"));
 clickText("Post quest");
 ok("lands in my quests after posting", H.has(root, "Water the balcony plants"));
 ok("posting clears the draft",
    !(w.localStorage.getItem("youdo-quest-draft") || "").includes("Water the balcony"));
 clickLabel("Browse");
 ok("posted quest is discoverable in the feed", H.has(root, "Water the balcony plants"));
+ok("the feed card keeps the open-ended estimate", H.has(root, "All day"));
 
 console.log("\n== draft autosave ==");
 clickLabel("Post");
