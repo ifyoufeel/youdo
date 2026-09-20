@@ -1437,7 +1437,9 @@ function AddressBlock(props) {
           h("div", {
             style: { fontSize: "var(--text-sm)", fontWeight: "var(--weight-semibold)", marginTop: 4, lineHeight: "var(--leading-normal)" }
           }, q.addressLine),
-          h("div", { style: { fontSize: "var(--text-2xs)", marginTop: 2 } }, q.area + " · " + formatDistance(props.distanceM)))));
+          h("div", { style: { fontSize: "var(--text-2xs)", marginTop: 2 } },
+            /* Distance from yourself to your own quest is not information. */
+            props.distanceM === null ? q.area : q.area + " · " + formatDistance(props.distanceM)))));
   }
   return h(Card, { variant: "sunken", padding: "md" },
     h("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
@@ -1746,6 +1748,9 @@ function QuestDetailScreen(props) {
   var mine = myOfferOn(state, quest.id, app.actorId);
   var counterpart = counterpartOf(state, quest, app.actorId);
   var distanceM = app.distanceTo(quest);
+  /* Your own quest has no meaningful distance from you — it read "0 m away"
+     for anything posted at your own address. Say where it is instead. */
+  var ownQuest = quest.posterId === app.actorId;
   var addressShown = addressVisibleTo(state, quest, app.actorId);
   var pending = pendingOffersFor(state, quest.id);
   var myReview = myReviewOn(state, quest.id, app.actorId);
@@ -1787,7 +1792,7 @@ function QuestDetailScreen(props) {
     if (role === "poster") {
       var out = [h(Button, {
         key: "cancel", variant: "secondary", size: "lg",
-        style: { padding: "0 16px" },
+        style: { padding: "0 16px", flex: "none" },
         onClick: function () { setCancelSheet(true); }
       }, "Cancel")];
       if (quest.status === "open") {
@@ -1796,10 +1801,14 @@ function QuestDetailScreen(props) {
           onClick: function () { props.onReviewOffers(quest.id); }
         }, pending.length ? "Review " + pending.length + (pending.length === 1 ? " offer" : " offers") : "Review offers"));
       } else if (quest.status === "completed") {
+        /* Same shape as the doer-side slab: a compact secondary with an icon,
+           then the full-width action. "Raise an issue" spelled out took 151px
+           of a 346px slab and pushed the money button off the edge. */
         out = [h(Button, {
-          key: "dispute", variant: "secondary", size: "lg", style: { padding: "0 16px" },
+          key: "dispute", variant: "secondary", size: "lg", icon: "flag",
+          style: { padding: "0 16px", flex: "none" },
           onClick: function () { setDisputeSheet(true); }
-        }, "Raise an issue"), h(Button, {
+        }, "Issue"), h(Button, {
           key: "confirm", variant: "money", size: "lg", icon: "check", fullWidth: true,
           onClick: function () { app.confirmDone(quest); }
         }, "Confirm and pay")];
@@ -1814,7 +1823,7 @@ function QuestDetailScreen(props) {
 
     if (role === "doer") {
       var left = [h(Button, {
-        key: "cancel", variant: "secondary", size: "lg", style: { padding: "0 16px" },
+        key: "cancel", variant: "secondary", size: "lg", style: { padding: "0 16px", flex: "none" },
         onClick: function () { setCancelSheet(true); }
       }, "Cancel")];
       if (quest.status === "assigned") {
@@ -1846,7 +1855,7 @@ function QuestDetailScreen(props) {
     if (canOffer) {
       return [h(Button, {
         key: "ask", variant: "secondary", size: "lg", icon: "message-circle",
-        style: { padding: "0 18px" },
+        style: { padding: "0 18px", flex: "none" },
         onClick: function () { setOfferSheet(true); }
       }, "Ask"), h(Button, {
         key: "take", variant: "primary", size: "lg", icon: "zap", fullWidth: true,
@@ -1860,7 +1869,8 @@ function QuestDetailScreen(props) {
   return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
     h(TopBar, {
       title: quest.title,
-      subtitle: formatDistance(distanceM) + " · " + formatWhenAt(quest.scheduledFor, app.now),
+      subtitle: (ownQuest ? quest.area : formatDistance(distanceM)) +
+        " · " + formatWhenAt(quest.scheduledFor, app.now),
       onBack: props.onBack,
       actions: role === "poster" ? null : h(IconButton, {
         icon: "heart", label: "Save", size: "sm",
@@ -1904,7 +1914,7 @@ function QuestDetailScreen(props) {
         quest: quest, now: app.now, doerSide: role === "doer"
       }) : null,
 
-      h(AddressBlock, { quest: quest, visible: addressShown, distanceM: distanceM }),
+      h(AddressBlock, { quest: quest, visible: addressShown, distanceM: ownQuest ? null : distanceM }),
 
       h(Card, null,
         h(InfoRow, { icon: "clock", label: "How long", value: questDuration(quest) }),
@@ -2786,7 +2796,7 @@ function PostQuestScreen(props) {
 
     h(Slab, null,
       step > 0 ? h(Button, {
-        variant: "secondary", size: "lg", style: { padding: "0 16px" },
+        variant: "secondary", size: "lg", style: { padding: "0 16px", flex: "none" },
         onClick: function () { setStep(step - 1); }
       }, "Back") : null,
       key === "review"

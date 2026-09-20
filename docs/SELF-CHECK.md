@@ -41,14 +41,24 @@ into a `font:` shorthand it could not read. The checker now parses the
 shorthand — but the eyebrow was rewritten longhand too, because a rule that is
 hard to check is a rule that quietly stops being true.
 
-## What a checker cannot see
+## Layout is checked separately
 
-**jsdom does no layout.** These suites drive real clicks and read real text, so
-they catch behaviour, guards and copy. They cannot catch overflow. A pass in a
-real browser found two things they had no chance of finding: the offer row's
-four actions overflowing a 390px card, and the preview clock wrapping onto a
-second line. Run a browser pass before signing off on a screen — and per
-ADR-001, typography and gestures are signed off on a device, not on the web.
+**jsdom does no layout.** The rule and behaviour suites drive real clicks and
+read real text, so they catch guards, copy and flow. A button pushed off the
+edge of its slab is invisible to them — which is how three overflow bugs
+reached review: the offer row's four actions, the preview clock wrapping, and
+"Raise an issue" pushing "Confirm and pay" 38px past the slab.
+
+`test/layout.js` closes that gap. It runs the page in Chromium at a 1180px
+viewport, so the phone frame renders at its real 390px width, walks fifteen
+screens and sheets, and fails if any in-flow child crosses its flex parent's
+content box. Absolutely-positioned and transformed children are skipped — the
+notification badge and the rating star's tilt both sit outside their parent's
+box deliberately. It is not part of `npm test` because it needs a server and a
+browser; `test/README.md` has the command.
+
+Per ADR-001, typography and gestures are still signed off on a device, not on
+the web — a browser pass is not a device pass.
 
 **Contrast is checked at one pairing, not all.** The rule here is narrow: the
 one pairing the PRD already named. A full audit of every fill against every

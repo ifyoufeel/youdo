@@ -128,15 +128,21 @@ clickLabel("My quests");
 ok("my quests card shows the confirm window", H.has(root, "left to confirm"));
 clickHas("Water my plants");
 ok("tapping the card opens the quest", H.has(root, "Six pots on the balcony"));
+/* Your own quest is at your own address; "0 m away" is not information. */
+ok("your own quest shows where it is, not how far",
+   !/\b0 m(?!in)/.test(H.text(root)) && H.has(root, "Da'an"));
 ok("poster sees the confirm window on the quest", H.has(root, "left to confirm"));
-clickText("Raise an issue");
+clickText("Issue");
 ok("dispute sheet opens", H.has(root, "What went wrong"));
 ok("dispute explains the money stays held", H.has(root, "stays held"));
 /* PRD §8: a completed quest can only go to paid or disputed. Cancelling it is
    not a transition that exists, so the screen must not offer one. */
 clickText("Back");
 ok("no cancel offered on a completed quest", !byText("Cancel"));
-clickText("Raise an issue");
+/* The slab is a compact secondary plus the full-width action, the same shape
+   as every other two-button slab — long labels pushed the primary off-screen. */
+ok("the issue button is the compact one", !byText("Raise an issue") && !!byText("Issue"));
+clickText("Issue");
 const why = H.field(root, "What went wrong");
 ok("dispute blocks without a reason", !!byText("Send for review") && byText("Send for review").disabled);
 if (why) act(() => H.type(why, "Only half the plants were watered."));
