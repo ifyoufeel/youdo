@@ -708,6 +708,10 @@ function useApp() {
   var state = st[0], setState = st[1];
   var ac = React.useState(D.meId);
   var actorId = ac[0], setActorId = ac[1];
+  /* PRD §7.1 / ADR-012: signed in by default so the two-sided lifecycle stays
+     one tap away; "Sign out" (Settings) reaches the onboarding flow itself. */
+  var au = React.useState(true);
+  var authed = au[0], setAuthed = au[1];
   var fl = React.useState(DEFAULT_FILTERS);
   var filters = fl[0], setFilters = fl[1];
   var so = React.useState("closest");
@@ -727,6 +731,7 @@ function useApp() {
 
   var app = {
     state: state, actorId: actorId, now: state.now,
+    authed: authed,
     filters: filters, setFilters: setFilters,
     sort: sort, setSort: setSort,
     toast: toast, flash: flash
@@ -745,11 +750,23 @@ function useApp() {
   };
   app.switchActor = function (id) {
     setActorId(id);
+    /* The switcher's whole job is instant identity, on either side of
+       onboarding — flipping chair always lands signed in. */
+    setAuthed(true);
     flash("neutral", "Now viewing as " + userOf(id).name);
   };
   /* Same change of chair, without the announcement — the scripted flows move
      between the two sides constantly and a toast per hop is noise. */
   app.setActor = setActorId;
+
+  /* ---- auth & onboarding (PRD §7.1) ---- */
+  app.completeSignIn = function () {
+    setAuthed(true);
+    flash("neutral", "Signed in as " + userOf(actorId).name);
+  };
+  app.signOut = function () {
+    setAuthed(false);
+  };
 
   /* ---- clock ---- */
   app.advanceClock = function (delta, label) {
@@ -3545,6 +3562,12 @@ function ProfileScreen(props) {
       h(Card, { variant: "sunken", padding: "md" },
         h(InfoRow, { icon: "credit-card", label: "Bank account", value: me.bank, last: true })),
 
+      h(Eyebrow, { style: { marginTop: 8 } }, "Session"),
+      h(Button, {
+        variant: "secondary", fullWidth: true, icon: "x",
+        onClick: function () { setSettings(false); app.signOut(); }
+      }, "Sign out"),
+
       h(Button, { variant: "secondary", fullWidth: true, icon: "trash", style: { marginTop: 8 } }, "Delete account"),
       h("p", {
         style: { margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-secondary)", lineHeight: "var(--leading-normal)" }
@@ -3746,6 +3769,209 @@ function PublicProfileScreen(props) {
       h(Button, { variant: "secondary", fullWidth: true, icon: "eye" }, "Block this person")));
 }
 
+/* ---------------- Onboarding ----------------
+   PRD §7.1: sign in with Google or a 6-digit OTP, no passwords (ADR-007);
+   first run explains both sides in one screen and asks for location with a
+   reason, not a bare OS prompt. Every step below is a real, reachable screen
+   — nothing here is a placeholder for one.
+
+   ADR-012: the preview still starts signed in. Reviewing the two-sided
+   lifecycle already built in M2–M6 depends on the actor switcher's instant
+   identity swap (ADR-008); gating that behind five taps on every load would
+   fight the whole reason the switcher exists. "Sign out", in Settings, is
+   how a reviewer reaches this flow. */
+
+function OnboardingPitch(props) {
+  return h(Card, { variant: "sunken", padding: "md", style: { flex: "1 1 0", minWidth: 0 } },
+    h(Icon, { name: props.icon, size: 19, color: "var(--ink-700)" }),
+    h("div", {
+      style: { marginTop: 8, fontSize: "var(--text-sm)", fontWeight: "var(--weight-semibold)" }
+    }, props.title),
+    h("p", {
+      style: { margin: "4px 0 0", fontSize: "var(--text-2xs)", lineHeight: "var(--leading-normal)", color: "var(--text-secondary)" }
+    }, props.body));
+}
+function OnboardingHeading(props) {
+  return h("h1", {
+    style: {
+      margin: 0, font: "var(--weight-black) var(--text-xl)/1.15 var(--font-display)",
+      letterSpacing: "var(--tracking-heading)"
+    }
+  }, props.children);
+}
+function OnboardingBody(props) {
+  return h("p", {
+    style: { margin: 0, fontSize: "var(--text-sm)", lineHeight: "var(--leading-normal)", color: "var(--ink-700)" }
+  }, props.children);
+}
+
+function OnboardingWelcome(props) {
+  return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
+    h(Body, { style: { justifyContent: "center", gap: 20 } },
+      h("div", null,
+        h(Eyebrow, null, "Taipei"),
+        h("div", { style: { marginTop: 6 } }, h(OnboardingHeading, null, "Small jobs, done by neighbours")),
+        h("div", { style: { marginTop: 8 } },
+          h(OnboardingBody, null, "Post something you need done, or take on a job near you and get paid. The money is held in escrow between you, always."))),
+      h("div", { style: { display: "flex", gap: 10 } },
+        h(OnboardingPitch, {
+          icon: "briefcase", title: "Need something done",
+          body: "Post a job, agree a price, and pay only once it's done."
+        }),
+        h(OnboardingPitch, {
+          icon: "coins", title: "Have a free hour",
+          body: "Take a nearby job and get paid — no shifts, no licence."
+        }))),
+    h(Slab, null, h(Button, { size: "lg", fullWidth: true, iconRight: "arrow-right", onClick: props.onNext }, "Get started")));
+}
+
+function OnboardingLocation(props) {
+  return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
+    h(TopBar, { onBack: props.onBack }),
+    h(Body, { style: { justifyContent: "center", gap: 14, alignItems: "flex-start" } },
+      h(Icon, { name: "map-pin", size: 26, color: "var(--ink-900)" }),
+      h(OnboardingHeading, null, "See what's near you"),
+      h(OnboardingBody, null,
+        "We use your area to show nearby quests and give posters an honest distance. Your exact address is never shared until a quest is accepted.")),
+    h(Slab, null,
+      h(Button, {
+        variant: "secondary", size: "lg", style: { padding: "0 16px", flex: "none" }, onClick: props.onSkip
+      }, "Not now"),
+      h(Button, { size: "lg", fullWidth: true, icon: "map-pin", onClick: props.onAllow }, "Allow location")));
+}
+
+function OnboardingSignIn(props) {
+  var loading = props.loading;
+  return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
+    h(TopBar, { onBack: props.onBack }),
+    h(Body, { style: { justifyContent: "center", gap: 16 } },
+      loading ? h(Fragment, null,
+        h(OnboardingHeading, null, "Sign in to YouDO"),
+        h(LoadingState, { label: "Signing in with Google…" })
+      ) : h(Fragment, null,
+        h(OnboardingHeading, null, "Sign in to YouDO"),
+        h(OnboardingBody, null, "No passwords. Use your Google account, or we'll send a code to your email or phone."),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginTop: 4 } },
+          h(Button, { size: "lg", fullWidth: true, onClick: props.onGoogle }, "Sign in via Google"),
+          h(Button, { variant: "ghost", fullWidth: true, onClick: props.onCode }, "Use a code instead")))));
+}
+
+var OTP_CONTACT_MODES = [{ value: "email", label: "Email" }, { value: "phone", label: "Phone" }];
+function OnboardingContact(props) {
+  var mode = props.mode, contact = props.contact, error = props.error;
+  return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
+    h(TopBar, { onBack: props.onBack }),
+    h(Body, { style: { gap: 14 } },
+      h(OnboardingHeading, null, "Sign in with a code"),
+      h(OnboardingBody, null, "We'll text or email a 6-digit code — nothing to remember."),
+      h(Tabs, { items: OTP_CONTACT_MODES, value: mode, onChange: props.onModeChange }),
+      h(Input, {
+        label: mode === "phone" ? "Phone" : "Email",
+        icon: mode === "phone" ? "message-square" : "send",
+        placeholder: mode === "phone" ? "+886 9xx xxx xxx" : "you@example.com",
+        value: contact, onChange: function (ev) { props.onContactChange(ev.target.value); },
+        error: error
+      })),
+    h(Slab, null,
+      h(Button, {
+        variant: "secondary", size: "lg", style: { padding: "0 16px", flex: "none" }, onClick: props.onBack
+      }, "Back"),
+      h(Button, { size: "lg", fullWidth: true, onClick: props.onSend }, "Send code")));
+}
+
+function OnboardingCode(props) {
+  var loading = props.loading;
+  return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 } },
+    h(TopBar, { onBack: props.onBack }),
+    h(Body, { style: { gap: 14 } },
+      h(OnboardingHeading, null, "Enter your code"),
+      h(OnboardingBody, null, "We sent a 6-digit code to " + props.contact + "."),
+      loading ? h(LoadingState, { label: "Verifying your code…" }) : h(Fragment, null,
+        h(Input, {
+          label: "6-digit code", icon: "lock", placeholder: "000000",
+          value: props.code, inputMode: "numeric", maxLength: 6,
+          onChange: function (ev) { props.onCodeChange(ev.target.value.replace(/\D/g, "").slice(0, 6)); },
+          error: props.error
+        }),
+        h(Button, { variant: "ghost", size: "sm", onClick: props.onResend }, "Resend code"))),
+    h(Slab, null,
+      h(Button, {
+        variant: "secondary", size: "lg", style: { padding: "0 16px", flex: "none" }, onClick: props.onBack
+      }, "Back"),
+      h(Button, { size: "lg", fullWidth: true, disabled: loading, onClick: props.onVerify }, "Verify code")));
+}
+
+/* A wrong-length code is a validation error, caught before anything is sent.
+   000000 is the mock's one deliberately-wrong code, so the failure path is
+   real rather than unreachable — every other 6 digits succeed.
+
+   Everything here resolves in the same tick, matching the rest of this
+   store (no network, no persistence — see the note at the top of this
+   file). The `loading` states OnboardingSignIn/OnboardingCode accept are
+   real UI, exercised in the States gallery exactly like ErrorState already
+   was before this milestone; wiring an actual delay through them is M5/M7
+   work, once the ports carry ADR-004's jittered latency this mock doesn't
+   simulate anywhere yet. */
+function OnboardingFlow(props) {
+  var app = props.app;
+  var st = React.useState("welcome");
+  var step = st[0], setStep = st[1];
+  var mc = React.useState("email");
+  var mode = mc[0], setMode = mc[1];
+  var ct = React.useState("");
+  var contact = ct[0], setContact = ct[1];
+  var ce = React.useState(null);
+  var contactError = ce[0], setContactError = ce[1];
+  var cd = React.useState("");
+  var code = cd[0], setCode = cd[1];
+  var cdErr = React.useState(null);
+  var codeError = cdErr[0], setCodeError = cdErr[1];
+
+  function sendCode() {
+    var ok = mode === "phone" ? /^\+?[0-9\s]{8,}$/.test(contact) : /^\S+@\S+\.\S+$/.test(contact);
+    if (!ok) {
+      setContactError(mode === "phone" ? "Add a working phone number to send the code" : "Add a working email to send the code");
+      return;
+    }
+    setContactError(null);
+    app.flash("neutral", "Code sent to " + contact);
+    setStep("code");
+  }
+  function verifyCode() {
+    if (code.length !== 6) { setCodeError("Enter all 6 digits"); return; }
+    if (code === "000000") { setCodeError("That code didn't match — check your messages and try again"); setCode(""); return; }
+    setCodeError(null);
+    props.onDone();
+  }
+
+  if (step === "welcome") return h(OnboardingWelcome, { onNext: function () { setStep("location"); } });
+  if (step === "location") return h(OnboardingLocation, {
+    onBack: function () { setStep("welcome"); },
+    onAllow: function () { app.flash("neutral", "Found you nearby — quests are sorted by distance"); setStep("signin"); },
+    onSkip: function () { app.flash("neutral", "You can turn location on later, in Settings"); setStep("signin"); }
+  });
+  if (step === "signin") return h(OnboardingSignIn, {
+    loading: false,
+    onBack: function () { setStep("location"); },
+    onGoogle: props.onDone,
+    onCode: function () { setStep("contact"); }
+  });
+  if (step === "contact") return h(OnboardingContact, {
+    mode: mode, contact: contact, error: contactError,
+    onModeChange: function (v) { setMode(v); setContact(""); setContactError(null); },
+    onContactChange: setContact,
+    onBack: function () { setStep("signin"); },
+    onSend: sendCode
+  });
+  return h(OnboardingCode, {
+    contact: contact, code: code, error: codeError, loading: false,
+    onCodeChange: setCode,
+    onBack: function () { setStep("contact"); },
+    onResend: function () { app.flash("neutral", "Sent a new code to " + contact); setCode(""); setCodeError(null); },
+    onVerify: verifyCode
+  });
+}
+
 /* ---------------- The prototype shell ---------------- */
 
 /* Anything the viewer could act on right now, counted for the tab badge. The
@@ -3849,7 +4075,9 @@ function Prototype() {
   var top = stack.length ? stack[stack.length - 1] : null;
   var screen = null;
 
-  if (top && top.k === "quest") {
+  if (!app.authed) {
+    screen = h(OnboardingFlow, { app: app, onDone: app.completeSignIn });
+  } else if (top && top.k === "quest") {
     var quest = questById(state, top.id);
     screen = quest ? h(QuestDetailScreen, {
       key: quest.id, quest: quest, app: app, onBack: pop,
@@ -3919,7 +4147,7 @@ function Prototype() {
     });
   }
 
-  var actionable = actionableCount(state, app.actorId);
+  var actionable = app.authed ? actionableCount(state, app.actorId) : 0;
   var tabs = [
     { value: "browse", label: "Browse", icon: "search" },
     { value: "quests", label: "My quests", icon: "list-checks", badge: actionable || undefined },
@@ -3927,7 +4155,7 @@ function Prototype() {
     { value: "chats", label: "Chats", icon: "message-circle", badge: app.unread || undefined },
     { value: "profile", label: "Profile", icon: "user" }
   ];
-  var rateQuest = rateFor ? questById(state, rateFor) : null;
+  var rateQuest = app.authed && rateFor ? questById(state, rateFor) : null;
 
   return h("div", {
     style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 14, width: "100%" }
@@ -3937,10 +4165,10 @@ function Prototype() {
       h("div", { style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } }, screen),
       app.toast ? h("div", { className: "toasts" },
         h(Toast, { key: app.toast.key, tone: app.toast.tone }, app.toast.text)) : null,
-      h(TabBar, {
+      app.authed ? h(TabBar, {
         items: tabs, value: stack.length ? null : tab,
         onChange: function (v) { reset(v); }
-      }),
+      }) : null,
       rateQuest ? h(RateSheet, {
         open: true, counterpart: counterpartOf(state, rateQuest, app.actorId),
         onClose: function () { setRateFor(null); },
@@ -5035,6 +5263,22 @@ function MiniFrame(props) {
     }
   }, props.note));
 }
+
+/* A phone-shaped MiniFrame for full-height screens — the onboarding steps use
+   height: 100% against their parent, so the gallery has to give them one. */
+function OnboardingPreviewFrame(props) {
+  return h("div", { style: { display: "flex", flexDirection: "column", gap: 10, flex: "1 1 300px", minWidth: 280, maxWidth: 320 } },
+    h("span", { style: SECTION_LABEL }, props.label),
+    h("div", {
+      style: {
+        width: "100%", height: 560, display: "flex", flexDirection: "column",
+        overflow: "hidden", background: "var(--surface-page)",
+        border: "var(--border-thick) solid var(--ink-900)", borderRadius: 28
+      }
+    }, props.children),
+    h("p", { style: { margin: 0, fontSize: "var(--text-2xs)", color: "var(--ink-500)", lineHeight: 1.45 } }, props.note));
+}
+
 function StatesTab() {
   /* A synthetic store, so the gallery shows real components driven by real
      records rather than screenshots of them. */
@@ -5216,6 +5460,39 @@ function StatesTab() {
         }, h(EmptyState, {
           title: "Rate Jason H. — it's what the next person goes on.",
           action: "Leave a rating", onAction: function () {}
+        })))),
+
+    h(Panel, { title: "Onboarding & sign-in — every screen it actually has" },
+      h("p", {
+        style: {
+          margin: 0, fontSize: "var(--text-sm)", lineHeight: "var(--leading-normal)",
+          color: "var(--ink-700)", maxWidth: "62ch"
+        }
+      }, "PRD §7.1: Google or a 6-digit code, no passwords, and a first run that explains both sides before it asks to use your location. The preview itself still starts signed in (ADR-012) — “Sign out”, in Settings, is what opens this."),
+      h("div", { style: { display: "flex", gap: 18, flexWrap: "wrap" } },
+        h(OnboardingPreviewFrame, {
+          label: "Welcome", note: "The two-sided pitch, in one screen, before anything is asked of you."
+        }, h(OnboardingWelcome, { onNext: function () {} })),
+        h(OnboardingPreviewFrame, {
+          label: "Location — the ask", note: "A reason, not a bare OS prompt (PRD §7.1). “Not now” still moves on."
+        }, h(OnboardingLocation, { onBack: function () {}, onAllow: function () {}, onSkip: function () {} })),
+        h(OnboardingPreviewFrame, {
+          label: "Sign in", note: "Google or a code — no password field exists to fill in."
+        }, h(OnboardingSignIn, { loading: false, onBack: function () {}, onGoogle: function () {}, onCode: function () {} })),
+        h(OnboardingPreviewFrame, {
+          label: "Sign in — loading", note: "A real loading state, not a gallery-only one: this is what a Google tap shows."
+        }, h(OnboardingSignIn, { loading: true, onBack: function () {}, onGoogle: function () {}, onCode: function () {} })),
+        h(OnboardingPreviewFrame, {
+          label: "Code — validation error", note: "Blocks before anything is sent, written as a fix."
+        }, h(OnboardingContact, {
+          mode: "email", contact: "not-an-email", error: "Add a working email to send the code",
+          onModeChange: function () {}, onContactChange: function () {}, onBack: function () {}, onSend: function () {}
+        })),
+        h(OnboardingPreviewFrame, {
+          label: "Code — wrong code", note: "000000 is the mock's one deliberately-wrong code, so this path is reachable."
+        }, h(OnboardingCode, {
+          contact: "alex@example.com", code: "", error: "That code didn't match — check your messages and try again",
+          loading: false, onCodeChange: function () {}, onBack: function () {}, onResend: function () {}, onVerify: function () {}
         })))));
 }
 

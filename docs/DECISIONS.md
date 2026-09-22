@@ -206,3 +206,39 @@ change, not a return to rate-based billing.
 hourly fixture (a 3-hour wardrobe assembly at NT$350/hr) became one agreed
 NT$1,050, and the two offers on it moved with it. PRD §5's pricing anchors and
 §7.4's budget rule are amended to match.
+
+---
+
+## ADR-012 · The preview starts signed in; onboarding is real but not the default gate
+
+**Decision.** M1 built the sign-in and first-run flow PRD §7.1 requires — a
+welcome screen pitching both sides in one look, a location-permission ask with
+a reason (not a bare OS prompt) that degrades gracefully on "Not now", and
+mocked Google / 6-digit-OTP sign-in with both of its failure paths: an invalid
+contact, and the mock's one deliberately-wrong code, `000000`. But
+`Prototype()` still boots with the viewer already signed in — it does not gate
+on this flow by default. "Sign out", now in Settings, is how it is reached.
+
+**Why.** ADR-008 already settled the actor switcher's job: two-sided software
+can't be reviewed from one chair, so a reviewer becomes any of six people in
+one tap. Every existing suite — `screens.js`, `lifecycle.js`, `ledger.js`,
+`rules.js` — depends on that: they boot straight into the tab shell and drive
+the M2–M6 lifecycle from there. Gating the whole prototype behind five
+onboarding taps on every load would fight that principle for no product
+benefit — onboarding needs to be built and reviewable, not mandatory friction
+between a reviewer and the feature they came to look at.
+
+**Cost.** The literal sentence in `HANDOFF.md` — "the preview starts signed
+in" — stays true a little longer than the milestone label suggests. Nobody
+trips over onboarding by accident; they have to know "Sign out" is where it
+lives.
+
+**Where this is reachable.** Settings → Sign out, from any actor. Every
+screen and both failure paths are also in the States gallery, per ADR-008's
+"every milestone has to be reviewable in isolation" — so the flow is visible
+even to someone who never clicks through it live.
+
+**Revisit if.** M0's real Expo scaffold begins. A freshly-installed app has no
+prior session to default into, so the real product — unlike this preview —
+should gate on auth from a cold start. That is a different codebase and a
+different default, not a reason to change this one.

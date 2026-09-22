@@ -250,6 +250,45 @@ ok("report sheet opens", H.has(root, "What happened"));
 ok("blocking offered alongside reporting", H.has(root, "Block this person"));
 clickText("Cancel");
 
+console.log("\n== onboarding: sign out, and every screen it opens ==");
+clickLabel("Profile");
+clickLabel("Settings");
+clickText("Sign out");
+ok("signing out drops to the onboarding welcome screen", H.has(root, "Small jobs, done by neighbours"));
+ok("tab bar is gone while signed out", !H.byLabel(root, "My quests"));
+
+clickText("Get started");
+ok("location step gives a reason, not a bare OS prompt", H.has(root, "See what's near you"));
+clickText("Not now");
+ok("declining location still moves on to sign-in", H.has(root, "Sign in to YouDO"));
+
+clickText("Use a code instead");
+ok("the code path offers email or phone", !!byText("Email") && !!byText("Phone"));
+clickText("Send code");
+ok("an empty contact is blocked", H.has(root, "Add a working email"));
+type("Email", "not-an-email");
+clickText("Send code");
+ok("an invalid email is blocked, written as a fix", H.has(root, "Add a working email"));
+type("Email", "alex@example.com");
+clickText("Send code");
+ok("a valid contact reaches the code screen", H.has(root, "Enter your code"));
+ok("the code screen names where the code went", H.has(root, "alex@example.com"));
+
+type("6-digit code", "000000");
+clickText("Verify code");
+ok("the mock's one deliberately-wrong code is a real, reachable failure", H.has(root, "didn't match"));
+type("6-digit code", "123456");
+clickText("Verify code");
+ok("a correct code signs back in", !!H.byLabel(root, "My quests"));
+
+console.log("\n== onboarding: the actor switcher still bypasses it ==");
+clickLabel("Profile");
+clickLabel("Settings");
+clickText("Sign out");
+ok("signed out again", H.has(root, "Small jobs, done by neighbours"));
+clickText("Wei-Ting C.");
+ok("switching actor bypasses onboarding entirely", !!H.byLabel(root, "My quests"));
+
 const real = errors.filter((e) => !/not wrapped in act|deprecated/.test(e));
 console.log("\nconsole errors:", real.length ? "\n  " + real.slice(0, 8).join("\n  ") : "none");
 console.log("\n" + checks + " checks, " + fails + " failed" + (real.length ? ", " + real.length + " console errors" : ""));
