@@ -227,8 +227,38 @@ actor switcher (ADR-008 — two-sided software cannot be reviewed from one chair
 and a clock you can wind forward (a 72-hour window cannot be reviewed at all
 without reaching the far side of it). See ADR-009.
 
+**Changed in review on the preview** (v16 → v23, each one a comment thread on
+the artifact):
+
+- **One price per quest.** Hourly rates removed entirely — ADR-011. The field
+  is "Price", not "Fixed price".
+- **Duration is its own thing.** ~20 min through ~6 hr, plus 6+ hr, 12+ hr and
+  All day. The open-ended ones carry their own label so they are not printed
+  back as "~6 hr". It tells a doer what they are taking on; it prices nothing.
+- **Four fields in "Where & when" open the same way**: date, time, duration and
+  offers-close are all bottom sheets now, with a shared `OptionListPicker`.
+- **The budget step is one field and one disclosure.** No preset chips, no
+  separate estimate card, and the slab is Back plus the forward action.
+- **The category is a Badge**, not a Tag, where it sits beside the status and
+  urgency badges — a Tag is 30px of sentence case against a Badge's 20px of
+  caps.
+- **Profile is one card**: identity and balance together, verification as the
+  avatar checkmark, rating as a tilted star and a number top right. Settings has
+  editable phone and email, an area select that really moves the point distances
+  are measured from, "Locate me", verification and payment method.
+- **Contrast**: three paper-on-flare pairings measured 3.11:1 at 10–12px and are
+  now ink-on-flare at 5.90:1 — ADR-010.
+- **Layout is checked in a browser now** (`test/layout.js`), after three
+  overflow bugs reached review that jsdom could never have seen.
+
 **Still open in these milestones.**
 
+- **The platform fee rate is a placeholder.** `FEE_BPS = 1000` (10%) in
+  `preview/app.js`, disclosed to users as "Platform fee (10%)". PRD §14.1 has
+  never decided it. One constant, one line.
+- **The default quest expiry is undecided** (PRD §14.4). The wizard offers an
+  hour before it starts / in 24 hours / when it starts, and ships with the
+  first. One line in `EXPIRY_OPTIONS`.
 - Photo picker on the posting wizard (M3) — no image handling anywhere yet.
 - Deposits and cash-outs settle instantly. ADR-005 requires every payment to
   pass through `pending` even in the mock, because Stripe's transitions are
