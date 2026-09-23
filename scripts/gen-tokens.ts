@@ -75,6 +75,31 @@ function buildRaw(vars: Map<string, string>) {
     ])
   );
 
+  // The rest of spacing.css, past the numbered scale — screen gutters,
+  // named stack gaps, card padding, control heights, the tab/top bar
+  // heights, and the two layout-frame widths. All px, all flat, same as
+  // radius below — spacing.css doesn't separate these from the numbered
+  // scale either.
+  const layout = {
+    gutterScreen: pxToNumber(need(vars, "gutter-screen")),
+    gutterScreenWide: pxToNumber(need(vars, "gutter-screen-wide")),
+    stackTight: pxToNumber(need(vars, "stack-tight")),
+    stackDefault: pxToNumber(need(vars, "stack-default")),
+    stackLoose: pxToNumber(need(vars, "stack-loose")),
+    stackSection: pxToNumber(need(vars, "stack-section")),
+    cardPadding: pxToNumber(need(vars, "card-padding")),
+    cardPaddingLg: pxToNumber(need(vars, "card-padding-lg")),
+    cardGap: pxToNumber(need(vars, "card-gap")),
+    controlHeightSm: pxToNumber(need(vars, "control-height-sm")),
+    controlHeightMd: pxToNumber(need(vars, "control-height-md")),
+    controlHeightLg: pxToNumber(need(vars, "control-height-lg")),
+    hitTargetMin: pxToNumber(need(vars, "hit-target-min")),
+    tabbarHeight: pxToNumber(need(vars, "tabbar-height")),
+    topbarHeight: pxToNumber(need(vars, "topbar-height")),
+    maxContentWidth: pxToNumber(need(vars, "max-content-width")),
+    appFrameWidth: pxToNumber(need(vars, "app-frame-width")),
+  };
+
   // shape.css doesn't separate "base" radii from "role" radii the way
   // colors.css separates raw ramps from semantic aliases — they're one
   // flat list in the source, so they stay one flat list here.
@@ -140,7 +165,7 @@ function buildRaw(vars: Map<string, string>) {
     hoverLift: pxToNumber(need(vars, "hover-lift")),
   };
 
-  return { color, space, radius, border, font, fontSize, fontWeight, lineHeight, letterSpacing, duration, easing, interaction };
+  return { color, space, layout, radius, border, font, fontSize, fontWeight, lineHeight, letterSpacing, duration, easing, interaction };
 }
 
 /* ---------------- semantic.ts ---------------- */
