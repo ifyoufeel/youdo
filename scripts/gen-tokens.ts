@@ -31,7 +31,15 @@ import {
   type SoftShadow,
 } from "./lib/parse-tokens";
 
-const ROOT = join(__dirname, "..");
+/* GEN_TOKENS_ROOT exists only for scripts/__tests__/gen-tokens-check.test.ts,
+   which needs to drive this script against a disposable temp directory
+   instead of the real preview/tokens/*.css and src/design/tokens/*.ts —
+   corrupting the committed files in place (even briefly, even restored
+   afterward) is unsafe: Jest runs test files in parallel worker processes,
+   and another file importing type.ts mid-corruption would see the
+   corrupted content. Unset in every real invocation (npm run tokens:gen/
+   :check), so production behavior is unchanged. */
+const ROOT = process.env.GEN_TOKENS_ROOT || join(__dirname, "..");
 const TOKENS_DIR = join(ROOT, "preview", "tokens");
 const OUT_DIR = join(ROOT, "src", "design", "tokens");
 const SOURCE_FILES = ["colors.css", "typography.css", "spacing.css", "shape.css", "motion.css"];
