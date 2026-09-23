@@ -99,7 +99,7 @@ export function Sticker({
 
   if (!interactive) {
     return (
-      <View style={[styles.wrapper, style]}>
+      <View style={[styles.wrapper, style]} testID={testID}>
         <View style={shadowStyle} />
         {content}
       </View>

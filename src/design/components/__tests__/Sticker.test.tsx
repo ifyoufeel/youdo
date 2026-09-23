@@ -32,6 +32,15 @@ describe("Sticker", () => {
     });
   });
 
+  it("forwards testID on the non-interactive path too — a real bug caught by Card's tests: the outer View dropped it", async () => {
+    const { getByTestId } = await render(
+      <Sticker radius={20} testID="sticker">
+        <Text>Plain card</Text>
+      </Sticker>
+    );
+    expect(getByTestId("sticker")).toBeTruthy();
+  });
+
   it("renders interactive and drives press-in/press-out/hover-in/hover-out with no console warnings/errors", async () => {
     await withSpies(async () => {
       const { getByTestId } = await render(
