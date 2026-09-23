@@ -51,6 +51,7 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "resolver": "react-native-reanimated/jest/resolver.js",
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/preview/",
