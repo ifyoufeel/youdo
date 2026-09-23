@@ -1,0 +1,54 @@
+{
+  "name": "youdo",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@expo/metro-runtime": "^57.0.16",
+    "expo": "~57.0.24",
+    "expo-font": "^57.0.4",
+    "expo-router": "^57.0.22",
+    "expo-splash-screen": "^57.0.9",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "^19.2.3",
+    "react-native": "0.86.3",
+    "react-native-reanimated": "^4.7.0",
+    "react-native-safe-area-context": "^5.10.0",
+    "react-native-screens": "^4.28.0",
+    "react-native-svg": "^15.15.5",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.103.2",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
+    "eslint-plugin-import": "^2.32.0",
+    "jest-expo": "^57.0.5",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "zod": "^4.6.5"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "jest",
+    "tokens:gen": "tsx scripts/gen-tokens.ts",
+    "tokens:check": "tsx scripts/gen-tokens.ts --check",
+    "web:export": "expo export -p web"
+  },
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/preview/",
+      "<rootDir>/test/"
+    ]
+  }
+}
