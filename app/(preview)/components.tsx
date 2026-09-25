@@ -4,12 +4,16 @@
    milestone is proving survives the port), Card (every variant, one with
    `media` to exercise ADR-003's overflow-clipping watch item), and
    Sticker standalone. */
+import { useState } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { Icon } from "@design/components/Icon";
 import { ICON_NAMES } from "@design/icons/names";
 import { Button, type ButtonVariant, type ButtonSize } from "@design/components/Button";
 import { Card, type CardVariant } from "@design/components/Card";
 import { Sticker } from "@design/components/Sticker";
+import { IconButton, type IconButtonVariant } from "@design/components/IconButton";
+import { TopBar } from "@design/components/TopBar";
+import { TabBar, type TabBarItem } from "@design/components/TabBar";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -25,6 +29,55 @@ function SectionHeading({ children }: { children: string }) {
 const BUTTON_VARIANTS: ButtonVariant[] = ["primary", "secondary", "inverse", "money", "danger", "ghost"];
 const BUTTON_SIZES: ButtonSize[] = ["sm", "md", "lg"];
 const CARD_VARIANTS: CardVariant[] = ["sticker", "flat", "sunken", "accent", "money", "inverse"];
+const ICON_BUTTON_VARIANTS: IconButtonVariant[] = ["primary", "secondary", "inverse", "ghost"];
+const TAB_ITEMS: TabBarItem[] = [
+  { key: "browse", label: "Browse", icon: "search" },
+  { key: "quests", label: "My quests", icon: "list-checks", badge: 2 },
+  { key: "post", label: "Post", icon: "plus" },
+  { key: "chats", label: "Chats", icon: "message-circle" },
+  { key: "profile", label: "Profile", icon: "user" },
+];
+
+function ChromeGallery() {
+  const [tab, setTab] = useState("browse");
+  return (
+    <>
+      <Text style={styles.chromeLabel}>TopBar — title+subtitle</Text>
+      <View style={styles.chromeFrame}>
+        <TopBar title="Quest detail" subtitle="Da'an · 5 min walk" onBack={() => {}} />
+      </View>
+
+      <Text style={styles.chromeLabel}>TopBar — wordmark + action</Text>
+      <View style={styles.chromeFrame}>
+        <TopBar wordmark actions={<IconButton icon="bell" accessibilityLabel="Notifications" badge={2} onPress={() => {}} />} />
+      </View>
+
+      <Text style={styles.chromeLabel}>IconButton — variant x size (press one)</Text>
+      <View style={styles.buttonGrid}>
+        {ICON_BUTTON_VARIANTS.map((variant) => (
+          <View key={variant} style={styles.buttonRow}>
+            <Text style={styles.rowLabel}>{variant}</Text>
+            {(["sm", "md", "lg"] as const).map((size) => (
+              <IconButton
+                key={size}
+                icon="search"
+                accessibilityLabel="Search"
+                variant={variant}
+                size={size}
+                onPress={() => {}}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.chromeLabel}>TabBar — press a tab</Text>
+      <View style={styles.chromeFrame}>
+        <TabBar items={TAB_ITEMS} value={tab} onChange={setTab} />
+      </View>
+    </>
+  );
+}
 
 export default function ComponentsScreen() {
   return (
@@ -88,6 +141,9 @@ export default function ComponentsScreen() {
           <View style={[styles.stickerFill, { backgroundColor: semantic.color.surface.money }]} />
         </Sticker>
       </View>
+
+      <SectionHeading>Chrome — TopBar, IconButton, TabBar</SectionHeading>
+      <ChromeGallery />
     </ScrollView>
   );
 }
@@ -170,5 +226,16 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: raw.radius.md,
+  },
+  chromeLabel: {
+    fontFamily: LABEL_FONT,
+    fontSize: raw.fontSize["2xs"],
+    color: semantic.color.text.secondary,
+  },
+  chromeFrame: {
+    borderWidth: raw.border.hair,
+    borderColor: semantic.color.border.default,
+    borderRadius: raw.radius.sm,
+    overflow: "hidden",
   },
 });

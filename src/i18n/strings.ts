@@ -61,6 +61,10 @@ export const strings = {
   "tabs.post": "Post",
   "tabs.chats": "Chats",
   "tabs.profile": "Profile",
+
+  "common.loading": "Loading…",
+  "common.errorGeneric": "We couldn't reach the server. Check your connection and try again.",
+  "common.retry": "Try again",
 } as const;
 
 export type StringKey = keyof typeof strings;
