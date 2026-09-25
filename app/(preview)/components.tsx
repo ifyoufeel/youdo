@@ -20,6 +20,8 @@ import { Radio } from "@design/components/Radio";
 import { Tag } from "@design/components/Tag";
 import { Dialog } from "@design/components/Dialog";
 import { Select } from "@design/components/Select";
+import { QuestCard, type QuestCardVariant } from "@design/components/QuestCard";
+import { Toast, type ToastTone } from "@design/components/Toast";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -172,6 +174,52 @@ function DialogGallery() {
   );
 }
 
+const QUEST_CARD_VARIANTS: QuestCardVariant[] = ["feed", "compact", "spacious", "spacious-meta"];
+const TOAST_TONES: ToastTone[] = ["neutral", "success", "money", "danger"];
+const DEMO_POSTER = { name: "Wei-Ting C.", rating: 4.9, questsCompleted: 38, verified: true };
+
+function QuestCardGallery() {
+  const [saved, setSaved] = useState(false);
+  return (
+    <View style={styles.questCardGrid}>
+      {QUEST_CARD_VARIANTS.map((variant) => (
+        <View key={variant} style={styles.questCardCell}>
+          <Text style={styles.chromeLabel}>{variant}</Text>
+          <QuestCard
+            variant={variant}
+            title="Walk Biscuit for an hour"
+            payout="NT$400"
+            distance="5 min walk"
+            duration="1 hr"
+            when="Today, 6pm"
+            category="Dog walking"
+            poster={variant === "spacious-meta" ? undefined : DEMO_POSTER}
+            badges={[{ label: "Urgent", tone: "hot", icon: "zap" }]}
+            saved={saved}
+            onSave={() => setSaved((s) => !s)}
+            onPress={() => {}}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ToastGallery() {
+  return (
+    <View style={styles.formColumn}>
+      {TOAST_TONES.map((tone) => (
+        <Toast key={tone} tone={tone}>
+          {tone === "money" ? "NT$400 added to your wallet" : tone === "danger" ? "Couldn't reach the server" : "Code sent to alex@example.tw"}
+        </Toast>
+      ))}
+      <Toast tone="danger" action="Retry" onAction={() => {}}>
+        Couldn&apos;t post your quest
+      </Toast>
+    </View>
+  );
+}
+
 export default function ComponentsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -243,6 +291,12 @@ export default function ComponentsScreen() {
 
       <SectionHeading>Dialog — sheet + default, and Select</SectionHeading>
       <DialogGallery />
+
+      <SectionHeading>QuestCard — every variant (press save)</SectionHeading>
+      <QuestCardGallery />
+
+      <SectionHeading>Toast — every tone</SectionHeading>
+      <ToastGallery />
     </ScrollView>
   );
 }
@@ -345,5 +399,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: raw.space["2"],
+  },
+  questCardGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.layout.stackDefault,
+  },
+  questCardCell: {
+    width: 260,
+    gap: raw.space["1"],
   },
 });
