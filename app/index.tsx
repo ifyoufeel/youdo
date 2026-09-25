@@ -14,8 +14,5 @@ export default function Index() {
   if (status === "loading") return null;
   if (status === "signedOut") return <Redirect href="/(onboarding)/welcome" />;
 
-  // TODO Phase 7: redirect to /(tabs) once the tab shell exists — the
-  // preview gallery is a placeholder destination for a signed-in session
-  // until then.
-  return <Redirect href="/(preview)/tokens" />;
+  return <Redirect href="/(tabs)" />;
 }

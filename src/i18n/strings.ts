@@ -61,6 +61,11 @@ export const strings = {
   "tabs.post": "Post",
   "tabs.chats": "Chats",
   "tabs.profile": "Profile",
+  "tabs.browse.comingSoon": "The quest feed is coming soon.",
+  "tabs.quests.comingSoon": "Track offers and quest progress here soon.",
+  "tabs.post.comingSoon": "Posting a quest is coming soon.",
+  "tabs.chats.comingSoon": "Chat with posters and doers here soon.",
+  "tabs.profile.comingSoon": "Your profile and settings are coming soon.",
 
   "common.loading": "Loading…",
   "common.errorGeneric": "We couldn't reach the server. Check your connection and try again.",
