@@ -3,7 +3,7 @@
    in its four states. Each is a real, standalone Screen render, not a
    mockup — proving the shell + EmptyState/LoadingState/ErrorState
    actually compose the way a real feature screen will use them. */
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { Screen } from "@design/components/Screen";
 import { EmptyState } from "@design/components/EmptyState";
@@ -14,6 +14,12 @@ import { Button } from "@design/components/Button";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
+import { OnboardingProvider, useOnboardingDraft } from "@features/onboarding/OnboardingContext";
+import WelcomeScreen from "@features/onboarding/WelcomeScreen";
+import LocationScreen from "@features/onboarding/LocationScreen";
+import SignInScreen from "@features/onboarding/SignInScreen";
+import ContactScreen from "@features/onboarding/ContactScreen";
+import CodeScreen from "@features/onboarding/CodeScreen";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const LABEL_FONT = fontFamilyName(raw.font.mono, raw.fontWeight.regular);
@@ -27,6 +33,32 @@ function SectionHeading({ children }: { children: string }) {
    gives it something bounded to fill inside this scrolling gallery. */
 function ScreenFrame({ children }: { children: ReactNode }) {
   return <View style={styles.frame}>{children}</View>;
+}
+
+/* Pre-populates OnboardingContext's draft so the Contact/Code specimens
+   below can show the invalid-email and wrong-code failure states
+   directly, per ADR-012's "every screen and both failure paths are also
+   in the States gallery." */
+function SeedDraft({
+  contact,
+  contactError,
+  code,
+  codeError,
+}: {
+  contact?: string;
+  contactError?: string;
+  code?: string;
+  codeError?: string;
+}) {
+  const draft = useOnboardingDraft();
+  useEffect(() => {
+    if (contact !== undefined) draft.setContact(contact);
+    if (contactError !== undefined) draft.setContactError(contactError);
+    if (code !== undefined) draft.setCode(code);
+    if (codeError !== undefined) draft.setCodeError(codeError);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }
 
 export default function ScreensScreen() {
@@ -78,6 +110,58 @@ export default function ScreensScreen() {
             <Text>A very slow beagle who stops at every tree.</Text>
           </Card>
         </Screen>
+      </ScreenFrame>
+
+      <SectionHeading>Onboarding — every screen, both failure paths (ADR-012)</SectionHeading>
+
+      <Text style={styles.specimenLabel}>Welcome</Text>
+      <ScreenFrame>
+        <WelcomeScreen />
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Location</Text>
+      <ScreenFrame>
+        <LocationScreen />
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Sign in</Text>
+      <ScreenFrame>
+        <SignInScreen />
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Contact</Text>
+      <ScreenFrame>
+        <OnboardingProvider>
+          <ContactScreen />
+        </OnboardingProvider>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Contact — failure: invalid email</Text>
+      <ScreenFrame>
+        <OnboardingProvider>
+          <SeedDraft contact="not-an-email" contactError="Add a working email to send the code" />
+          <ContactScreen />
+        </OnboardingProvider>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Code</Text>
+      <ScreenFrame>
+        <OnboardingProvider>
+          <SeedDraft contact="alex@example.tw" />
+          <CodeScreen />
+        </OnboardingProvider>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Code — failure: wrong code</Text>
+      <ScreenFrame>
+        <OnboardingProvider>
+          <SeedDraft
+            contact="alex@example.tw"
+            code=""
+            codeError="That code didn't match — check your messages and try again"
+          />
+          <CodeScreen />
+        </OnboardingProvider>
       </ScreenFrame>
     </ScrollView>
   );

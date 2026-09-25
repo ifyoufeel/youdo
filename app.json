@@ -24,7 +24,13 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "YouDO uses your location to show nearby quests and give posters an honest distance."
+        }
+      ]
     ]
   }
 }
