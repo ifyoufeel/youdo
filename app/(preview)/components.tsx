@@ -18,6 +18,8 @@ import { Input } from "@design/components/Input";
 import { Checkbox } from "@design/components/Checkbox";
 import { Radio } from "@design/components/Radio";
 import { Tag } from "@design/components/Tag";
+import { Dialog } from "@design/components/Dialog";
+import { Select } from "@design/components/Select";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -116,6 +118,60 @@ function FormGallery() {
   );
 }
 
+const RADIUS_OPTIONS = [
+  { value: "1", label: "Within 1 km" },
+  { value: "3", label: "Within 3 km" },
+  { value: "5", label: "Within 5 km" },
+  { value: "10", label: "Within 10 km" },
+];
+
+function DialogGallery() {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [defaultOpen, setDefaultOpen] = useState(false);
+  const [radius, setRadius] = useState("3");
+
+  return (
+    <>
+      <View style={styles.buttonRow}>
+        <Button variant="secondary" size="sm" onPress={() => setSheetOpen(true)}>
+          Open sheet
+        </Button>
+        <Button variant="secondary" size="sm" onPress={() => setDefaultOpen(true)}>
+          Open popup
+        </Button>
+      </View>
+
+      <Dialog
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="Sort and filter"
+        subtitle="5 quests nearby"
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onPress={() => setSheetOpen(false)}>
+              Reset
+            </Button>
+            <Button variant="primary" size="sm" fullWidth onPress={() => setSheetOpen(false)}>
+              Show quests
+            </Button>
+          </>
+        }
+      >
+        <Select label="Distance" value={radius} options={RADIUS_OPTIONS} onChange={setRadius} />
+      </Dialog>
+
+      <Dialog open={defaultOpen} onClose={() => setDefaultOpen(false)} variant="default" title="Leave without saving?">
+        <Text style={styles.chromeLabel}>Your changes won&apos;t be kept.</Text>
+      </Dialog>
+
+      <Text style={styles.chromeLabel}>Select — opens the sheet above</Text>
+      <View style={styles.formColumn}>
+        <Select label="Distance" value={radius} options={RADIUS_OPTIONS} onChange={setRadius} />
+      </View>
+    </>
+  );
+}
+
 export default function ComponentsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -184,6 +240,9 @@ export default function ComponentsScreen() {
 
       <SectionHeading>Forms — Input, Checkbox, Radio, Tag</SectionHeading>
       <FormGallery />
+
+      <SectionHeading>Dialog — sheet + default, and Select</SectionHeading>
+      <DialogGallery />
     </ScrollView>
   );
 }
