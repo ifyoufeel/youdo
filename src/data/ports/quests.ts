@@ -19,6 +19,10 @@ export interface PostQuestInput {
   requirements: string[];
 }
 
+/** "closest" is the default when omitted — PRD §7.2's feed is ordered by
+    distance first. */
+export type QuestSort = "closest" | "pay" | "ending" | "newest";
+
 export interface ListQuestsParams extends PageParams {
   /** ADR-004's "geo params in listQuests({center, radiusM, cursor})",
       honored from M0 even though the memory adapter filters an in-memory
@@ -28,7 +32,12 @@ export interface ListQuestsParams extends PageParams {
   categoryId?: string;
   minPayMinor?: number;
   verifiedPostersOnly?: boolean;
+  /** Matches `scheduledFor`'s calendar date against the adapter's notion
+      of "now" — the real device clock in the memory adapter today; a
+      server-side "now" once Supabase (M7) lands. */
+  todayOnly?: boolean;
   search?: string;
+  sort?: QuestSort;
 }
 
 export interface QuestsPort {

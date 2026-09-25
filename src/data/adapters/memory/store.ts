@@ -32,3 +32,11 @@ export const quests: Quest[] = parseArray(QuestSchema, seed.quests);
 export const categories: Category[] = parseArray(CategorySchema, seed.categories);
 
 export const meId: string = seed.meId;
+
+/** Mutable — saveQuest/unsaveQuest write through this directly (unlike
+    users/quests/categories above, which are read-only snapshots of the
+    fixture). Seeded from seed.savedByUser so the starting state matches
+    the fixture, but every write after that is real. */
+export const savedQuestIds: Map<string, Set<string>> = new Map(
+  Object.entries(seed.savedByUser).map(([userId, questIds]) => [userId, new Set(questIds)])
+);
