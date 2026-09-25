@@ -14,6 +14,10 @@ import { Sticker } from "@design/components/Sticker";
 import { IconButton, type IconButtonVariant } from "@design/components/IconButton";
 import { TopBar } from "@design/components/TopBar";
 import { TabBar, type TabBarItem } from "@design/components/TabBar";
+import { Input } from "@design/components/Input";
+import { Checkbox } from "@design/components/Checkbox";
+import { Radio } from "@design/components/Radio";
+import { Tag } from "@design/components/Tag";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -74,6 +78,39 @@ function ChromeGallery() {
       <Text style={styles.chromeLabel}>TabBar — press a tab</Text>
       <View style={styles.chromeFrame}>
         <TabBar items={TAB_ITEMS} value={tab} onChange={setTab} />
+      </View>
+    </>
+  );
+}
+
+function FormGallery() {
+  const [email, setEmail] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [sort, setSort] = useState<"closest" | "pay">("closest");
+  const [category, setCategory] = useState("delivery");
+
+  return (
+    <>
+      <Text style={styles.chromeLabel}>Input — label, icon, hint/error</Text>
+      <View style={styles.formColumn}>
+        <Input label="Email" value={email} onChangeText={setEmail} icon="send" placeholder="you@example.com" />
+        <Input label="Email" value="" onChangeText={() => {}} error="Add a working email to send the code" />
+      </View>
+
+      <Text style={styles.chromeLabel}>Checkbox / Radio</Text>
+      <View style={styles.formColumn}>
+        <Checkbox label="Verified posters only" checked={checked} onChange={setChecked} />
+        <Radio label="Closest" checked={sort === "closest"} onSelect={() => setSort("closest")} />
+        <Radio label="Best paid" checked={sort === "pay"} onSelect={() => setSort("pay")} />
+      </View>
+
+      <Text style={styles.chromeLabel}>Tag — selectable chip row</Text>
+      <View style={styles.tagRow}>
+        {["delivery", "dog-walking", "assembly", "moving"].map((c) => (
+          <Tag key={c} selected={category === c} onSelect={() => setCategory(c)}>
+            {c}
+          </Tag>
+        ))}
       </View>
     </>
   );
@@ -144,6 +181,9 @@ export default function ComponentsScreen() {
 
       <SectionHeading>Chrome — TopBar, IconButton, TabBar</SectionHeading>
       <ChromeGallery />
+
+      <SectionHeading>Forms — Input, Checkbox, Radio, Tag</SectionHeading>
+      <FormGallery />
     </ScrollView>
   );
 }
@@ -237,5 +277,14 @@ const styles = StyleSheet.create({
     borderColor: semantic.color.border.default,
     borderRadius: raw.radius.sm,
     overflow: "hidden",
+  },
+  formColumn: {
+    gap: raw.layout.stackDefault,
+    maxWidth: 340,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.space["2"],
   },
 });
