@@ -23,6 +23,8 @@ import SignInScreen from "@features/onboarding/SignInScreen";
 import ContactScreen from "@features/onboarding/ContactScreen";
 import CodeScreen from "@features/onboarding/CodeScreen";
 import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
+import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
+import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
 import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -258,6 +260,28 @@ export default function ScreensScreen() {
       <ScreenFrame tall>
         <AutoSignedIn>
           <QuestDetailScreen questId="q1" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Post a quest (M3)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        The real wizard, auto-signed-in — interactive: fill in each step and submit yourself to see
+        validation, the fee breakdown, and the review step&apos;s summary for real.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <PostQuestScreen />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>My quests (M3)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        The real screen, auto-signed-in — interactive: switch tabs to see the real Active/Offers/Done
+        buckets from the signed-in demo identity&apos;s fixture engagements.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <MyQuestsScreen />
         </AutoSignedIn>
       </ScreenFrame>
     </ScrollView>
