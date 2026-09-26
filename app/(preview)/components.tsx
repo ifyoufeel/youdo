@@ -1,0 +1,482 @@
+/* Exit-criterion screen #2 (M0 plan, Phase 7): Icon (all 47), Button
+   (every variant x size, genuinely pressable — not static "pressed"
+   screenshots, since Sticker's press feedback is exactly what this
+   milestone is proving survives the port), Card (every variant, one with
+   `media` to exercise ADR-003's overflow-clipping watch item), and
+   Sticker standalone. */
+import { useState } from "react";
+import { ScrollView, View, Text, StyleSheet } from "react-native";
+import { Icon } from "@design/components/Icon";
+import { ICON_NAMES } from "@design/icons/names";
+import { Button, type ButtonVariant, type ButtonSize } from "@design/components/Button";
+import { Card, type CardVariant } from "@design/components/Card";
+import { Sticker } from "@design/components/Sticker";
+import { IconButton, type IconButtonVariant } from "@design/components/IconButton";
+import { TopBar } from "@design/components/TopBar";
+import { TabBar, type TabBarItem } from "@design/components/TabBar";
+import { Input } from "@design/components/Input";
+import { Checkbox } from "@design/components/Checkbox";
+import { Radio } from "@design/components/Radio";
+import { Tag } from "@design/components/Tag";
+import { Dialog } from "@design/components/Dialog";
+import { Select } from "@design/components/Select";
+import { QuestCard, type QuestCardVariant } from "@design/components/QuestCard";
+import { Toast, type ToastTone } from "@design/components/Toast";
+import { Badge, type BadgeTone } from "@design/components/Badge";
+import { RewardPill } from "@design/components/RewardPill";
+import { UserChip } from "@design/components/UserChip";
+import { Tabs } from "@design/components/Tabs";
+import { InfoRow } from "@design/components/InfoRow";
+import { FeeBreakdown } from "@design/components/FeeBreakdown";
+import { raw } from "@design/tokens/raw";
+import { semantic } from "@design/tokens/semantic";
+import { fontFamilyName } from "@design/tokens/font-family";
+
+const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
+const LABEL_FONT = fontFamilyName(raw.font.mono, raw.fontWeight.regular);
+const BODY_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
+
+function SectionHeading({ children }: { children: string }) {
+  return <Text style={styles.sectionHeading}>{children}</Text>;
+}
+
+const BUTTON_VARIANTS: ButtonVariant[] = ["primary", "secondary", "inverse", "money", "danger", "ghost"];
+const BUTTON_SIZES: ButtonSize[] = ["sm", "md", "lg"];
+const CARD_VARIANTS: CardVariant[] = ["sticker", "flat", "sunken", "accent", "money", "inverse"];
+const ICON_BUTTON_VARIANTS: IconButtonVariant[] = ["primary", "secondary", "inverse", "ghost"];
+const TAB_ITEMS: TabBarItem[] = [
+  { key: "browse", label: "Browse", icon: "search" },
+  { key: "quests", label: "My quests", icon: "list-checks", badge: 2 },
+  { key: "post", label: "Post", icon: "plus" },
+  { key: "chats", label: "Chats", icon: "message-circle" },
+  { key: "profile", label: "Profile", icon: "user" },
+];
+
+function ChromeGallery() {
+  const [tab, setTab] = useState("browse");
+  return (
+    <>
+      <Text style={styles.chromeLabel}>TopBar — title+subtitle</Text>
+      <View style={styles.chromeFrame}>
+        <TopBar title="Quest detail" subtitle="Da'an · 5 min walk" onBack={() => {}} />
+      </View>
+
+      <Text style={styles.chromeLabel}>TopBar — wordmark + action</Text>
+      <View style={styles.chromeFrame}>
+        <TopBar wordmark actions={<IconButton icon="bell" accessibilityLabel="Notifications" badge={2} onPress={() => {}} />} />
+      </View>
+
+      <Text style={styles.chromeLabel}>IconButton — variant x size (press one)</Text>
+      <View style={styles.buttonGrid}>
+        {ICON_BUTTON_VARIANTS.map((variant) => (
+          <View key={variant} style={styles.buttonRow}>
+            <Text style={styles.rowLabel}>{variant}</Text>
+            {(["sm", "md", "lg"] as const).map((size) => (
+              <IconButton
+                key={size}
+                icon="search"
+                accessibilityLabel="Search"
+                variant={variant}
+                size={size}
+                onPress={() => {}}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.chromeLabel}>TabBar — press a tab</Text>
+      <View style={styles.chromeFrame}>
+        <TabBar items={TAB_ITEMS} value={tab} onChange={setTab} />
+      </View>
+    </>
+  );
+}
+
+function FormGallery() {
+  const [email, setEmail] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [sort, setSort] = useState<"closest" | "pay">("closest");
+  const [category, setCategory] = useState("delivery");
+
+  return (
+    <>
+      <Text style={styles.chromeLabel}>Input — label, icon, hint/error</Text>
+      <View style={styles.formColumn}>
+        <Input label="Email" value={email} onChangeText={setEmail} icon="send" placeholder="you@example.com" />
+        <Input label="Email" value="" onChangeText={() => {}} error="Add a working email to send the code" />
+      </View>
+
+      <Text style={styles.chromeLabel}>Checkbox / Radio</Text>
+      <View style={styles.formColumn}>
+        <Checkbox label="Verified posters only" checked={checked} onChange={setChecked} />
+        <Radio label="Closest" checked={sort === "closest"} onSelect={() => setSort("closest")} />
+        <Radio label="Best paid" checked={sort === "pay"} onSelect={() => setSort("pay")} />
+      </View>
+
+      <Text style={styles.chromeLabel}>Tag — selectable chip row</Text>
+      <View style={styles.tagRow}>
+        {["delivery", "dog-walking", "assembly", "moving"].map((c) => (
+          <Tag key={c} selected={category === c} onSelect={() => setCategory(c)}>
+            {c}
+          </Tag>
+        ))}
+      </View>
+    </>
+  );
+}
+
+const RADIUS_OPTIONS = [
+  { value: "1", label: "Within 1 km" },
+  { value: "3", label: "Within 3 km" },
+  { value: "5", label: "Within 5 km" },
+  { value: "10", label: "Within 10 km" },
+];
+
+function DialogGallery() {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [defaultOpen, setDefaultOpen] = useState(false);
+  const [radius, setRadius] = useState("3");
+
+  return (
+    <>
+      <View style={styles.buttonRow}>
+        <Button variant="secondary" size="sm" onPress={() => setSheetOpen(true)}>
+          Open sheet
+        </Button>
+        <Button variant="secondary" size="sm" onPress={() => setDefaultOpen(true)}>
+          Open popup
+        </Button>
+      </View>
+
+      <Dialog
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="Sort and filter"
+        subtitle="5 quests nearby"
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onPress={() => setSheetOpen(false)}>
+              Reset
+            </Button>
+            <Button variant="primary" size="sm" fullWidth onPress={() => setSheetOpen(false)}>
+              Show quests
+            </Button>
+          </>
+        }
+      >
+        <Select label="Distance" value={radius} options={RADIUS_OPTIONS} onChange={setRadius} />
+      </Dialog>
+
+      <Dialog open={defaultOpen} onClose={() => setDefaultOpen(false)} variant="default" title="Leave without saving?">
+        <Text style={styles.chromeLabel}>Your changes won&apos;t be kept.</Text>
+      </Dialog>
+
+      <Text style={styles.chromeLabel}>Select — opens the sheet above</Text>
+      <View style={styles.formColumn}>
+        <Select label="Distance" value={radius} options={RADIUS_OPTIONS} onChange={setRadius} />
+      </View>
+    </>
+  );
+}
+
+const QUEST_CARD_VARIANTS: QuestCardVariant[] = ["feed", "compact", "spacious", "spacious-meta"];
+const TOAST_TONES: ToastTone[] = ["neutral", "success", "money", "danger"];
+const DEMO_POSTER = { name: "Wei-Ting C.", rating: 4.9, questsCompleted: 38, verified: true };
+const BADGE_TONES: BadgeTone[] = ["neutral", "accent", "money", "hot", "success", "warning", "danger", "info", "ink"];
+
+function TrustGallery() {
+  return (
+    <View style={styles.formColumn}>
+      <Text style={styles.chromeLabel}>Badge — every tone</Text>
+      <View style={styles.badgeRow}>
+        {BADGE_TONES.map((tone) => (
+          <Badge key={tone} label={tone} tone={tone} />
+        ))}
+      </View>
+
+      <Text style={styles.chromeLabel}>RewardPill — md, lg</Text>
+      <View style={styles.badgeRow}>
+        <RewardPill amount="NT$400" />
+        <RewardPill amount="NT$1,050" size="lg" />
+      </View>
+
+      <Text style={styles.chromeLabel}>UserChip — sm/md/lg, verified</Text>
+      <UserChip name="Wei-Ting C." rating={4.9} questsCompleted={38} verified size="sm" />
+      <UserChip name="Jason H." size="md" />
+      <UserChip name="Mei-Ling W." rating={5} questsCompleted={3} verified meta="Posted this quest" size="lg" />
+    </View>
+  );
+}
+
+function QuestCardGallery() {
+  const [saved, setSaved] = useState(false);
+  return (
+    <View style={styles.questCardGrid}>
+      {QUEST_CARD_VARIANTS.map((variant) => (
+        <View key={variant} style={styles.questCardCell}>
+          <Text style={styles.chromeLabel}>{variant}</Text>
+          <QuestCard
+            variant={variant}
+            title="Walk Biscuit for an hour"
+            payout="NT$400"
+            distance="5 min walk"
+            duration="1 hr"
+            when="Today, 6pm"
+            category="Dog walking"
+            poster={variant === "spacious-meta" ? undefined : DEMO_POSTER}
+            badges={[{ label: "Urgent", tone: "hot", icon: "zap" }]}
+            saved={saved}
+            onSave={() => setSaved((s) => !s)}
+            onPress={() => {}}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ToastGallery() {
+  return (
+    <View style={styles.formColumn}>
+      {TOAST_TONES.map((tone) => (
+        <Toast key={tone} tone={tone}>
+          {tone === "money" ? "NT$400 added to your wallet" : tone === "danger" ? "Couldn't reach the server" : "Code sent to alex@example.tw"}
+        </Toast>
+      ))}
+      <Toast tone="danger" action="Retry" onAction={() => {}}>
+        Couldn&apos;t post your quest
+      </Toast>
+    </View>
+  );
+}
+
+function WizardGallery() {
+  const [tab, setTab] = useState("active");
+  return (
+    <View style={styles.formColumn}>
+      <Text style={styles.chromeLabel}>Tabs — segmented, with counts (press one)</Text>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: "active", label: "Active", count: 2 },
+          { value: "offers", label: "Offers", count: 1 },
+          { value: "done", label: "Done", count: 0 },
+        ]}
+      />
+
+      <Text style={styles.chromeLabel}>InfoRow — with and without an icon</Text>
+      <View style={styles.formColumn}>
+        <InfoRow icon="calendar" label="When" value="17 Sep, 2pm" />
+        <InfoRow label="How long" value="~25 min" />
+      </View>
+
+      <Text style={styles.chromeLabel}>FeeBreakdown</Text>
+      <FeeBreakdown amountMinor={60000} title="What this costs you" />
+    </View>
+  );
+}
+
+export default function ComponentsScreen() {
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Component gallery</Text>
+
+      <SectionHeading>Icon — all 47</SectionHeading>
+      <View style={styles.iconGrid}>
+        {ICON_NAMES.map((name) => (
+          <View key={name} style={styles.iconCell}>
+            <Icon name={name} size={22} />
+            <Text style={styles.iconLabel}>{name}</Text>
+          </View>
+        ))}
+      </View>
+
+      <SectionHeading>Button — variant x size (press one)</SectionHeading>
+      <View style={styles.buttonGrid}>
+        {BUTTON_VARIANTS.map((variant) => (
+          <View key={variant} style={styles.buttonRow}>
+            <Text style={styles.rowLabel}>{variant}</Text>
+            {BUTTON_SIZES.map((size) => (
+              <Button key={size} variant={variant} size={size} icon="check" onPress={() => {}}>
+                {size}
+              </Button>
+            ))}
+          </View>
+        ))}
+      </View>
+
+      <SectionHeading>Card — every variant</SectionHeading>
+      <View style={styles.cardGrid}>
+        {CARD_VARIANTS.map((variant) => (
+          <Card key={variant} variant={variant} interactive onPress={() => {}} style={styles.cardCell}>
+            <Text style={styles.cardTitle}>{variant}</Text>
+            <Text style={styles.cardBody}>Walk Biscuit for an hour — NT$400</Text>
+          </Card>
+        ))}
+        {/* The one card exercising ADR-003's overflow-clipping watch item:
+            a media block whose own inner View clips, while Sticker's
+            shadow sibling — rendered outside this box entirely — stays
+            unclippable. */}
+        <Card
+          variant="sticker"
+          interactive
+          onPress={() => {}}
+          style={styles.cardCell}
+          media={<View style={styles.mediaBlock} />}
+        >
+          <Text style={styles.cardTitle}>with media</Text>
+          <Text style={styles.cardBody}>Pick up a parcel</Text>
+        </Card>
+      </View>
+
+      <SectionHeading>Sticker — standalone</SectionHeading>
+      <View style={styles.stickerRow}>
+        <Sticker radius={raw.radius.md} interactive={false}>
+          <View style={[styles.stickerFill, { backgroundColor: semantic.color.surface.accent }]} />
+        </Sticker>
+        <Sticker radius={raw.radius.md} interactive onPress={() => {}}>
+          <View style={[styles.stickerFill, { backgroundColor: semantic.color.surface.money }]} />
+        </Sticker>
+      </View>
+
+      <SectionHeading>Chrome — TopBar, IconButton, TabBar</SectionHeading>
+      <ChromeGallery />
+
+      <SectionHeading>Forms — Input, Checkbox, Radio, Tag</SectionHeading>
+      <FormGallery />
+
+      <SectionHeading>Dialog — sheet + default, and Select</SectionHeading>
+      <DialogGallery />
+
+      <SectionHeading>Trust — Badge, RewardPill, UserChip (M2)</SectionHeading>
+      <TrustGallery />
+
+      <SectionHeading>QuestCard — every variant (press save)</SectionHeading>
+      <QuestCardGallery />
+
+      <SectionHeading>Toast — every tone</SectionHeading>
+      <ToastGallery />
+
+      <SectionHeading>Post & My quests — Tabs, InfoRow, FeeBreakdown (M3)</SectionHeading>
+      <WizardGallery />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: semantic.color.surface.page,
+  },
+  content: {
+    padding: raw.layout.gutterScreen,
+    gap: raw.layout.stackSection,
+  },
+  title: {
+    fontFamily: HEADING_FONT,
+    fontSize: raw.fontSize["3xl"],
+    color: semantic.color.text.primary,
+  },
+  sectionHeading: {
+    fontFamily: HEADING_FONT,
+    fontSize: raw.fontSize.xl,
+    color: semantic.color.text.primary,
+    marginTop: raw.layout.stackLoose,
+  },
+  iconGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.space["4"],
+  },
+  iconCell: {
+    alignItems: "center",
+    gap: raw.space["1"],
+    width: 72,
+  },
+  iconLabel: {
+    fontFamily: LABEL_FONT,
+    fontSize: 9,
+    color: semantic.color.text.muted,
+    textAlign: "center",
+  },
+  buttonGrid: {
+    gap: raw.layout.stackDefault,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: raw.space["3"],
+  },
+  rowLabel: {
+    fontFamily: LABEL_FONT,
+    fontSize: raw.fontSize["2xs"],
+    color: semantic.color.text.secondary,
+    width: 70,
+  },
+  cardGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.layout.stackDefault,
+  },
+  cardCell: {
+    width: 220,
+  },
+  cardTitle: {
+    fontFamily: fontFamilyName(raw.font.text, raw.fontWeight.semibold),
+    fontSize: raw.fontSize.sm,
+  },
+  cardBody: {
+    fontFamily: BODY_FONT,
+    fontSize: raw.fontSize.sm,
+  },
+  mediaBlock: {
+    height: 96,
+    backgroundColor: semantic.color.surface.hotSoft,
+  },
+  stickerRow: {
+    flexDirection: "row",
+    gap: raw.layout.stackDefault,
+  },
+  stickerFill: {
+    width: 96,
+    height: 96,
+    borderRadius: raw.radius.md,
+  },
+  chromeLabel: {
+    fontFamily: LABEL_FONT,
+    fontSize: raw.fontSize["2xs"],
+    color: semantic.color.text.secondary,
+  },
+  chromeFrame: {
+    borderWidth: raw.border.hair,
+    borderColor: semantic.color.border.default,
+    borderRadius: raw.radius.sm,
+    overflow: "hidden",
+  },
+  formColumn: {
+    gap: raw.layout.stackDefault,
+    maxWidth: 340,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.space["2"],
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: raw.space["2"],
+  },
+  questCardGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: raw.layout.stackDefault,
+  },
+  questCardCell: {
+    width: 260,
+    gap: raw.space["1"],
+  },
+});

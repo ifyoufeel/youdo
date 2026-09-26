@@ -42,20 +42,34 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** a new user can sign in, grant location, and browse real (mock) quests near them.
 
-- [ ] Auth screens behind `AuthPort` (mocked): Google button + 6-digit OTP entry for email/phone
-- [ ] First-run explainer (both sides of the market) + justified location permission request; graceful degradation if denied
+- [x] Auth screens behind `AuthPort` (mocked): Google button + 6-digit OTP entry for email/phone
+- [x] First-run explainer (both sides of the market) + justified location permission request; graceful degradation if denied
 - [ ] i18n layer wired — **no hardcoded user-facing strings from here on**
-- [ ] Tab shell with the five tabs
+- [x] Tab shell with the five tabs
 - [ ] Browse feed on FlashList, cursor pagination, pull-to-refresh
-- [ ] Search (title + description substring)
-- [ ] **Working filter sheet** — radius, minimum pay, time window, verified-only; persists; composes with search
-- [ ] **Working sort control** — closest, best paid, ending soonest, newest
-- [ ] Save / unsave with optimistic update
+- [x] Search (title + description substring)
+- [x] **Working filter sheet** — radius, minimum pay, time window, verified-only; persists; composes with search
+- [x] **Working sort control** — closest, best paid, ending soonest, newest
+- [x] Save / unsave with optimistic update
 - [ ] Empty, loading and error states (loading is a sunken card with text — the system bans shimmer)
 
 **Exit:** filters and sort demonstrably change the result set; every list state is reachable from the preview gallery.
 
 **Preview:** sign-in → browse → filter → save.
+
+> The tab shell, browse, search, filter, sort and save were already built —
+> they came with the original prototype this repo was seeded from, before the
+> milestone checklist existed to track them. What M1 actually added: the
+> sign-in and first-run screens (ADR-012 — reachable via Settings → Sign out,
+> since the preview still boots signed in, same as the actor switcher's
+> chosen identity always has). `FlashList`, cursor pagination, pull-to-refresh
+> and a real i18n library are Expo-scaffold concerns — this is still the
+> plain-script preview M0 hasn't replaced yet, and a synchronous local array
+> has nothing to page or pull against, so all four wait for that milestone.
+> Loading and error states exist as components (`LoadingState`, `ErrorState`)
+> and are demoed in the States gallery, but nothing in this synchronous mock
+> actually resolves asynchronously yet to trigger one for real — that is
+> ADR-004's jittered latency, still M5/M7 work.
 
 ---
 
@@ -203,7 +217,8 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 ## Where this actually stands
 
 M4 is built and previewable; M3 and M6 came along with it, because the loop
-could not be reviewed with holes on either side of it.
+could not be reviewed with holes on either side of it. M1's sign-in and
+first-run flow has since landed too.
 
 **Landed.** The §8 state machine with per-actor guards in the store · poster-side
 offer inbox with accept, decline and auto-decline of the rest · escrow held on
@@ -213,6 +228,15 @@ with auto-release · dispute · expiry · per-thread messages that go read-only
 when the quest closes · address revealed only on acceptance · ratings capture ·
 saved list · notification inbox · report and block · the posting wizard with
 blocking validation and draft autosave.
+
+**Sign-in and first run (M1).** A welcome screen pitching both sides in one
+look, a location-permission ask with a reason that degrades gracefully on
+"Not now", and mocked Google / 6-digit-OTP sign-in — including both of its
+failure paths: an invalid contact, and the mock's one deliberately-wrong code,
+`000000`. The preview itself still boots signed in (ADR-012), the same way
+the actor switcher's chosen identity always has, so the two-sided lifecycle
+above stays one tap away; "Sign out", in Settings, is how the flow is reached,
+and every screen and failure state is also in the States gallery.
 
 **Money moves both ways.** The wallet had cash-out and no way in, which made
 the accept sheet's "add NT$X to hold this offer" a dead end. Adding money is now
@@ -266,7 +290,10 @@ the artifact):
 - Notification *delivery* (M6): the inbox and the per-category toggles are
   built, but the toggles are screen state, not stored preference, and there is
   no push registration. That is M7/M8 work.
-- Auth and onboarding (M1) are still absent — the preview starts signed in.
+- Auth and onboarding (M1) are built but not the default: the preview still
+  boots signed in (ADR-012), reachable via Settings → Sign out. A real i18n
+  library, and `FlashList`/cursor pagination/pull-to-refresh for the feed
+  (also M1), are Expo-scaffold concerns still waiting on M0.
 - The `disputed` → `paid` / `cancelled` edges exist in the transition table and
   are rejected for everyone, because they need an admin actor the product does
   not have yet. The frozen-escrow state itself is reachable and designed.
