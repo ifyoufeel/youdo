@@ -180,6 +180,23 @@ export const strings = {
   "post.next": "Keep going",
   "post.submit": "Post quest",
   "post.postedToast": "Quest posted — doers nearby can see it now",
+
+  "myQuests.tab.active": "Active",
+  "myQuests.tab.offers": "Offers",
+  "myQuests.tab.done": "Done",
+  "myQuests.role.poster": "Posted by you",
+  "myQuests.role.doer": "Taken by you",
+  "myQuests.role.applicant": "Offer sent",
+  "myQuests.offersCloseIn": "Offers close in {{remaining}}",
+  "myQuests.offersClosed": "Offers have closed",
+  "myQuests.noOffers": "No offers came in",
+  "myQuests.view": "View",
+  "myQuests.empty.active.title": "Nothing on the go — take a quest and it lands here.",
+  "myQuests.empty.active.action": "Browse quests",
+  "myQuests.empty.offers.title": "No offers out right now. Find one you fancy and name your price.",
+  "myQuests.empty.offers.action": "Browse quests",
+  "myQuests.empty.done.title": "Nothing finished yet — your first completed quest shows up here.",
+  "myQuests.empty.done.action": "Browse quests",
 } as const;
 
 export type StringKey = keyof typeof strings;
