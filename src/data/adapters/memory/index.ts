@@ -7,6 +7,7 @@ import { createMemoryThreadsPort } from "./threads";
 import { createMemoryLedgerPort } from "./ledger";
 import { createMemoryReviewsPort } from "./reviews";
 import { createMemoryNotificationsPort } from "./notifications";
+import { createMemoryCategoriesPort } from "./categories";
 
 export { setFaultInjectionRate, getFaultInjectionRate } from "./fault-injection";
 
@@ -20,5 +21,6 @@ export function createMemoryAdapter(): Repository {
     ...createMemoryLedgerPort(),
     ...createMemoryReviewsPort(),
     ...createMemoryNotificationsPort(),
+    ...createMemoryCategoriesPort(),
   };
 }

@@ -70,5 +70,7 @@ export function createSupabaseAdapter(): Repository {
     listForUser: () => stub("listForUser"),
     markAllRead: () => stub("markAllRead"),
     subscribeToUser: () => stubSync("subscribeToUser"),
+
+    listCategories: () => stub("listCategories"),
   };
 }

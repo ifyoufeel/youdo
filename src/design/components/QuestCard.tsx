@@ -109,7 +109,14 @@ function PricePill({ amount }: { amount: string }) {
 
 function SaveButton({ saved, onSave, size = 19 }: { saved: boolean; onSave: () => void; size?: number }) {
   return (
-    <Pressable onPress={onSave} accessibilityRole="button" accessibilityLabel="Save quest" hitSlop={8} style={styles.saveButton}>
+    <Pressable
+      onPress={onSave}
+      accessibilityRole="button"
+      accessibilityLabel="Save quest"
+      accessibilityState={{ selected: saved }}
+      hitSlop={8}
+      style={styles.saveButton}
+    >
       <Icon name="heart" size={size} filled={saved} strokeWidth={2} color={saved ? raw.color.flare["500"] : raw.color.ink["300"]} />
     </Pressable>
   );

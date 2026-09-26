@@ -56,12 +56,16 @@ export const strings = {
   "onboarding.code.wrong": "That code didn't match — check your messages and try again",
   "onboarding.code.resentToast": "Sent a new code to {{contact}}",
 
+  "browse.searchPlaceholder": "Search quests near you",
+  "browse.resultCount": "{{count}} {{noun}} nearby",
+  "browse.empty": "Nothing near you right now",
+  "browse.emptyNarrowed": "Nothing matches that yet — try a different search or category",
+
   "tabs.browse": "Browse",
   "tabs.quests": "My quests",
   "tabs.post": "Post",
   "tabs.chats": "Chats",
   "tabs.profile": "Profile",
-  "tabs.browse.comingSoon": "The quest feed is coming soon.",
   "tabs.quests.comingSoon": "Track offers and quest progress here soon.",
   "tabs.post.comingSoon": "Posting a quest is coming soon.",
   "tabs.chats.comingSoon": "Chat with posters and doers here soon.",
