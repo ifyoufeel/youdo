@@ -1,4 +1,13 @@
-import { TRANSITIONS, canTransition, roleOn, isClosed, statusMeta, myOfferOn, acceptedOfferFor } from "./lifecycle";
+import {
+  TRANSITIONS,
+  canTransition,
+  roleOn,
+  isClosed,
+  statusMeta,
+  myOfferOn,
+  acceptedOfferFor,
+  addressVisibleTo,
+} from "./lifecycle";
 import type { Quest, Offer, QuestStatus } from "../contracts";
 
 const ALL_STATUSES: QuestStatus[] = [
@@ -126,5 +135,39 @@ describe("roleOn", () => {
 
   it("acceptedOfferFor returns null when the quest has no acceptedOfferId", () => {
     expect(acceptedOfferFor([offer()], quest({ acceptedOfferId: null }))).toBeNull();
+  });
+});
+
+describe("addressVisibleTo", () => {
+  it("the poster always sees it, even before any offer exists", () => {
+    const q = quest({ posterId: "u1", status: "open", acceptedOfferId: null });
+    expect(addressVisibleTo(q, [], "u1")).toBe(true);
+  });
+
+  it("a stranger never sees it", () => {
+    const q = quest({ status: "assigned", acceptedOfferId: "o1" });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+    expect(addressVisibleTo(q, offers, "u9")).toBe(false);
+  });
+
+  it("a pending applicant (not yet accepted) never sees it, even on their own offer", () => {
+    const q = quest({ status: "open", acceptedOfferId: null });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "pending" })];
+    expect(addressVisibleTo(q, offers, "u0")).toBe(false);
+  });
+
+  it("the accepted doer does not see it while the quest is still 'open'", () => {
+    // Acceptance and the open->assigned transition happen together in
+    // practice, but this reads the quest's real status rather than
+    // assuming acceptedOfferId alone means the move already happened.
+    const q = quest({ status: "open", acceptedOfferId: "o1" });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+    expect(addressVisibleTo(q, offers, "u0")).toBe(false);
+  });
+
+  it("the accepted doer sees it once the quest has left 'open'", () => {
+    const q = quest({ status: "assigned", acceptedOfferId: "o1" });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+    expect(addressVisibleTo(q, offers, "u0")).toBe(true);
   });
 });

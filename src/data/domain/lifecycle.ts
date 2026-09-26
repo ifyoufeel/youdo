@@ -109,3 +109,17 @@ export function roleOn(offers: Offer[], quest: Quest | null, userId: string): Ro
   if (myOfferOn(offers, quest.id, userId)) return "applicant";
   return "visitor";
 }
+
+/** PRD §4.3's address privacy: coarse distance only until an offer is
+    accepted. Ported from app.js:471-476. The poster always sees it — it's
+    their own address. The accepted doer sees it only once the quest has
+    actually left "open" (accepting a quest is what moves it to
+    "assigned"; while the status update and the address reveal are the
+    same moment in practice, this reads the quest's real status rather
+    than assuming acceptedOfferId alone means the transition happened). */
+export function addressVisibleTo(quest: Quest, offers: Offer[], userId: string): boolean {
+  if (quest.posterId === userId) return true;
+  const accepted = acceptedOfferFor(offers, quest);
+  if (!accepted || accepted.doerId !== userId) return false;
+  return quest.status !== "open";
+}

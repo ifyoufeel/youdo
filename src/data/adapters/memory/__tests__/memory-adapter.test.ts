@@ -296,9 +296,11 @@ describe("memory adapter — real slice", () => {
         )
       ).rejects.toThrow(/not implemented yet/);
 
-      await expect(adapter.sendOffer("q1", seed.meId, 1, "x", { idempotencyKey: "k" })).rejects.toThrow(
-        /not implemented yet/
-      );
+      // sendOffer/withdrawOffer/listOffersForQuest/myOfferOnQuest are real
+      // as of M2 (src/data/adapters/memory/__tests__/offers.test.ts covers
+      // them) — acceptOffer/declineOffer stay stubs until M4.
+      await expect(adapter.acceptOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
+      await expect(adapter.declineOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listThreadsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listEntriesForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listReviewsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);

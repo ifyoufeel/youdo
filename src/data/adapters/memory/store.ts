@@ -12,6 +12,10 @@ import {
   type Quest,
   type Category,
   CategorySchema,
+  type Offer,
+  OfferSchema,
+  type Thread,
+  ThreadSchema,
 } from "../../contracts";
 import { seed } from "./seed";
 
@@ -40,3 +44,15 @@ export const meId: string = seed.meId;
 export const savedQuestIds: Map<string, Set<string>> = new Map(
   Object.entries(seed.savedByUser).map(([userId, questIds]) => [userId, new Set(questIds)])
 );
+
+/** Mutable — sendOffer/withdrawOffer (M2) push and rewrite entries here
+    directly, same pattern as savedQuestIds above. acceptOffer/
+    declineOffer stay unimplemented until M4, so nothing here mutates
+    `status` to "accepted"/"declined" yet. */
+export const offers: Offer[] = parseArray(OfferSchema, seed.offers);
+
+/** Mutable — sendOffer (M2) creates one of these, find-or-create by
+    (questId, doerId), the moment a doer's first offer on a quest lands.
+    `messagesByThread`/`threadReadAt` stay unparsed — M4's concern, once
+    something actually reads or sends a message. */
+export const threads: Thread[] = parseArray(ThreadSchema, seed.threads);
