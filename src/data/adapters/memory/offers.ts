@@ -10,13 +10,7 @@ import { isFirstUse } from "./idempotency";
 import { NotImplementedYet } from "./not-implemented";
 import { offers, threads, quests } from "./store";
 import { myOfferOn } from "../../domain/lifecycle";
-
-/* Dependency-free, same reasoning as src/lib/idempotency.ts's own
-   newIdempotencyKey: crypto.randomUUID isn't guaranteed across every
-   environment this adapter runs in (Hermes/web/jsdom). */
-function nextId(prefix: string): string {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
+import { nextId } from "./next-id";
 
 /** One thread per (quest, doer) pair (PRD §7.5) — find the existing one
     or create it. A second offer from a *different* doer on the same

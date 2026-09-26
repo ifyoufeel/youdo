@@ -10,6 +10,7 @@ const BASE: Quest = {
   categoryId: "delivery",
   point: { x: 0, y: 0 },
   estimatedMinutes: 30,
+  durationLabel: null,
   scheduledFor: "2026-09-16T18:00:00+08:00",
   expiresAt: "2026-09-16T20:00:00+08:00",
   createdAt: "2026-09-16T06:00:00+08:00",

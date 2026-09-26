@@ -174,6 +174,7 @@ describe("memory adapter — real slice", () => {
         categoryId: "delivery",
         point: me.home,
         estimatedMinutes: 30,
+        durationLabel: null,
         scheduledFor: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
         createdAt: new Date().toISOString(),
@@ -276,29 +277,20 @@ describe("memory adapter — real slice", () => {
   describe("stubbed methods", () => {
     it("throw NotImplementedYet, not silently no-op", async () => {
       const adapter = createMemoryAdapter();
-      await expect(
-        adapter.postQuest(
-          {
-            posterId: seed.meId,
-            title: "x",
-            details: "x",
-            categoryId: "dog-walking",
-            payoutMinor: 1,
-            estimatedMinutes: 1,
-            addressLine: "x",
-            area: "Da'an",
-            point: { x: 0, y: 0 },
-            scheduledFor: "2026-01-01T00:00:00+08:00",
-            expiresAt: "2026-01-01T00:00:00+08:00",
-            requirements: [],
-          },
-          { idempotencyKey: "k" }
-        )
-      ).rejects.toThrow(/not implemented yet/);
+      await expect(adapter.startQuest("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
+        /not implemented yet/
+      );
+      await expect(adapter.markDone("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
+        /not implemented yet/
+      );
+      await expect(adapter.cancelQuest("q1", seed.meId, "reason", { idempotencyKey: "k" })).rejects.toThrow(
+        /not implemented yet/
+      );
 
       // sendOffer/withdrawOffer/listOffersForQuest/myOfferOnQuest are real
       // as of M2 (src/data/adapters/memory/__tests__/offers.test.ts covers
-      // them) — acceptOffer/declineOffer stay stubs until M4.
+      // them); postQuest/listMyQuests are real as of M3 (quests.test.ts
+      // covers them) — acceptOffer/declineOffer stay stubs until M4.
       await expect(adapter.acceptOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
       await expect(adapter.declineOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listThreadsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);

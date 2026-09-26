@@ -24,7 +24,7 @@ import { useRepository } from "@data/composition-root";
 import { useAuthSession } from "@data/auth-session";
 import { money, formatMoney, distanceBetween, type Quest } from "@data/contracts";
 import type { QuestSort } from "@data/ports/quests";
-import { formatDistance, formatDuration, formatWhenAt } from "@lib/format";
+import { formatDistance, questDuration, formatWhenAt } from "@lib/format";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -108,7 +108,7 @@ export function BrowseScreen() {
           title={item.title}
           payout={formatMoney(money(item.payoutMinor))}
           distance={mine || !center ? item.area : formatDistance(distanceBetween(item.point, center))}
-          duration={formatDuration(item.estimatedMinutes)}
+          duration={questDuration(item)}
           when={formatWhenAt(item.scheduledFor, now)}
           category={categoryLabel(item.categoryId)}
           badges={questBadges(item, now)}

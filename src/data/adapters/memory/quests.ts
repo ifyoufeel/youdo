@@ -1,12 +1,23 @@
-import type { QuestsPort, QuestSort } from "../../ports/quests";
+import type { QuestsPort, QuestSort, PostQuestInput } from "../../ports/quests";
 import type { Point, Quest } from "../../contracts";
 import { distanceBetween } from "../../contracts";
 import { paginate } from "./pagination";
 import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
-import { quests, users, savedQuestIds } from "./store";
+import { quests, offers, users, savedQuestIds } from "./store";
 import { isFirstUse } from "./idempotency";
 import { NotImplementedYet } from "./not-implemented";
+import { nextId } from "./next-id";
+import { offersFor, roleOn } from "../../domain/lifecycle";
+
+/* postQuest has no natural post-hoc lookup a replay could fall back on
+   (unlike sendOffer's myOfferOn, or saveQuest's idempotent-by-nature
+   Set.add) — a poster could legitimately post two identical-looking
+   quests in one session, so "find the quest this poster already posted"
+   isn't a valid replay key. A dedicated cache keyed on the idempotency
+   key itself is the only correct way to return the exact same record on
+   replay rather than either a duplicate or nothing. */
+const postedByKey = new Map<string, Quest>();
 
 /** Same calendar date (local time) as the adapter's notion of "now" — the
     real device clock, since nothing wires the preview's simulated clock
@@ -72,9 +83,55 @@ export function createMemoryQuestsPort(): QuestsPort {
       return quests.find((q) => q.id === id) ?? null;
     },
 
-    async postQuest() {
-      throw new NotImplementedYet("postQuest", "M2");
+    // postQuest trusts the caller's input is already valid (app.postQuest
+    // does zero validation either — the wizard's own per-step errors are
+    // what actually blocks a bad submit, same division of labor as the
+    // real app).
+    async postQuest(input: PostQuestInput, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("postQuest");
+
+      if (!isFirstUse("postQuest", idempotency.idempotencyKey)) {
+        const cached = postedByKey.get(idempotency.idempotencyKey);
+        if (cached) return cached;
+      }
+
+      const quest: Quest = {
+        id: nextId("q"),
+        posterId: input.posterId,
+        title: input.title,
+        payoutMinor: input.payoutMinor,
+        payoutUnit: "fixed",
+        categoryId: input.categoryId,
+        point: input.point,
+        estimatedMinutes: input.estimatedMinutes,
+        durationLabel: input.durationLabel,
+        scheduledFor: input.scheduledFor,
+        expiresAt: input.expiresAt,
+        createdAt: new Date().toISOString(),
+        status: "open",
+        acceptedOfferId: null,
+        addressLine: input.addressLine,
+        area: input.area,
+        details: input.details,
+        requirements: input.requirements,
+      };
+      quests.push(quest);
+      postedByKey.set(idempotency.idempotencyKey, quest);
+      return quest;
     },
+
+    async listMyQuests(userId) {
+      await simulateLatency();
+      maybeInjectFault("listMyQuests");
+      // roleOn's own first check (quest.posterId === userId -> "poster")
+      // already covers posted-by-me, so there's nothing this needs to
+      // check beyond "not a visitor".
+      return quests
+        .filter((q) => roleOn(offersFor(offers, q.id), q, userId) !== "visitor")
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    },
+
     async startQuest() {
       throw new NotImplementedYet("startQuest", "M4");
     },

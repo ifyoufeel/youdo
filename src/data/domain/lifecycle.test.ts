@@ -7,6 +7,8 @@ import {
   myOfferOn,
   acceptedOfferFor,
   addressVisibleTo,
+  bucketOf,
+  counterpartIdOn,
 } from "./lifecycle";
 import type { Quest, Offer, QuestStatus } from "../contracts";
 
@@ -73,6 +75,7 @@ function quest(overrides: Partial<Quest> = {}): Quest {
     categoryId: "dog-walking",
     point: { x: 0, y: 0 },
     estimatedMinutes: 60,
+    durationLabel: null,
     scheduledFor: "2026-09-16T18:00:00+08:00",
     expiresAt: "2026-09-16T17:00:00+08:00",
     createdAt: "2026-09-15T20:10:00+08:00",
@@ -169,5 +172,67 @@ describe("addressVisibleTo", () => {
     const q = quest({ status: "assigned", acceptedOfferId: "o1" });
     const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
     expect(addressVisibleTo(q, offers, "u0")).toBe(true);
+  });
+});
+
+describe("bucketOf", () => {
+  it("an applicant's quest is always 'offers', whatever the quest's status", () => {
+    const offers = [offer({ id: "o1", doerId: "u0", status: "pending" })];
+    for (const status of ["open", "assigned"] as QuestStatus[]) {
+      const q = quest({ status, acceptedOfferId: null });
+      expect(bucketOf(offers, q, "u0")).toBe("offers");
+    }
+  });
+
+  it("every isClosed status (paid/cancelled/expired) is 'done' for a poster or doer", () => {
+    for (const status of ["paid", "cancelled", "expired"] as QuestStatus[]) {
+      const posted = quest({ posterId: "u0", status });
+      expect(bucketOf([], posted, "u0")).toBe("done");
+
+      const doing = quest({ posterId: "u1", status, acceptedOfferId: "o1" });
+      const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+      expect(bucketOf(offers, doing, "u0")).toBe("done");
+    }
+  });
+
+  it("every non-closed, non-applicant status is 'active' — open/assigned/in_progress/completed/disputed for the poster or doer", () => {
+    for (const status of ["open", "assigned", "in_progress", "completed", "disputed"] as QuestStatus[]) {
+      const posted = quest({ posterId: "u0", status });
+      expect(bucketOf([], posted, "u0")).toBe("active");
+    }
+  });
+
+  it("a visitor's quest never falls into any bucket a My-quests screen would read for them", () => {
+    // roleOn is "visitor" here, so bucketOf still returns something, but
+    // listMyQuests (quests.ts) never includes a pure visitor's quest in
+    // the first place — this just documents bucketOf's own fallback.
+    const q = quest({ posterId: "u1", status: "open", acceptedOfferId: null });
+    expect(bucketOf([], q, "u9")).toBe("active");
+  });
+});
+
+describe("counterpartIdOn", () => {
+  it("the poster sees the accepted doer's id once one exists", () => {
+    const q = quest({ posterId: "u1", acceptedOfferId: "o1" });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+    expect(counterpartIdOn(offers, q, "u1")).toBe("u0");
+  });
+
+  it("the poster sees null before anyone's been accepted", () => {
+    const q = quest({ posterId: "u1", acceptedOfferId: null });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "pending" })];
+    expect(counterpartIdOn(offers, q, "u1")).toBeNull();
+  });
+
+  it("the doer always sees the poster's id", () => {
+    const q = quest({ posterId: "u1", acceptedOfferId: "o1" });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
+    expect(counterpartIdOn(offers, q, "u0")).toBe("u1");
+  });
+
+  it("an applicant always sees the poster's id too", () => {
+    const q = quest({ posterId: "u1", acceptedOfferId: null });
+    const offers = [offer({ id: "o1", doerId: "u0", status: "pending" })];
+    expect(counterpartIdOn(offers, q, "u0")).toBe("u1");
   });
 });

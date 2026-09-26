@@ -110,6 +110,32 @@ export function roleOn(offers: Offer[], quest: Quest | null, userId: string): Ro
   return "visitor";
 }
 
+/** "My quests" tab bucketing (app.js:2949-2957, bucketOf) — simplified:
+    the prototype's "paid but unrated stays active" carve-out needs
+    myReviewOn (ratings, M6 — ReviewsPort is entirely unimplemented until
+    then), so this treats every paid quest as "done". isClosed() already
+    covers paid/cancelled/expired, which makes this simpler than the
+    prototype's version, not a lesser one. */
+export type Bucket = "active" | "offers" | "done";
+
+export function bucketOf(offers: Offer[], quest: Quest, userId: string): Bucket {
+  const role = roleOn(offers, quest, userId);
+  if (role === "applicant") return "offers";
+  if (isClosed(quest.status)) return "done";
+  return "active";
+}
+
+/** The "other side" of an engagement, id-only (app.js:460-467) — the
+    accepted doer's id if the viewer is the poster (null if nobody's
+    accepted yet), otherwise always the poster's id. Resolving it to a
+    real User is the caller's job, same as every other selector here. */
+export function counterpartIdOn(offers: Offer[], quest: Quest, userId: string): string | null {
+  if (quest.posterId === userId) {
+    return acceptedOfferFor(offers, quest)?.doerId ?? null;
+  }
+  return quest.posterId;
+}
+
 /** PRD §4.3's address privacy: coarse distance only until an offer is
     accepted. Ported from app.js:471-476. The poster always sees it — it's
     their own address. The accepted doer sees it only once the quest has

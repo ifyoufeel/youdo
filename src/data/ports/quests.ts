@@ -11,6 +11,7 @@ export interface PostQuestInput {
   categoryId: string;
   payoutMinor: number;
   estimatedMinutes: number;
+  durationLabel: string | null;
   addressLine: string;
   area: string;
   point: Point;
@@ -44,6 +45,13 @@ export interface QuestsPort {
   listQuests(params: ListQuestsParams): Promise<Page<Quest>>;
   getQuest(id: string): Promise<Quest | null>;
   postQuest(input: PostQuestInput, idempotency: Idempotent): Promise<Quest>;
+
+  /** Every quest the user is engaged with, whichever side — posted, or
+      ever made an offer on — of any status. Unlike listQuests (the open
+      marketplace feed, status "open" only), this is what "My quests"
+      reads. Small per-user, no pagination — same call as
+      listSavedQuestIds. */
+  listMyQuests(userId: string): Promise<Quest[]>;
 
   /* PRD §8 lifecycle mutations. Each is guarded server-side against
      src/data/domain/lifecycle.ts's TRANSITIONS table — an actor without

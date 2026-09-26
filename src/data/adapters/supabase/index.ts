@@ -34,6 +34,7 @@ export function createSupabaseAdapter(): Repository {
     listQuests: () => stub("listQuests"),
     getQuest: () => stub("getQuest"),
     postQuest: () => stub("postQuest"),
+    listMyQuests: () => stub("listMyQuests"),
     startQuest: () => stub("startQuest"),
     markDone: () => stub("markDone"),
     confirmDone: () => stub("confirmDone"),

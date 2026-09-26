@@ -32,7 +32,12 @@ function parseArray<T>(schema: { parse: (v: unknown) => T }, arr: readonly unkno
 }
 
 export const users: Map<string, User> = parseRecord(UserSchema, seed.users);
+
+/** Mutable — postQuest (M3) pushes new quests here directly, same pattern
+    as savedQuestIds/offers/threads below. Seeded from the fixture, but
+    every write after that is real. */
 export const quests: Quest[] = parseArray(QuestSchema, seed.quests);
+
 export const categories: Category[] = parseArray(CategorySchema, seed.categories);
 
 export const meId: string = seed.meId;

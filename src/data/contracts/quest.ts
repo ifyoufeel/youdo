@@ -31,6 +31,12 @@ export const QuestSchema = z.object({
   categoryId: z.string(),
   point: PointSchema,
   estimatedMinutes: z.number().int().positive(),
+  /** Set only for the wizard's open-ended duration picks ("6+ hr", "12+ hr",
+      "All day") — `estimatedMinutes` alone can't carry the "+", and
+      formatDuration()ing it back would silently lose that distinction.
+      questDuration() (src/lib/format.ts) prefers this over
+      formatDuration(estimatedMinutes) whenever it's set. */
+  durationLabel: z.string().nullable(),
   scheduledFor: z.string(), // ISO instant
   expiresAt: z.string(), // ISO instant
   createdAt: z.string(), // ISO instant

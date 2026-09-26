@@ -22,6 +22,15 @@ function extractFixture(): unknown {
 describe("memory adapter seed stays in sync with preview/data.taiwan.js", () => {
   it("seed is byte-for-byte the same fixture the preview ships", () => {
     const live = extractFixture();
-    expect(seed).toEqual(live);
+    // durationLabel (M3) is a real-port-only addition to QuestSchema — the
+    // prototype's static fixture never carries it (it's only ever set by
+    // the posting wizard at runtime, for open-ended duration picks like
+    // "6+ hr"), so it's the one deliberate, justified divergence this
+    // strict byte-for-byte comparison excludes.
+    const seedForComparison = {
+      ...seed,
+      quests: seed.quests.map(({ durationLabel: _durationLabel, ...rest }) => rest),
+    };
+    expect(seedForComparison).toEqual(live);
   });
 });

@@ -25,7 +25,7 @@ import { Icon } from "@design/components/Icon";
 import { Toast } from "@design/components/Toast";
 import { money, formatMoney } from "@data/contracts";
 import { statusMeta } from "@data/domain/lifecycle";
-import { formatDuration, formatWhenAt } from "@lib/format";
+import { questDuration, formatWhenAt } from "@lib/format";
 import { questBadges } from "@lib/questBadges";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -133,7 +133,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
       </Card>
 
       <Card padding="md">
-        <InfoRow label={t("questDetail.meta.duration")} value={formatDuration(quest.estimatedMinutes)} />
+        <InfoRow label={t("questDetail.meta.duration")} value={questDuration(quest)} />
         <InfoRow label={t("questDetail.meta.when")} value={formatWhenAt(quest.scheduledFor, now)} />
         {quest.status === "open" ? (
           <InfoRow label={t("questDetail.meta.offersClose")} value={formatWhenAt(quest.expiresAt, now)} />

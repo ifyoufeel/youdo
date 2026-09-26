@@ -1,4 +1,5 @@
-import { formatDistance, formatDuration, formatWhenAt, formatRemaining } from "../format";
+import { formatDistance, formatDuration, formatWhenAt, formatRemaining, questDuration } from "../format";
+import type { Quest } from "@data/contracts";
 
 describe("formatDistance", () => {
   it("shows metres, rounded to the nearest 100, under 1km", () => {
@@ -19,6 +20,37 @@ describe("formatDuration", () => {
 
   it("shows rounded hours at and above 120 minutes", () => {
     expect(formatDuration(180)).toBe("~3 hr");
+  });
+});
+
+describe("questDuration", () => {
+  const BASE: Quest = {
+    id: "q-test",
+    posterId: "u1",
+    title: "Test quest",
+    payoutMinor: 10000,
+    payoutUnit: "fixed",
+    categoryId: "delivery",
+    point: { x: 0, y: 0 },
+    estimatedMinutes: 360,
+    durationLabel: null,
+    scheduledFor: "2026-09-16T18:00:00+08:00",
+    expiresAt: "2026-09-16T20:00:00+08:00",
+    createdAt: "2026-09-16T06:00:00+08:00",
+    status: "open",
+    acceptedOfferId: null,
+    addressLine: "",
+    area: "Da'an",
+    details: "",
+    requirements: [],
+  };
+
+  it("falls back to formatDuration when there's no durationLabel", () => {
+    expect(questDuration(BASE)).toBe(formatDuration(360));
+  });
+
+  it("prefers the open-ended durationLabel over re-deriving one from estimatedMinutes", () => {
+    expect(questDuration({ ...BASE, durationLabel: "6+ hr" })).toBe("6+ hr");
   });
 });
 

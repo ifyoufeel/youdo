@@ -4,6 +4,8 @@
    contract. Ports preview/app.js's formatDistance/formatDuration/
    formatWhenAt (lines 43-48, 332-342) verbatim, including Taipei's fixed
    UTC+8 offset (no DST to model — PRD scopes this launch to Taipei only). */
+import type { Quest } from "@data/contracts";
+
 const HOUR_MS = 60 * 60 * 1000;
 const TPE_OFFSET_MS = 8 * HOUR_MS;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -15,6 +17,13 @@ export function formatDistance(m: number): string {
 
 export function formatDuration(min: number): string {
   return min >= 120 ? "~" + Math.round(min / 60) + " hr" : "~" + min + " min";
+}
+
+/** Ported from preview/app.js:369-371. Prefers the wizard's own
+    open-ended label ("6+ hr", "12+ hr", "All day") over re-deriving one
+    from estimatedMinutes, which would silently drop the "+". */
+export function questDuration(quest: Quest): string {
+  return quest.durationLabel ?? formatDuration(quest.estimatedMinutes);
 }
 
 interface TpeParts {
