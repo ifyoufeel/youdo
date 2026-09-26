@@ -20,6 +20,7 @@ import { Card } from "@design/components/Card";
 import { Badge } from "@design/components/Badge";
 import { RewardPill } from "@design/components/RewardPill";
 import { UserChip } from "@design/components/UserChip";
+import { InfoRow } from "@design/components/InfoRow";
 import { Button } from "@design/components/Button";
 import { Icon } from "@design/components/Icon";
 import { Toast } from "@design/components/Toast";
@@ -224,15 +225,6 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: "row",
@@ -278,20 +270,6 @@ const styles = StyleSheet.create({
     color: semantic.color.text.secondary,
   },
   requirement: {
-    fontFamily: BODY_FONT,
-    fontSize: raw.fontSize.sm,
-    color: semantic.color.text.primary,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  infoLabel: {
-    fontFamily: LABEL_FONT,
-    fontSize: raw.fontSize.sm,
-    color: semantic.color.text.secondary,
-  },
-  infoValue: {
     fontFamily: BODY_FONT,
     fontSize: raw.fontSize.sm,
     color: semantic.color.text.primary,

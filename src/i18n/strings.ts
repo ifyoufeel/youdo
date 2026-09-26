@@ -116,6 +116,14 @@ export const strings = {
   "questDetail.withdrawn": "Offer withdrawn — you can send another while the quest is open",
   "questDetail.visitorDisclaimer": "Nothing leaves your wallet — the poster holds the money, not you.",
 
+  "feeBreakdown.defaultTitle": "Before you commit",
+  "feeBreakdown.price": "Quest price",
+  "feeBreakdown.fee": "Platform fee ({{rate}})",
+  "feeBreakdown.doerReceives": "The doer receives",
+  "feeBreakdown.youReceive": "You receive",
+  "feeBreakdown.defaultNote":
+    "We hold {{amount}} the moment you accept someone, and it comes straight back if the quest is cancelled.",
+
   "offer.title": "Make your offer",
   "offer.subtitle": "One offer per quest — you can withdraw it while it's pending",
   "offer.modeAsking": "Take it at {{amount}}",

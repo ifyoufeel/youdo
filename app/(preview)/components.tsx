@@ -25,6 +25,9 @@ import { Toast, type ToastTone } from "@design/components/Toast";
 import { Badge, type BadgeTone } from "@design/components/Badge";
 import { RewardPill } from "@design/components/RewardPill";
 import { UserChip } from "@design/components/UserChip";
+import { Tabs } from "@design/components/Tabs";
+import { InfoRow } from "@design/components/InfoRow";
+import { FeeBreakdown } from "@design/components/FeeBreakdown";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -248,6 +251,33 @@ function ToastGallery() {
   );
 }
 
+function WizardGallery() {
+  const [tab, setTab] = useState("active");
+  return (
+    <View style={styles.formColumn}>
+      <Text style={styles.chromeLabel}>Tabs — segmented, with counts (press one)</Text>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: "active", label: "Active", count: 2 },
+          { value: "offers", label: "Offers", count: 1 },
+          { value: "done", label: "Done", count: 0 },
+        ]}
+      />
+
+      <Text style={styles.chromeLabel}>InfoRow — with and without an icon</Text>
+      <View style={styles.formColumn}>
+        <InfoRow icon="calendar" label="When" value="17 Sep, 2pm" />
+        <InfoRow label="How long" value="~25 min" />
+      </View>
+
+      <Text style={styles.chromeLabel}>FeeBreakdown</Text>
+      <FeeBreakdown amountMinor={60000} title="What this costs you" />
+    </View>
+  );
+}
+
 export default function ComponentsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -328,6 +358,9 @@ export default function ComponentsScreen() {
 
       <SectionHeading>Toast — every tone</SectionHeading>
       <ToastGallery />
+
+      <SectionHeading>Post & My quests — Tabs, InfoRow, FeeBreakdown (M3)</SectionHeading>
+      <WizardGallery />
     </ScrollView>
   );
 }
