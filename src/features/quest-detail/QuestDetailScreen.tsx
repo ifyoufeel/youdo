@@ -84,7 +84,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const meta = statusMeta(quest.status);
   const badges = quest.status === "open" ? questBadges(quest, now) : [{ label: meta.label, tone: meta.tone }];
   const pendingCount = detail.offers.filter((o) => o.status === "pending").length;
-  const canOffer = role === "visitor" && quest.status === "open";
+  const canOffer = detail.isSignedIn && role === "visitor" && quest.status === "open";
 
   const slab = canOffer ? (
     <>
@@ -203,8 +203,13 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
           submitting={sendOffer.isPending}
           errorMessage={sendOffer.error instanceof Error ? sendOffer.error.message : null}
           onSubmit={(amountMinor, note) => {
+            // canOffer already requires isSignedIn before this sheet can
+            // even open, but never trust a stale closure over a real
+            // session — a session that signs out while the sheet is open
+            // should silently no-op the submit, not force-unwrap null.
+            if (!session) return;
             sendOffer.mutate(
-              { questId, doerId: session!.userId, amountMinor, note },
+              { questId, doerId: session.userId, amountMinor, note },
               {
                 onSuccess: () => {
                   setSheetOpen(false);

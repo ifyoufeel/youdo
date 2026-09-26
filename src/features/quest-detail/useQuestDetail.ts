@@ -48,6 +48,11 @@ export function useQuestDetail(questId: string) {
     role,
     addressVisible,
     myOffer,
+    // A genuinely signed-out visitor (no cold-start gate applies to a
+    // direct deep link into this route) must never see offer CTAs that
+    // assume a real userId — role alone can't distinguish that case,
+    // since it also defaults to "visitor" while signed out.
+    isSignedIn: authStatus === "signedIn",
     // Gated on authStatus too — role/addressVisible fall back to a
     // signed-out "visitor" derivation while auth is still resolving
     // (same "loading" vs "signedOut" distinction AuthSessionProvider's

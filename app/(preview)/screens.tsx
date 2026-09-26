@@ -22,6 +22,8 @@ import LocationScreen from "@features/onboarding/LocationScreen";
 import SignInScreen from "@features/onboarding/SignInScreen";
 import ContactScreen from "@features/onboarding/ContactScreen";
 import CodeScreen from "@features/onboarding/CodeScreen";
+import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
+import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const LABEL_FONT = fontFamilyName(raw.font.mono, raw.fontWeight.regular);
@@ -33,8 +35,8 @@ function SectionHeading({ children }: { children: string }) {
 /* Each specimen is a fixed-height frame around a real <Screen> — Screen
    itself wants to fill its container (SafeAreaView flex:1), so the frame
    gives it something bounded to fill inside this scrolling gallery. */
-function ScreenFrame({ children }: { children: ReactNode }) {
-  return <View style={styles.frame}>{children}</View>;
+function ScreenFrame({ children, tall = false }: { children: ReactNode; tall?: boolean }) {
+  return <View style={[styles.frame, tall ? styles.frameTall : null]}>{children}</View>;
 }
 
 /* Pre-populates OnboardingContext's draft so the Contact/Code specimens
@@ -223,6 +225,41 @@ export default function ScreensScreen() {
           <CodeScreen />
         </OnboardingProvider>
       </ScreenFrame>
+
+      <SectionHeading>Quest detail — every role (M2)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        Each frame below is the real screen, signed in as the one demo identity — different quest
+        ids put that same signed-in user in a different role, substituting for a dev actor switcher
+        (same call M1&apos;s Browse gallery made).
+      </Text>
+
+      <Text style={styles.specimenLabel}>Visitor · no offer yet, address hidden, both offer CTAs</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q4" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Applicant · your own pending offer, real withdraw action</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q3" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Poster · your own quest — offer count only, no dead button</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q6" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Doer · your offer was accepted, quest in progress — address now visible</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q1" />
+        </AutoSignedIn>
+      </ScreenFrame>
     </ScrollView>
   );
 }
@@ -262,5 +299,8 @@ const styles = StyleSheet.create({
     borderColor: semantic.color.border.default,
     borderRadius: raw.radius.sm,
     overflow: "hidden",
+  },
+  frameTall: {
+    height: 680,
   },
 });
