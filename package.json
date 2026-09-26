@@ -7,6 +7,7 @@
     "@expo-google-fonts/instrument-sans": "^0.4.2",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo/metro-runtime": "^57.0.16",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@shopify/flash-list": "^2.3.2",
     "@tanstack/react-query": "^5.103.2",
     "expo": "~57.0.24",
@@ -54,6 +55,9 @@
   "jest": {
     "preset": "jest-expo",
     "resolver": "react-native-reanimated/jest/resolver.js",
+    "moduleNameMapper": {
+      "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock"
+    },
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/preview/",

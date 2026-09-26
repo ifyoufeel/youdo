@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
 import { BrowseScreen } from "../BrowseScreen";
@@ -67,6 +68,13 @@ function Providers({ children }: { children: React.ReactNode }) {
 }
 
 describe("BrowseScreen", () => {
+  // useBrowseFilters persists to the same AsyncStorage mock across every
+  // test in this file — cleared so one test's applied filters never leak
+  // into the next one's "default" expectations.
+  afterEach(async () => {
+    await AsyncStorage.clear();
+  });
+
   it("renders with no console warnings/errors once the feed loads", async () => {
     const error = jest.spyOn(console, "error").mockImplementation(() => {});
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
@@ -119,5 +127,26 @@ describe("BrowseScreen", () => {
     // resolves inside this test's async scope, rather than leaking a
     // dangling timer past the test's return.
     await waitFor(() => expect(first.props.accessibilityState.selected).toBe(true), LONG_TIMEOUT);
+  });
+
+  it("the filter sheet composes with an active search term and demonstrably changes the result set/order", async () => {
+    const { findByText, findByTestId } = await render(<BrowseScreen />, { wrapper: Providers });
+    await findByText("Assemble a wardrobe (2 boxes)", {}, LONG_TIMEOUT);
+
+    // "wardrobe" alone narrows the default feed to this one match.
+    await fireEvent.changeText(await findByTestId("browse-search", {}, LONG_TIMEOUT), "wardrobe");
+    expect(await findByText("1 quest · Closest first", {}, LONG_TIMEOUT)).toBeTruthy();
+
+    // Layering "Pays at least NT$500" + "Best paid" on top of that search
+    // composes rather than replaces it — same one match, re-labeled by the
+    // new sort, proving the filter sheet's params actually reached the feed.
+    await fireEvent.press(await findByTestId("browse-open-filters", {}, LONG_TIMEOUT));
+    await fireEvent.press(await findByTestId("browse-filter-minpay", {}, LONG_TIMEOUT));
+    await fireEvent.press(await findByText("NT$500", {}, LONG_TIMEOUT));
+    await fireEvent.press(await findByText("Best paid", {}, LONG_TIMEOUT));
+    await fireEvent.press(await findByTestId("browse-filter-apply", {}, LONG_TIMEOUT));
+
+    expect(await findByText("1 quest · Best paid", {}, LONG_TIMEOUT)).toBeTruthy();
+    expect(await findByText("Assemble a wardrobe (2 boxes)", {}, LONG_TIMEOUT)).toBeTruthy();
   });
 });
