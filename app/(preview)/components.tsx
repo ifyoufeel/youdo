@@ -22,6 +22,9 @@ import { Dialog } from "@design/components/Dialog";
 import { Select } from "@design/components/Select";
 import { QuestCard, type QuestCardVariant } from "@design/components/QuestCard";
 import { Toast, type ToastTone } from "@design/components/Toast";
+import { Badge, type BadgeTone } from "@design/components/Badge";
+import { RewardPill } from "@design/components/RewardPill";
+import { UserChip } from "@design/components/UserChip";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -177,6 +180,31 @@ function DialogGallery() {
 const QUEST_CARD_VARIANTS: QuestCardVariant[] = ["feed", "compact", "spacious", "spacious-meta"];
 const TOAST_TONES: ToastTone[] = ["neutral", "success", "money", "danger"];
 const DEMO_POSTER = { name: "Wei-Ting C.", rating: 4.9, questsCompleted: 38, verified: true };
+const BADGE_TONES: BadgeTone[] = ["neutral", "accent", "money", "hot", "success", "warning", "danger", "info", "ink"];
+
+function TrustGallery() {
+  return (
+    <View style={styles.formColumn}>
+      <Text style={styles.chromeLabel}>Badge — every tone</Text>
+      <View style={styles.badgeRow}>
+        {BADGE_TONES.map((tone) => (
+          <Badge key={tone} label={tone} tone={tone} />
+        ))}
+      </View>
+
+      <Text style={styles.chromeLabel}>RewardPill — md, lg</Text>
+      <View style={styles.badgeRow}>
+        <RewardPill amount="NT$400" />
+        <RewardPill amount="NT$1,050" size="lg" />
+      </View>
+
+      <Text style={styles.chromeLabel}>UserChip — sm/md/lg, verified</Text>
+      <UserChip name="Wei-Ting C." rating={4.9} questsCompleted={38} verified size="sm" />
+      <UserChip name="Jason H." size="md" />
+      <UserChip name="Mei-Ling W." rating={5} questsCompleted={3} verified meta="Posted this quest" size="lg" />
+    </View>
+  );
+}
 
 function QuestCardGallery() {
   const [saved, setSaved] = useState(false);
@@ -292,6 +320,9 @@ export default function ComponentsScreen() {
       <SectionHeading>Dialog — sheet + default, and Select</SectionHeading>
       <DialogGallery />
 
+      <SectionHeading>Trust — Badge, RewardPill, UserChip (M2)</SectionHeading>
+      <TrustGallery />
+
       <SectionHeading>QuestCard — every variant (press save)</SectionHeading>
       <QuestCardGallery />
 
@@ -398,6 +429,12 @@ const styles = StyleSheet.create({
   tagRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: raw.space["2"],
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
     gap: raw.space["2"],
   },
   questCardGrid: {

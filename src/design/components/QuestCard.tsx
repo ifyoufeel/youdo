@@ -7,44 +7,26 @@
    one formatting boundary stays formatMoney() at the call site (ADR-005),
    not duplicated in here.
 
-   The card's badge pill, price pill, and poster row are small helpers
-   private to this file — not exported, no variant matrix — rather than
-   formalizing Badge/RewardPill/UserChip as public src/design primitives.
-   Nothing else needs their full surface yet; they get built for real once
-   a second screen does (M2's detail/trust panel, M6's profile), at which
-   point these get swapped for the real components in a one-file change.
-   Also skipped here: UserChip's Avatar circle — the poster row is name +
-   rating + quest count as plain text, no avatar glyph, until Avatar
-   itself is built. */
+   The card's badge/price/poster pieces used to be small helpers private
+   to this file (M1) — promoted to public src/design/{Badge,RewardPill,
+   UserChip}.tsx now that a second consumer (M2's quest detail/trust
+   panel) needs their full surface. QuestCard renders those directly
+   below rather than keeping a second, divergent copy. */
 import { Pressable, View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { Card } from "./Card";
 import { Icon, type IconName } from "./Icon";
+import { Badge, type BadgeTone } from "./Badge";
+import { RewardPill } from "./RewardPill";
+import { UserChip } from "./UserChip";
 import { raw } from "../tokens/raw";
 import { semantic } from "../tokens/semantic";
 import { fontFamilyName } from "../tokens/font-family";
 
 const TITLE_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const META_FONT = fontFamilyName(raw.font.text, raw.fontWeight.medium);
-const BADGE_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
-const PRICE_FONT = fontFamilyName(raw.font.display, raw.fontWeight.black);
-const POSTER_NAME_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
-const POSTER_META_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
-const CATEGORY_FONT = fontFamilyName(raw.font.text, raw.fontWeight.semibold);
 
 export type QuestCardVariant = "feed" | "compact" | "spacious" | "spacious-meta";
-export type QuestCardBadgeTone = "neutral" | "accent" | "money" | "hot" | "success" | "warning" | "danger" | "info" | "ink";
-
-const BADGE_TONES: Record<QuestCardBadgeTone, { bg: string; fg: string }> = {
-  neutral: { bg: raw.color.paper["200"], fg: raw.color.ink["800"] },
-  accent: { bg: raw.color.lime["500"], fg: raw.color.ink["900"] },
-  money: { bg: raw.color.coin["500"], fg: raw.color.ink["900"] },
-  hot: { bg: raw.color.flare["500"], fg: raw.color.ink["900"] },
-  success: { bg: raw.color.success["200"], fg: raw.color.success["600"] },
-  warning: { bg: raw.color.warning["200"], fg: raw.color.warning["600"] },
-  danger: { bg: raw.color.danger["200"], fg: raw.color.danger["600"] },
-  info: { bg: raw.color.info["200"], fg: raw.color.info["600"] },
-  ink: { bg: raw.color.ink["900"], fg: raw.color.paper["050"] },
-};
+export type QuestCardBadgeTone = BadgeTone;
 
 export interface QuestCardBadge {
   label: string;
@@ -76,33 +58,11 @@ export interface QuestCardProps {
   testID?: string;
 }
 
-function BadgePill({ label, tone = "neutral", icon, size = "sm" }: QuestCardBadge & { size?: "sm" | "md" }) {
-  const t = BADGE_TONES[tone];
-  const sm = size === "sm";
-  return (
-    <View style={[styles.badge, { height: sm ? 20 : 24, paddingHorizontal: sm ? 7 : 9, backgroundColor: t.bg }]}>
-      {icon ? <Icon name={icon} size={sm ? 11 : 13} strokeWidth={2.25} color={t.fg} /> : null}
-      <Text style={[styles.badgeLabel, { fontSize: sm ? raw.fontSize["3xs"] : raw.fontSize["2xs"], color: t.fg }]}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function Meta({ icon, children }: { icon: IconName; children: string }) {
   return (
     <View style={styles.meta}>
       <Icon name={icon} size={13} strokeWidth={2} color={semantic.color.text.secondary} />
       <Text style={styles.metaText}>{children}</Text>
-    </View>
-  );
-}
-
-function PricePill({ amount }: { amount: string }) {
-  return (
-    <View style={styles.pricePill}>
-      <Icon name="coins" size={15} color={raw.color.ink["900"]} />
-      <Text style={styles.priceText}>{amount}</Text>
     </View>
   );
 }
@@ -119,25 +79,6 @@ function SaveButton({ saved, onSave, size = 19 }: { saved: boolean; onSave: () =
     >
       <Icon name="heart" size={size} filled={saved} strokeWidth={2} color={saved ? raw.color.flare["500"] : raw.color.ink["300"]} />
     </Pressable>
-  );
-}
-
-function PosterRow({ poster }: { poster: QuestCardPoster }) {
-  return (
-    <View style={styles.posterRow}>
-      <Text style={styles.posterName} numberOfLines={1}>
-        {poster.name}
-      </Text>
-      {poster.questsCompleted !== undefined ? (
-        <Text style={styles.posterMeta}>{poster.questsCompleted} quests</Text>
-      ) : null}
-      {poster.rating !== undefined ? (
-        <View style={styles.posterRating}>
-          <Icon name="star" size={12} filled color={raw.color.coin["500"]} />
-          <Text style={styles.posterRatingText}>{poster.rating}</Text>
-        </View>
-      ) : null}
-    </View>
   );
 }
 
@@ -184,7 +125,7 @@ export function QuestCard({
       <Card variant="sticker" padding="sm" interactive={!!onPress} onPress={onPress} style={style} testID={testID}>
         <View style={styles.spaciousColumn}>
           <View style={styles.spaciousTopRow}>
-            {badges[0] ? <BadgePill {...badges[0]} /> : <View />}
+            {badges[0] ? <Badge {...badges[0]} /> : <View />}
             {onSave ? <SaveButton saved={saved} onSave={onSave} size={16} /> : null}
           </View>
           <TitleText size={raw.fontSize.lg}>{title}</TitleText>
@@ -192,20 +133,20 @@ export function QuestCard({
           <View style={styles.spaciousBottomRow}>
             {spaciousMeta ? (
               category ? (
-                <BadgePill label={category} tone="neutral" />
+                <Badge label={category} tone="neutral" />
               ) : when ? (
                 <Meta icon="calendar">{when}</Meta>
               ) : (
                 <View />
               )
             ) : poster ? (
-              <PosterRow poster={poster} />
+              <UserChip name={poster.name} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
             ) : category ? (
-              <BadgePill label={category} tone="neutral" />
+              <Badge label={category} tone="neutral" />
             ) : (
               <View />
             )}
-            <PricePill amount={payout} />
+            <RewardPill amount={payout} />
           </View>
         </View>
       </Card>
@@ -219,7 +160,7 @@ export function QuestCard({
           {badges.length ? (
             <View style={styles.badgeRow}>
               {badges.map((b) => (
-                <BadgePill key={b.label} {...b} />
+                <Badge key={b.label} {...b} />
               ))}
             </View>
           ) : null}
@@ -227,13 +168,19 @@ export function QuestCard({
           <MetaRow distance={distance} duration={duration} when={when} />
         </View>
         <View style={styles.priceColumn}>
-          <PricePill amount={payout} />
+          <RewardPill amount={payout} />
           {onSave ? <SaveButton saved={saved} onSave={onSave} /> : null}
         </View>
       </View>
       {category || poster ? (
         <View style={styles.footerRow}>
-          {poster ? <PosterRow poster={poster} /> : category ? <BadgePill label={category} tone="neutral" /> : <View />}
+          {poster ? (
+            <UserChip name={poster.name} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
+          ) : category ? (
+            <Badge label={category} tone="neutral" />
+          ) : (
+            <View />
+          )}
         </View>
       ) : null}
     </Card>
@@ -281,36 +228,6 @@ const styles = StyleSheet.create({
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,
   },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderRadius: raw.radius.pill,
-    borderWidth: raw.border.hair,
-    borderColor: semantic.color.border.strong,
-  },
-  badgeLabel: {
-    fontFamily: BADGE_FONT,
-    letterSpacing: raw.letterSpacing.caps,
-    textTransform: "uppercase",
-  },
-  pricePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 32,
-    paddingHorizontal: 11,
-    backgroundColor: raw.color.coin["500"],
-    borderWidth: raw.border.width,
-    borderColor: semantic.color.border.strong,
-    borderRadius: raw.radius.pill,
-  },
-  priceText: {
-    fontFamily: PRICE_FONT,
-    fontSize: raw.fontSize.sm,
-    fontVariant: ["tabular-nums"],
-    color: raw.color.ink["900"],
-  },
   saveButton: {
     width: 28,
     height: 28,
@@ -326,32 +243,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: raw.border.hair,
     borderTopColor: semantic.color.border.subtle,
-  },
-  posterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexShrink: 1,
-  },
-  posterName: {
-    fontFamily: POSTER_NAME_FONT,
-    fontSize: raw.fontSize.sm,
-    color: semantic.color.text.primary,
-  },
-  posterMeta: {
-    fontFamily: POSTER_META_FONT,
-    fontSize: raw.fontSize["2xs"],
-    color: semantic.color.text.secondary,
-  },
-  posterRating: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  posterRatingText: {
-    fontFamily: CATEGORY_FONT,
-    fontSize: raw.fontSize["2xs"],
-    color: raw.color.ink["800"],
   },
   spaciousColumn: {
     gap: 4,
