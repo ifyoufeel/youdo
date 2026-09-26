@@ -9,6 +9,7 @@
    visible controls, not sheet-gated ones. */
 import { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@design/components/Screen";
@@ -28,7 +29,7 @@ import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
 import { t } from "../../i18n/t";
-import { questBadges } from "./questBadges";
+import { questBadges } from "@lib/questBadges";
 import { useQuestsFeed } from "./useQuestsFeed";
 import { useSaveQuest } from "./useSaveQuest";
 import { useCategories } from "./useCategories";
@@ -51,6 +52,7 @@ const SORT_LABEL: Record<QuestSort, string> = {
 };
 
 export function BrowseScreen() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string>(ALL_CATEGORY);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -117,10 +119,11 @@ export function BrowseScreen() {
           }
           saved={saved}
           onSave={mine ? undefined : () => toggleSave(item.id, saved)}
+          onPress={() => router.push(`/quest/${item.id}`)}
         />
       );
     },
-    [session?.userId, posters, feed.savedIds, center, now, categoryLabel, toggleSave]
+    [session?.userId, posters, feed.savedIds, center, now, categoryLabel, toggleSave, router]
   );
 
   function ListHeader() {
