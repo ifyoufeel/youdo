@@ -136,6 +136,50 @@ export const strings = {
   "offer.feeNote": "{{posterName}} holds the money the moment they accept, so it's there before you start.",
   "offer.submit": "Send offer",
   "offer.sentToast": "Offer sent to {{posterName}}",
+
+  "post.title": "Post a quest",
+  "post.subtitle": "Takes about a minute",
+  "post.step.what": "What",
+  "post.step.where": "Where & when",
+  "post.step.budget": "Budget",
+  "post.step.review": "Review",
+  "post.stepHeader": "Step {{number}} of {{total}} · {{label}}",
+  "post.resumedNotice": "Picked up where you left off.",
+
+  "post.what.titleLabel": "What needs doing?",
+  "post.what.titlePlaceholder": "Walk my dog for an hour",
+  "post.what.titleHint": "Say the thing and the bound — “Walk Biscuit for an hour”",
+  "post.what.detailsLabel": "Details",
+  "post.what.detailsPlaceholder": "Anything a stranger would need to know: access, tools, timing.",
+  "post.what.categoryLabel": "Category",
+
+  "post.where.heading": "Where",
+  "post.where.addressLabel": "Address",
+  "post.where.addressPlaceholder": "14B, Lane 31, Yongkang St",
+  "post.where.districtLabel": "District",
+  "post.where.privacyNote":
+    "Doers see the district and how far it is. The full address only reaches the person you accept.",
+  "post.when.heading": "When",
+  "post.when.dateLabel": "Date",
+  "post.when.datePlaceholder": "Choose a date",
+  "post.when.timeLabel": "Time",
+  "post.when.timePlaceholder": "Choose a time",
+  "post.when.durationLabel": "How long will it take?",
+  "post.when.expiryLabel": "Offers close",
+  "post.when.expiryNote": "After that it stops showing in the feed and any offers expire.",
+
+  "post.budget.heading": "What's it worth",
+  "post.budget.priceLabel": "Price",
+  "post.budget.priceHint": "One agreed amount for the whole quest",
+  "post.budget.feeTitle": "What this costs you",
+
+  "post.review.feeTitle": "Before you post",
+  "post.review.privacyNote": "Doers see “{{address}}” only after you accept them. Until then it's {{area}} and a distance.",
+
+  "post.back": "Back",
+  "post.next": "Keep going",
+  "post.submit": "Post quest",
+  "post.postedToast": "Quest posted — doers nearby can see it now",
 } as const;
 
 export type StringKey = keyof typeof strings;

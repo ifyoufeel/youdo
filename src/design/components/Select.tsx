@@ -25,12 +25,16 @@ export interface SelectProps {
   value: string;
   options: SelectOption[];
   onChange: (value: string) => void;
+  /** Shown, muted, when `value` matches none of `options` — e.g. a field
+      with no natural default (the posting wizard's Date/Time) rather
+      than one seeded from the first option. */
+  placeholder?: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-export function Select({ label, value, options, onChange, disabled = false, style, testID }: SelectProps) {
+export function Select({ label, value, options, onChange, placeholder, disabled = false, style, testID }: SelectProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
@@ -49,10 +53,13 @@ export function Select({ label, value, options, onChange, disabled = false, styl
         accessibilityLabel={label}
       >
         <Text
-          style={[styles.fieldText, { color: disabled ? raw.color.ink["300"] : semantic.color.text.primary }]}
+          style={[
+            styles.fieldText,
+            { color: disabled ? raw.color.ink["300"] : selected ? semantic.color.text.primary : raw.color.ink["300"] },
+          ]}
           numberOfLines={1}
         >
-          {selected?.label ?? ""}
+          {selected?.label ?? placeholder ?? ""}
         </Text>
         <Icon name="chevron-down" size={18} color={disabled ? raw.color.ink["300"] : raw.color.ink["400"]} />
       </Pressable>

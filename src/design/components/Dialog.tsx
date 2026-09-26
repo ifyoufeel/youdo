@@ -12,9 +12,14 @@
    the sheet variant is decorative, matching that scope call; the web
    version's scale+fade "pop-in" for the default variant is approximated
    here as a plain fade, the same kind of acknowledged simplification as
-   IconButton's shadow-ladder note. */
+   IconButton's shadow-ladder note. The web version scrolls its whole
+   card (overflowY: auto on the 88%-max-height container, ds-bundle.js
+   line 1982); this scrolls just the body instead, leaving header and
+   actions pinned — the usual native-sheet shape, and needed for real
+   once M3's posting wizard opens a Select with 30+ options (Time) that
+   the original 4-option radius picker never exercised. */
 import type { ReactNode } from "react";
-import { Modal, Pressable, View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { Modal, Pressable, ScrollView, View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { IconButton } from "./IconButton";
 import { raw } from "../tokens/raw";
@@ -71,7 +76,9 @@ export function Dialog({ open, onClose, title, subtitle, children, actions, vari
                 {onClose ? <IconButton icon="x" accessibilityLabel="Close" variant="ghost" size="sm" onPress={onClose} /> : null}
               </View>
             ) : null}
-            <View style={styles.body}>{children}</View>
+            <ScrollView style={styles.bodyScroll} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+              {children}
+            </ScrollView>
             {actions ? <View style={styles.actions}>{actions}</View> : null}
           </Pressable>
         </Animated.View>
@@ -125,6 +132,9 @@ const styles = StyleSheet.create({
     fontSize: raw.fontSize.sm,
     color: semantic.color.text.secondary,
     marginTop: 4,
+  },
+  bodyScroll: {
+    maxHeight: 360,
   },
   body: {
     gap: 12,

@@ -48,6 +48,13 @@ describe("Select", () => {
     expect(queryByLabelText("Within 1 km")).toBeNull();
   });
 
+  it("shows the placeholder, muted, when value matches no option", async () => {
+    const { getByText } = await render(
+      <Select label="Date" value="" options={OPTIONS} onChange={() => {}} placeholder="Choose a date" />
+    );
+    expect(getByText("Choose a date")).toBeTruthy();
+  });
+
   it("marks the current value's Radio as checked in the sheet", async () => {
     const { getByTestId, getByLabelText } = await render(
       <Select label="Distance" value="3" options={OPTIONS} onChange={() => {}} testID="select" />

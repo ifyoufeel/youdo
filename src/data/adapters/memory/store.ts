@@ -16,7 +16,9 @@ import {
   OfferSchema,
   type Thread,
   ThreadSchema,
+  PointSchema,
 } from "../../contracts";
+import type { Area } from "../../ports/areas";
 import { seed } from "./seed";
 
 function parseRecord<T>(schema: { parse: (v: unknown) => T }, record: Record<string, unknown>): Map<string, T> {
@@ -39,6 +41,11 @@ export const users: Map<string, User> = parseRecord(UserSchema, seed.users);
 export const quests: Quest[] = parseArray(QuestSchema, seed.quests);
 
 export const categories: Category[] = parseArray(CategorySchema, seed.categories);
+
+export const areas: Area[] = Object.entries(seed.areas).map(([name, point]) => ({
+  name,
+  point: PointSchema.parse(point),
+}));
 
 export const meId: string = seed.meId;
 

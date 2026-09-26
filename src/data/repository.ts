@@ -7,6 +7,7 @@ import type { LedgerPort } from "./ports/ledger";
 import type { ReviewsPort } from "./ports/reviews";
 import type { NotificationsPort } from "./ports/notifications";
 import type { CategoriesPort } from "./ports/categories";
+import type { AreasPort } from "./ports/areas";
 
 /** The full surface every adapter (memory today, Supabase at M7) must
     satisfy identically — the one type composition-root.tsx hands out via
@@ -19,4 +20,5 @@ export type Repository = AuthPort &
   LedgerPort &
   ReviewsPort &
   NotificationsPort &
-  CategoriesPort;
+  CategoriesPort &
+  AreasPort;
