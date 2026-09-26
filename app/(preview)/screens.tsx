@@ -9,11 +9,13 @@ import { Screen } from "@design/components/Screen";
 import { EmptyState } from "@design/components/EmptyState";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
+import { QuestCard } from "@design/components/QuestCard";
 import { Card } from "@design/components/Card";
 import { Button } from "@design/components/Button";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
+import { t } from "../../src/i18n/t";
 import { OnboardingProvider, useOnboardingDraft } from "@features/onboarding/OnboardingContext";
 import WelcomeScreen from "@features/onboarding/WelcomeScreen";
 import LocationScreen from "@features/onboarding/LocationScreen";
@@ -112,6 +114,64 @@ export default function ScreensScreen() {
         </Screen>
       </ScreenFrame>
 
+      <SectionHeading>Browse — every state (M1 Phase 8/9)</SectionHeading>
+
+      <Text style={styles.specimenLabel}>Empty · real copy, real &quot;Widen search&quot; action</Text>
+      <ScreenFrame>
+        <Screen title={t("tabs.browse")} wordmark>
+          <EmptyState title={t("browse.empty")} action={t("browse.emptyAction.widen")} onAction={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Empty, narrowed by search/filters · real copy, real &quot;Clear filters&quot; action</Text>
+      <ScreenFrame>
+        <Screen title={t("tabs.browse")} wordmark>
+          <EmptyState title={t("browse.emptyNarrowed")} action={t("browse.emptyAction.clear")} onAction={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Loading · the feed&apos;s first page</Text>
+      <ScreenFrame>
+        <Screen title={t("tabs.browse")} wordmark>
+          <LoadingState />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Error · listQuests failed (repository fault-injection), real retry action</Text>
+      <ScreenFrame>
+        <Screen title={t("tabs.browse")} wordmark>
+          <ErrorState onRetry={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Full · real QuestCard specimens, mine vs. someone else&apos;s</Text>
+      <ScreenFrame>
+        <Screen title={t("tabs.browse")} wordmark scroll={false} contentStyle={styles.browseFullContent}>
+          <QuestCard
+            variant="spacious"
+            title="Assemble a wardrobe (2 boxes)"
+            payout="NT$1,050"
+            distance="3.9 km"
+            duration="~3 hr"
+            when="19 Sep, 11am"
+            badges={[{ label: "Tools needed", tone: "warning", icon: "briefcase" }]}
+            poster={{ name: "Mei-Ling W.", rating: 5, questsCompleted: 3, verified: true }}
+            saved={false}
+            onSave={() => {}}
+          />
+          <QuestCard
+            variant="spacious-meta"
+            title="Drop two bags at the recycling point"
+            payout="NT$250"
+            distance="Da'an"
+            duration="~25 min"
+            when="17 Sep, 2pm"
+            category="Delivery"
+            badges={[{ label: "No offers yet", tone: "neutral", icon: "user" }]}
+          />
+        </Screen>
+      </ScreenFrame>
+
       <SectionHeading>Onboarding — every screen, both failure paths (ADR-012)</SectionHeading>
 
       <Text style={styles.specimenLabel}>Welcome</Text>
@@ -191,6 +251,10 @@ const styles = StyleSheet.create({
     fontFamily: LABEL_FONT,
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,
+  },
+  browseFullContent: {
+    padding: raw.layout.gutterScreen,
+    gap: raw.layout.stackDefault,
   },
   frame: {
     height: 420,
