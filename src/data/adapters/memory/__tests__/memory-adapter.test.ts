@@ -277,22 +277,19 @@ describe("memory adapter — real slice", () => {
   describe("stubbed methods", () => {
     it("throw NotImplementedYet, not silently no-op", async () => {
       const adapter = createMemoryAdapter();
-      await expect(adapter.startQuest("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
+      // confirmDone (needs real escrow release) and disputeQuest (needs an
+      // admin actor) stay stubs until M5/M6 respectively — every other
+      // QuestsPort/OffersPort lifecycle mutation is real as of M4
+      // (src/data/adapters/memory/__tests__/{quests,offers}.test.ts cover
+      // startQuest/markDone/cancelQuest/acceptOffer/declineOffer).
+      await expect(adapter.confirmDone("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
         /not implemented yet/
       );
-      await expect(adapter.markDone("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
-        /not implemented yet/
-      );
-      await expect(adapter.cancelQuest("q1", seed.meId, "reason", { idempotencyKey: "k" })).rejects.toThrow(
+      await expect(adapter.disputeQuest("q1", seed.meId, "reason", { idempotencyKey: "k" })).rejects.toThrow(
         /not implemented yet/
       );
 
-      // sendOffer/withdrawOffer/listOffersForQuest/myOfferOnQuest are real
-      // as of M2 (src/data/adapters/memory/__tests__/offers.test.ts covers
-      // them); postQuest/listMyQuests are real as of M3 (quests.test.ts
-      // covers them) — acceptOffer/declineOffer stay stubs until M4.
-      await expect(adapter.acceptOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
-      await expect(adapter.declineOffer("o1", { idempotencyKey: "k" })).rejects.toThrow(/not implemented yet/);
+      // Threads/notifications go real in M4 Phase 1 — still stubs here.
       await expect(adapter.listThreadsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listEntriesForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listReviewsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);

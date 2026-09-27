@@ -1,5 +1,5 @@
 import { createMemoryOffersPort } from "../offers";
-import { threads, offers as offerStore } from "../store";
+import { threads, offers as offerStore, notifications, quests as questStore } from "../store";
 import { resetIdempotencyForTests } from "../idempotency";
 import { setFaultInjectionRate } from "../fault-injection";
 
@@ -93,6 +93,16 @@ describe("memory offers adapter", () => {
       expect(offerStore.filter((o) => o.questId === "q5" && o.doerId === "u2")).toHaveLength(1);
     });
 
+    it("notifies the poster with the doer's name and the amount", async () => {
+      const before = notifications.length;
+      await port.sendOffer("q5", "u3", 33000, "", key());
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("offer_received");
+      expect(created[0].userId).toBe("u5"); // q5's posterId
+      expect(created[0].body).toMatch(/NT\$330/);
+    });
+
     it("honors the fault-injection switch", async () => {
       setFaultInjectionRate(1);
       await expect(port.sendOffer("q2", "u4", 25000, "", key())).rejects.toThrow(/Injected fault/);
@@ -122,13 +132,91 @@ describe("memory offers adapter", () => {
     });
   });
 
-  describe("declineOffer / acceptOffer — deferred to M4", () => {
-    it("declineOffer throws NotImplementedYet", async () => {
-      await expect(port.declineOffer("o2", key())).rejects.toThrow(/M4/);
+  describe("declineOffer", () => {
+    it("declines a pending offer and notifies the doer", async () => {
+      const sent = await port.sendOffer("q6", "u4", 26000, "", key());
+      const before = notifications.length;
+      const declined = await port.declineOffer(sent.id, key());
+      expect(declined.status).toBe("declined");
+      expect(declined.respondedAt).toBeTruthy();
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("offer_declined");
+      expect(created[0].userId).toBe("u4");
     });
 
-    it("acceptOffer throws NotImplementedYet", async () => {
-      await expect(port.acceptOffer("o2", key())).rejects.toThrow(/M4/);
+    it("rejects declining an offer that isn't pending", async () => {
+      // o1 is seeded as already "accepted".
+      await expect(port.declineOffer("o1", key())).rejects.toThrow(/can't be declined/);
+    });
+
+    it("replaying the same idempotency key returns the same (already-declined) offer", async () => {
+      const sent = await port.sendOffer("q6", "u6", 26000, "", key());
+      const k = key();
+      const first = await port.declineOffer(sent.id, k);
+      const second = await port.declineOffer(sent.id, k);
+      expect(second.status).toBe("declined");
+      expect(second.respondedAt).toBe(first.respondedAt);
+    });
+  });
+
+  describe("acceptOffer", () => {
+    it("accepts a pending offer, auto-declines every other pending offer on the quest, and assigns the quest", async () => {
+      const before = notifications.length;
+      const accepted = await port.acceptOffer("o10", key());
+
+      expect(accepted.offer.status).toBe("accepted");
+      expect(accepted.quest.status).toBe("assigned");
+      expect(accepted.quest.acceptedOfferId).toBe("o10");
+
+      const o11 = offerStore.find((o) => o.id === "o11");
+      const o12 = offerStore.find((o) => o.id === "o12");
+      expect(o11?.status).toBe("declined");
+      expect(o12?.status).toBe("declined");
+
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(3); // accepted (u5) + 2 auto-declined (u3, u2)
+      expect(created.filter((n) => n.type === "offer_accepted")).toHaveLength(1);
+      expect(created.filter((n) => n.type === "offer_declined")).toHaveLength(2);
+    });
+
+    it("rejects accepting an offer once the quest is no longer open", async () => {
+      // Whitebox: force the quest's own status directly (there's no other
+      // way to reach "a still-pending offer on a non-open quest" through
+      // the port alone — acceptOffer's own success always declines every
+      // other pending offer on the same quest in the same call).
+      const sent = await port.sendOffer("q4", "u6", 45000, "", key());
+      const quest = questStore.find((q) => q.id === "q4")!;
+      const originalStatus = quest.status;
+      quest.status = "assigned";
+      await expect(port.acceptOffer(sent.id, key())).rejects.toThrow(/isn't taking offers/);
+      quest.status = originalStatus;
+    });
+
+    it("rejects accepting an offer that isn't pending", async () => {
+      // Whitebox: force the offer itself out of "pending" while leaving
+      // its quest "open" — the only way to isolate this guard from the
+      // "quest isn't open" one above, since every non-pending offer in
+      // the seed fixture belongs to an already-non-open quest.
+      const sent = await port.sendOffer("q5", "u9", 36000, "", key());
+      const offer = offerStore.find((o) => o.id === sent.id)!;
+      offer.status = "withdrawn";
+      await expect(port.acceptOffer(sent.id, key())).rejects.toThrow(/can't be accepted/);
+    });
+
+    it("replaying the same idempotency key returns the identical result, without re-declining anyone a second time", async () => {
+      const sent1 = await port.sendOffer("q3", "u7", 100000, "", key());
+      const sent2 = await port.sendOffer("q3", "u8", 101000, "", key());
+      const k = key();
+      const first = await port.acceptOffer(sent1.id, k);
+      const secondNotificationCount = notifications.length;
+      const second = await port.acceptOffer(sent1.id, k);
+
+      expect(second.offer.id).toBe(first.offer.id);
+      expect(second.quest.status).toBe("assigned");
+      expect(second.quest.acceptedOfferId).toBe(sent1.id);
+      expect(offerStore.find((o) => o.id === sent2.id)?.status).toBe("declined");
+      expect(notifications.length).toBe(secondNotificationCount); // no duplicate notifications on replay
     });
   });
 });

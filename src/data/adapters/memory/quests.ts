@@ -8,7 +8,8 @@ import { quests, offers, users, savedQuestIds } from "./store";
 import { isFirstUse } from "./idempotency";
 import { NotImplementedYet } from "./not-implemented";
 import { nextId } from "./next-id";
-import { offersFor, roleOn } from "../../domain/lifecycle";
+import { offersFor, roleOn, statusMeta, canTransition, counterpartIdOn, type Actor } from "../../domain/lifecycle";
+import { notify } from "./notify";
 
 /* postQuest has no natural post-hoc lookup a replay could fall back on
    (unlike sendOffer's myOfferOn, or saveQuest's idempotent-by-nature
@@ -25,6 +26,21 @@ const postedByKey = new Map<string, Quest>();
 function isToday(iso: string, now: Date): boolean {
   const d = new Date(iso);
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
+/** Ported from app.js's guard() — every lifecycle mutation below shares
+    this one role-aware rejection, rather than each re-deriving its own
+    error copy. Throws (never returns a boolean) since every caller's next
+    line assumes the transition is legal if this returns at all. */
+function guard(quest: Quest, to: Quest["status"], actorId: string): Actor {
+  const role = roleOn(offersFor(offers, quest.id), quest, actorId);
+  if (role === "visitor") {
+    throw new Error("You're not on this quest");
+  }
+  if (!canTransition(quest.status, to, role)) {
+    throw new Error(`A ${role} can't move this from ${statusMeta(quest.status).label.toLowerCase()}`);
+  }
+  return role;
 }
 
 function sortQuests(list: Quest[], sort: QuestSort | undefined, center: Point): Quest[] {
@@ -132,18 +148,94 @@ export function createMemoryQuestsPort(): QuestsPort {
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     },
 
-    async startQuest() {
-      throw new NotImplementedYet("startQuest", "M4");
+    async startQuest(questId, actorId, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("startQuest");
+
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest) {
+        throw new Error("startQuest: no such quest");
+      }
+      if (!isFirstUse("startQuest", idempotency.idempotencyKey)) {
+        return quest;
+      }
+      guard(quest, "in_progress", actorId);
+
+      quest.status = "in_progress";
+      quest.startedAt = new Date().toISOString();
+      const actor = users.get(actorId);
+      notify(quest.posterId, "quest_started", quest.id, `${actor?.name ?? "The doer"} started "${quest.title}"`);
+      return quest;
     },
-    async markDone() {
-      throw new NotImplementedYet("markDone", "M4");
+
+    async markDone(questId, actorId, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("markDone");
+
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest) {
+        throw new Error("markDone: no such quest");
+      }
+      if (!isFirstUse("markDone", idempotency.idempotencyKey)) {
+        return quest;
+      }
+      guard(quest, "completed", actorId);
+
+      quest.status = "completed";
+      quest.completedAt = new Date().toISOString();
+      const actor = users.get(actorId);
+      notify(quest.posterId, "quest_done", quest.id, `${actor?.name ?? "The doer"} marked "${quest.title}" as done`);
+      return quest;
     },
+
     async confirmDone() {
       throw new NotImplementedYet("confirmDone", "M5");
     },
-    async cancelQuest() {
-      throw new NotImplementedYet("cancelQuest", "M4");
+
+    async cancelQuest(questId, actorId, reason, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("cancelQuest");
+
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest) {
+        throw new Error("cancelQuest: no such quest");
+      }
+      if (!isFirstUse("cancelQuest", idempotency.idempotencyKey)) {
+        return quest;
+      }
+      guard(quest, "cancelled", actorId);
+
+      const trimmedReason = reason.trim();
+      if (quest.status !== "open" && !trimmedReason) {
+        throw new Error("Say why, so the other side knows what happened");
+      }
+
+      // Nothing was ever held (acceptOffer never touches LedgerPort — see
+      // this file's header comment), so there's no escrow to refund here,
+      // only pending offers left dangling to clean up.
+      if (!quest.acceptedOfferId) {
+        for (const offer of offersFor(offers, quest.id)) {
+          if (offer.status === "pending") {
+            offer.status = "withdrawn";
+            offer.respondedAt = new Date().toISOString();
+          }
+        }
+      }
+
+      quest.status = "cancelled";
+      quest.cancelledAt = new Date().toISOString();
+      quest.cancelledBy = actorId;
+      if (trimmedReason) quest.cancelReason = trimmedReason;
+
+      const counterpartId = counterpartIdOn(offers, quest, actorId);
+      if (counterpartId) {
+        const body = trimmedReason ? `"${quest.title}" was cancelled: ${trimmedReason}` : `"${quest.title}" was cancelled`;
+        notify(counterpartId, "quest_cancelled", quest.id, body);
+      }
+
+      return quest;
     },
+
     async disputeQuest() {
       throw new NotImplementedYet("disputeQuest", "M6");
     },

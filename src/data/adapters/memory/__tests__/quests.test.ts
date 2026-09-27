@@ -1,8 +1,25 @@
 import { createMemoryQuestsPort } from "../quests";
-import { quests as questStore } from "../store";
+import { quests as questStore, notifications } from "../store";
 import { resetIdempotencyForTests } from "../idempotency";
 import { setFaultInjectionRate } from "../fault-injection";
 import type { PostQuestInput } from "../../../ports/quests";
+import type { QuestStatus } from "../../../contracts";
+
+/** Whitebox — no seed quest is ever "assigned" (a real fixture gap, per
+    the M4 plan's own Context notes), so tests that need that state force
+    it directly on the store's mutable Quest object and restore it after,
+    the only way to exercise startQuest's guard without a live acceptOffer
+    call (this file only imports QuestsPort, not OffersPort). */
+function forceQuestState(id: string, status: QuestStatus, acceptedOfferId: string | null) {
+  const quest = questStore.find((q) => q.id === id)!;
+  const snapshot = { status: quest.status, acceptedOfferId: quest.acceptedOfferId };
+  quest.status = status;
+  quest.acceptedOfferId = acceptedOfferId;
+  return () => {
+    quest.status = snapshot.status;
+    quest.acceptedOfferId = snapshot.acceptedOfferId;
+  };
+}
 
 // Every test that actually posts a quest gets its own idempotency key —
 // quests is module-level state that persists across tests within one
@@ -98,6 +115,105 @@ describe("memory quests adapter", () => {
     it("returns an empty list for a user with no engagement", async () => {
       const mine = await port.listMyQuests("u-nobody");
       expect(mine).toEqual([]);
+    });
+  });
+
+  describe("startQuest", () => {
+    it("rejects a non-doer actor", async () => {
+      const restore = forceQuestState("q2", "assigned", "o2"); // o2: q2, doerId u3
+      await expect(port.startQuest("q2", "u2", key())).rejects.toThrow(/can't move this/); // u2 is q2's poster
+      restore();
+    });
+
+    it("moves an assigned quest to in_progress for the accepted doer, and notifies the poster", async () => {
+      const restore = forceQuestState("q2", "assigned", "o2");
+      const before = notifications.length;
+      const result = await port.startQuest("q2", "u3", key());
+      expect(result.status).toBe("in_progress");
+      expect(result.startedAt).toBeTruthy();
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("quest_started");
+      expect(created[0].userId).toBe("u2"); // q2's posterId
+      restore();
+    });
+
+    it("replaying the same idempotency key returns the identical (already in_progress) quest", async () => {
+      const restore = forceQuestState("q2", "assigned", "o2");
+      const k = key();
+      const first = await port.startQuest("q2", "u3", k);
+      const second = await port.startQuest("q2", "u3", k);
+      expect(second.startedAt).toBe(first.startedAt);
+      restore();
+    });
+  });
+
+  describe("markDone", () => {
+    it("moves an in_progress quest to completed for its doer, and notifies the poster", async () => {
+      // q1 is naturally in_progress with o1 (doerId u0) accepted — no
+      // whitebox forcing needed, unlike startQuest's assigned-state gap.
+      const before = notifications.length;
+      const result = await port.markDone("q1", "u0", key());
+      expect(result.status).toBe("completed");
+      expect(result.completedAt).toBeTruthy();
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("quest_done");
+      expect(created[0].userId).toBe("u1"); // q1's posterId
+    });
+
+    it("rejects a non-doer actor", async () => {
+      const restore = forceQuestState("q4", "in_progress", "o5"); // o5: q4, doerId u2
+      await expect(port.markDone("q4", "u4", key())).rejects.toThrow(/can't move this/); // u4 is neither poster nor the accepted doer
+      restore();
+    });
+
+    it("replaying the same idempotency key returns the identical (already completed) quest", async () => {
+      const restore = forceQuestState("q4", "in_progress", "o5");
+      const k = key();
+      const first = await port.markDone("q4", "u2", k);
+      const second = await port.markDone("q4", "u2", k);
+      expect(second.completedAt).toBe(first.completedAt);
+      restore();
+    });
+  });
+
+  describe("cancelQuest", () => {
+    it("cancels a still-open quest with no reason required, withdrawing every pending offer on it", async () => {
+      const posted = await port.postQuest(BASE_INPUT, key());
+      const cancelled = await port.cancelQuest(posted.id, "u0", "", key());
+      expect(cancelled.status).toBe("cancelled");
+      expect(cancelled.cancelledBy).toBe("u0");
+      expect(cancelled.cancelReason).toBeUndefined();
+    });
+
+    it("requires a reason once an offer has been accepted, and notifies the counterpart", async () => {
+      const restore = forceQuestState("q4", "in_progress", "o5"); // o5: q4, doerId u2, posterId u4
+      await expect(port.cancelQuest("q4", "u4", "", key())).rejects.toThrow(/Say why/);
+
+      const before = notifications.length;
+      const cancelled = await port.cancelQuest("q4", "u4", "Change of plans", key());
+      expect(cancelled.status).toBe("cancelled");
+      expect(cancelled.cancelReason).toBe("Change of plans");
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("quest_cancelled");
+      expect(created[0].userId).toBe("u2"); // the accepted doer, counterpart to the poster who cancelled
+      expect(created[0].body).toMatch(/Change of plans/);
+
+      restore();
+    });
+
+    it("rejects a non-participant actor", async () => {
+      await expect(port.cancelQuest("q3", "u-nobody", "Not mine", key())).rejects.toThrow(/not on this quest/);
+    });
+
+    it("replaying the same idempotency key returns the identical (already cancelled) quest", async () => {
+      const posted = await port.postQuest(BASE_INPUT, key());
+      const k = key();
+      const first = await port.cancelQuest(posted.id, "u0", "", k);
+      const second = await port.cancelQuest(posted.id, "u0", "", k);
+      expect(second.cancelledAt).toBe(first.cancelledAt);
     });
   });
 });

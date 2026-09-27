@@ -16,6 +16,8 @@ import {
   OfferSchema,
   type Thread,
   ThreadSchema,
+  type Notification,
+  NotificationSchema,
   PointSchema,
 } from "../../contracts";
 import type { Area } from "../../ports/areas";
@@ -65,6 +67,13 @@ export const offers: Offer[] = parseArray(OfferSchema, seed.offers);
 
 /** Mutable — sendOffer (M2) creates one of these, find-or-create by
     (questId, doerId), the moment a doer's first offer on a quest lands.
-    `messagesByThread`/`threadReadAt` stay unparsed — M4's concern, once
-    something actually reads or sends a message. */
+    `messagesByThread`/`threadReadAt` are parsed in threads.ts's own module
+    (M4), not here — they're Maps keyed differently than this file's other
+    exports and belong next to the code that owns their shape. */
 export const threads: Thread[] = parseArray(ThreadSchema, seed.threads);
+
+/** Mutable — offers/quests/threads mutations (M4) push into this via the
+    shared notify() helper (./notify.ts) the moment an event worth telling
+    a user about happens. Seeded from the fixture's own notifications so
+    the preview gallery has real unread rows to show from cold start. */
+export const notifications: Notification[] = parseArray(NotificationSchema, seed.notifications);
