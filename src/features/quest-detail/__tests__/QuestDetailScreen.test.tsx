@@ -50,12 +50,30 @@ describe("QuestDetailScreen", () => {
     warn.mockRestore();
   });
 
-  it("shows the poster's own view: an offer count, no offer CTAs", async () => {
-    const { findByText, queryByText } = await render(<QuestDetailScreen questId="q6" />, { wrapper: Providers });
-    await findByText(/3 offers/, {}, LONG_TIMEOUT);
-    expect(queryByText("Take this quest")).toBeNull();
-    expect(queryByText("Ask")).toBeNull();
-  });
+  it(
+    "shows the poster's own view: an offer count, a real Review offers button, no offer CTAs",
+    async () => {
+      const { findByText, queryByText } = await render(<QuestDetailScreen questId="q6" />, { wrapper: Providers });
+      expect(await findByText("Review 3 offers", {}, LONG_TIMEOUT)).toBeTruthy();
+      expect(queryByText("Take this quest")).toBeNull();
+      expect(queryByText("Ask")).toBeNull();
+    },
+    15000
+  );
+
+  it(
+    "never shows Review offers once the quest has left open, even for its own poster",
+    async () => {
+      // q7: posted by u0, status "completed" — the title legitimately
+      // appears twice (TopBar + body header), so wait on unique body
+      // content instead, same workaround the address-reveal test below
+      // already uses.
+      const { findByText, queryByText } = await render(<QuestDetailScreen questId="q7" />, { wrapper: Providers });
+      await findByText("~30 min", {}, LONG_TIMEOUT);
+      expect(queryByText(/Review/)).toBeNull();
+    },
+    15000
+  );
 
   it("shows an applicant's own offer with a real withdraw action", async () => {
     const { findByText, findByTestId } = await render(<QuestDetailScreen questId="q3" />, { wrapper: Providers });

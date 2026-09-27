@@ -92,6 +92,7 @@ export function MyQuestsScreen() {
             pendingOfferCount={e.pendingOfferCount}
             now={now}
             onOpen={() => router.push(`/quest/${e.quest.id}`)}
+            onReviewOffers={() => router.push(`/offers/${e.quest.id}`)}
           />
         ))
       )}

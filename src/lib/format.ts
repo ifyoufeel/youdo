@@ -73,6 +73,19 @@ export function formatWhenAt(iso: string, now: number): string {
   return p.d + " " + MONTHS[p.m] + ", " + time;
 }
 
+/** Message/offer/ledger stamps (app.js:344-351): a bare clock time today,
+    "Yesterday" the day before, a date before that — deliberately coarser
+    than formatWhenAt (no "Tomorrow"/weekday branches, since a stamp is
+    always in the past). */
+export function formatStamp(iso: string, now: number): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  const p = tpeParts(t);
+  if (sameTpeDay(t, now)) return clockLabel(p);
+  if (sameTpeDay(t, now - 24 * HOUR_MS)) return "Yesterday";
+  return p.d + " " + MONTHS[p.m];
+}
+
 /** Coarse on purpose — a live second hand on a 72-hour window is drama, not
     information. Returns null once the deadline has passed. */
 export function formatRemaining(untilIso: string, now: number): string | null {

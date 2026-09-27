@@ -1,13 +1,10 @@
 /* Feature-local, not promoted — a single-consumer composition of already-
    public primitives (Card/Badge/RewardPill/UserChip/Button), same call as
    quest-detail's OfferSheet in M2. Ported from app.js:2959-3045
-   (EngagementCard), minus StatusTrack/ConfirmWindow and the role/status-
-   specific action buttons ("Review offers"/"Start quest"/"Mark as done"/
-   "Confirm and pay"/"Leave a rating") — none of those mutations or
-   screens exist before M4/M5/M6 (same "slab actions scoped to what's
-   real" discipline QuestDetailScreen's own header comment set in M2).
-   The one real action here is "View", navigating to the already-real
-   quest detail route. */
+   (EngagementCard). M4 adds the poster+open "Review offers" action
+   (primary() 's first branch); "Start quest"/"Mark as done" land in M4
+   Phase 4, "Confirm and pay"/"Leave a rating" stay out until M5/M6 —
+   still no dead buttons, per this file's own original discipline. */
 import { View, Text, StyleSheet } from "react-native";
 import { Card } from "@design/components/Card";
 import { Badge } from "@design/components/Badge";
@@ -35,9 +32,22 @@ export interface EngagementCardProps {
   pendingOfferCount: number;
   now: number;
   onOpen: () => void;
+  /** Present only once a "Review offers" action is real to wire —
+      MyQuestsScreen passes it; gallery specimens with nothing to
+      navigate to simply omit it, and the button doesn't render. */
+  onReviewOffers?: () => void;
 }
 
-export function EngagementCard({ quest, role, amountMinor, counterpart, pendingOfferCount, now, onOpen }: EngagementCardProps) {
+export function EngagementCard({
+  quest,
+  role,
+  amountMinor,
+  counterpart,
+  pendingOfferCount,
+  now,
+  onOpen,
+  onReviewOffers,
+}: EngagementCardProps) {
   const meta = statusMeta(quest.status);
   const roleLabel =
     role === "poster" ? t("myQuests.role.poster") : role === "doer" ? t("myQuests.role.doer") : t("myQuests.role.applicant");
@@ -48,6 +58,8 @@ export function EngagementCard({ quest, role, amountMinor, counterpart, pendingO
     : pendingOfferCount > 0
       ? t("myQuests.offersClosed")
       : t("myQuests.noOffers");
+
+  const showReviewOffers = role === "poster" && quest.status === "open" && !!onReviewOffers;
 
   return (
     <Card padding="md" testID="engagement-card">
@@ -80,6 +92,21 @@ export function EngagementCard({ quest, role, amountMinor, counterpart, pendingO
           {t("myQuests.view")}
         </Button>
       </View>
+      {showReviewOffers ? (
+        <Button
+          size="sm"
+          variant={pendingOfferCount > 0 ? "primary" : "secondary"}
+          icon="users"
+          fullWidth
+          style={styles.reviewOffersButton}
+          onPress={onReviewOffers}
+          testID="engagement-review-offers"
+        >
+          {pendingOfferCount > 0
+            ? t("myQuests.action.reviewOffersCount", { count: pendingOfferCount, noun: pendingOfferCount === 1 ? "offer" : "offers" })
+            : t("myQuests.action.reviewOffers")}
+        </Button>
+      ) : null}
     </Card>
   );
 }
@@ -134,5 +161,8 @@ const styles = StyleSheet.create({
     fontFamily: FALLBACK_FONT,
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,
+  },
+  reviewOffersButton: {
+    marginTop: 8,
   },
 });

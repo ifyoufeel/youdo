@@ -167,6 +167,105 @@ describe("EngagementCard", () => {
     expect(getByText("Offers have closed")).toBeTruthy();
   });
 
+  it("shows a Review offers button only for the poster on an open quest with onReviewOffers given", async () => {
+    const openQuest = { ...QUEST, status: "open" as const, acceptedOfferId: null };
+    const { getByText } = await render(
+      <EngagementCard
+        quest={openQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={null}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onReviewOffers={() => {}}
+      />
+    );
+    expect(getByText("Review offers")).toBeTruthy();
+  });
+
+  it("shows the pending count in the Review offers label once there are some", async () => {
+    const openQuest = { ...QUEST, status: "open" as const, acceptedOfferId: null };
+    const { getByText } = await render(
+      <EngagementCard
+        quest={openQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={null}
+        pendingOfferCount={3}
+        now={NOW}
+        onOpen={() => {}}
+        onReviewOffers={() => {}}
+      />
+    );
+    expect(getByText("Review 3 offers")).toBeTruthy();
+  });
+
+  it("never shows Review offers without onReviewOffers, even for the poster on an open quest", async () => {
+    const openQuest = { ...QUEST, status: "open" as const, acceptedOfferId: null };
+    const { queryByText } = await render(
+      <EngagementCard
+        quest={openQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={null}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+      />
+    );
+    expect(queryByText(/Review/)).toBeNull();
+  });
+
+  it("never shows Review offers for a non-poster role or a non-open quest", async () => {
+    const { queryByText: q1 } = await render(
+      <EngagementCard
+        quest={QUEST}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onReviewOffers={() => {}}
+      />
+    );
+    expect(q1(/Review/)).toBeNull();
+
+    const { queryByText: q2 } = await render(
+      <EngagementCard
+        quest={QUEST}
+        role="poster"
+        amountMinor={40000}
+        counterpart={null}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onReviewOffers={() => {}}
+      />
+    );
+    expect(q2(/Review/)).toBeNull(); // QUEST is in_progress, not open
+  });
+
+  it("calls onReviewOffers when Review offers is pressed", async () => {
+    const openQuest = { ...QUEST, status: "open" as const, acceptedOfferId: null };
+    const onReviewOffers = jest.fn();
+    const { getByTestId } = await render(
+      <EngagementCard
+        quest={openQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={null}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onReviewOffers={onReviewOffers}
+      />
+    );
+    await fireEvent.press(getByTestId("engagement-review-offers"));
+    expect(onReviewOffers).toHaveBeenCalled();
+  });
+
   it("calls onOpen when View is pressed", async () => {
     const onOpen = jest.fn();
     const { getByTestId } = await render(

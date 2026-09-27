@@ -1,13 +1,13 @@
-/* Ports preview/app.js's QuestDetailScreen (1760-2073), scoped to what
-   M2 actually needs: payout, meta rows, description, requirements,
-   poster trust panel, offer count, address privacy, and the offer sheet
-   itself. Everything else that screen does — the poster's "Review
-   offers" button (a separate accept/decline inbox), the doer's "Start
-   quest"/"Mark as done" lifecycle actions, the completed/paid fee
-   breakdown and rating card — needs mutations or screens M4/M5/M6 build,
-   not this milestone; the slab below only ever renders a visitor's offer
-   CTAs or an applicant's withdraw action, per this milestone's own scope
-   call (see the M2 plan's "slab actions scoped to what's real"). */
+/* Ports preview/app.js's QuestDetailScreen (1760-2073). M2 scoped this to
+   payout, meta rows, description, requirements, poster trust panel,
+   offer count, address privacy, and the offer sheet. M4 adds the
+   poster's real "Review offers" button (the offer-inbox screen at
+   /offers/[id] now exists to open). Still deferred: the doer's "Start
+   quest"/"Mark as done" lifecycle actions and Cancel (M4 Phase 4), the
+   completed/paid fee breakdown and rating card (M5/M6) — the slab below
+   still only ever renders a visitor's offer CTAs or an applicant's
+   withdraw action, per the same "slab actions scoped to what's real"
+   discipline this file's own history already established. */
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -159,6 +159,18 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
               ? t("questDetail.offerCount.none")
               : t("questDetail.offerCount.some", { count: pendingCount, noun: pendingCount === 1 ? "offer" : "offers" })}
           </Text>
+          {quest.status === "open" ? (
+            <Button
+              variant={pendingCount > 0 ? "primary" : "secondary"}
+              style={styles.reviewOffersButton}
+              onPress={() => router.push(`/offers/${questId}`)}
+              testID="review-offers"
+            >
+              {pendingCount > 0
+                ? t("questDetail.reviewOffersCount", { count: pendingCount, noun: pendingCount === 1 ? "offer" : "offers" })
+                : t("questDetail.reviewOffers")}
+            </Button>
+          ) : null}
         </Card>
       ) : poster ? (
         <Card padding="md">
@@ -278,6 +290,9 @@ const styles = StyleSheet.create({
     fontFamily: LABEL_FONT,
     fontSize: raw.fontSize.sm,
     color: semantic.color.text.primary,
+  },
+  reviewOffersButton: {
+    marginTop: 10,
   },
   trustBadgeRow: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-import { formatDistance, formatDuration, formatWhenAt, formatRemaining, questDuration } from "../format";
+import { formatDistance, formatDuration, formatWhenAt, formatStamp, formatRemaining, questDuration } from "../format";
 import type { Quest } from "@data/contracts";
 
 describe("formatDistance", () => {
@@ -80,6 +80,27 @@ describe("formatWhenAt", () => {
 
   it("falls back to a date for anything further out", () => {
     expect(formatWhenAt("2026-10-01T11:00:00+08:00", now)).toBe("1 Oct, 11am");
+  });
+});
+
+describe("formatStamp", () => {
+  const TPE_9AM = "2026-09-16T09:00:00+08:00";
+  const now = Date.parse(TPE_9AM);
+
+  it("returns empty string for a falsy iso", () => {
+    expect(formatStamp("", now)).toBe("");
+  });
+
+  it("shows a bare clock time for a same-Taipei-day stamp", () => {
+    expect(formatStamp("2026-09-16T06:41:00+08:00", now)).toBe("6:41am");
+  });
+
+  it("labels the previous Taipei day as Yesterday — no time shown", () => {
+    expect(formatStamp("2026-09-15T20:00:00+08:00", now)).toBe("Yesterday");
+  });
+
+  it("falls back to a bare date for anything further back, never a weekday", () => {
+    expect(formatStamp("2026-09-10T20:00:00+08:00", now)).toBe("10 Sep");
   });
 });
 
