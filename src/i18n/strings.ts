@@ -118,6 +118,7 @@ export const strings = {
   "questDetail.reviewOffers": "Review offers",
   "questDetail.reviewOffersCount": "Review {{count}} {{noun}}",
   "questDetail.cancel": "Cancel",
+  "questDetail.openChat": "Open chat",
   "questDetail.startQuest": "Start quest",
   "questDetail.markAsDone": "Mark as done",
 
@@ -237,6 +238,19 @@ export const strings = {
   "myQuests.empty.offers.action": "Browse quests",
   "myQuests.empty.done.title": "Nothing finished yet — your first completed quest shows up here.",
   "myQuests.empty.done.action": "Browse quests",
+
+  "chats.empty": "No conversations yet — take a quest and the chat opens itself.",
+  "chats.browse": "Browse quests",
+  "chats.unread": "{{count}} new",
+  "chats.questRemoved": "Quest removed",
+  "chats.noMessagesYet": "Offer sent — waiting to hear back",
+  "chats.youPrefix": "You: ",
+
+  "thread.openQuest": "Open the quest",
+  "thread.exactAddress": "Exact address",
+  "thread.closedBanner": "This quest is {{status}}, so the thread is read-only. It stays here for the record.",
+  "thread.composerPlaceholder": "Message",
+  "thread.send": "Send",
 } as const;
 
 export type StringKey = keyof typeof strings;

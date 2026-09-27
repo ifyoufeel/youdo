@@ -36,6 +36,10 @@ export interface InputProps {
   maxLength?: number;
   autoCapitalize?: TextInputProps["autoCapitalize"];
   autoComplete?: TextInputProps["autoComplete"];
+  /** The keyboard's own submit action (Enter on web, the return key on
+      native) — e.g. a chat composer's Enter-to-send. Passed straight
+      through, same as keyboardType/autoComplete above. */
+  onSubmitEditing?: () => void;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -57,6 +61,7 @@ export function Input({
   maxLength,
   autoCapitalize,
   autoComplete,
+  onSubmitEditing,
   style,
   testID,
 }: InputProps) {
@@ -94,6 +99,7 @@ export function Input({
           maxLength={maxLength}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
+          onSubmitEditing={onSubmitEditing}
           style={[
             styles.fieldText,
             multiline ? styles.fieldTextMultiline : styles.fieldTextSingle,

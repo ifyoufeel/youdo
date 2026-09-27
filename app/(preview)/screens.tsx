@@ -25,6 +25,8 @@ import CodeScreen from "@features/onboarding/CodeScreen";
 import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
 import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
 import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
+import { ChatsScreen } from "@features/chats/ChatsScreen";
+import { ThreadScreen } from "@features/chats/ThreadScreen";
 import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -284,6 +286,34 @@ export default function ScreensScreen() {
       <ScreenFrame tall>
         <AutoSignedIn>
           <MyQuestsScreen />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Chats (M4)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        The real thread list, auto-signed-in — real unread badges and last-message previews from the
+        signed-in demo identity&apos;s fixture threads.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <ChatsScreen />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>
+        One real thread (q1, with u0 as the accepted doer) — real messages, the address reveal card,
+        and a live composer.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <ThreadScreen threadId="t-q1-u0" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>A closed thread (q8, paid) — read-only banner, no composer</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <ThreadScreen threadId="t-q8-u0" />
         </AutoSignedIn>
       </ScreenFrame>
     </ScrollView>

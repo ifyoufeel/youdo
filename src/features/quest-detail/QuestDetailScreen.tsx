@@ -40,6 +40,7 @@ import { useWithdrawOffer } from "./useWithdrawOffer";
 import { useStartQuest } from "./useStartQuest";
 import { useMarkDone } from "./useMarkDone";
 import { useCancelQuest } from "./useCancelQuest";
+import { useQuestThread } from "./useQuestThread";
 import { OfferSheet } from "./OfferSheet";
 import { CancelSheet } from "./CancelSheet";
 
@@ -66,6 +67,15 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
+
+  // Computed before the early returns below (useQuestThread is a hook,
+  // so it must run every render) from useQuestDetail's own null-safe
+  // fallbacks — roleOn/acceptedOfferFor both already handle a still-
+  // loading (null) quest.
+  const actorId = session?.userId;
+  const acceptedOfferForThread = detail.quest ? acceptedOfferFor(detail.offers, detail.quest) : null;
+  const doerIdForThread = detail.role === "poster" ? (acceptedOfferForThread?.doerId ?? null) : (actorId ?? null);
+  const thread = useQuestThread(questId, doerIdForThread);
 
   if (detail.isLoading) {
     return (
@@ -96,8 +106,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const badges = quest.status === "open" ? questBadges(quest, now) : [{ label: meta.label, tone: meta.tone }];
   const pendingCount = detail.offers.filter((o) => o.status === "pending").length;
   const canOffer = detail.isSignedIn && role === "visitor" && quest.status === "open";
-  const acceptedOffer = acceptedOfferFor(detail.offers, quest);
-  const actorId = session?.userId;
+  const acceptedOffer = acceptedOfferForThread;
 
   function runCancel(reason: string) {
     if (!actorId) return;
@@ -121,9 +130,16 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
     );
   } else if (role === "poster" && (quest.status === "assigned" || quest.status === "in_progress") && actorId) {
     slab = (
-      <Button variant="secondary" onPress={() => setCancelSheetOpen(true)} testID="cancel-quest-slab">
-        {t("questDetail.cancel")}
-      </Button>
+      <>
+        <Button variant="secondary" onPress={() => setCancelSheetOpen(true)} testID="cancel-quest-slab">
+          {t("questDetail.cancel")}
+        </Button>
+        {thread ? (
+          <Button variant="primary" fullWidth icon="message-circle" onPress={() => router.push(`/chats/${thread.id}`)} testID="open-chat">
+            {t("questDetail.openChat")}
+          </Button>
+        ) : null}
+      </>
     );
   } else if (role === "doer" && quest.status === "assigned" && actorId) {
     slab = (
@@ -161,6 +177,16 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
         </Button>
       </>
     );
+  } else if ((role === "doer" && quest.status === "completed") || role === "applicant") {
+    // No Cancel here — cancelling from "completed" isn't a legal
+    // transition (TRANSITIONS has no completed->cancelled row for either
+    // role), and an applicant's own withdraw action is already a body
+    // action, not a slab one (unchanged since M2).
+    slab = thread ? (
+      <Button variant="secondary" fullWidth icon="message-circle" onPress={() => router.push(`/chats/${thread.id}`)} testID="open-chat">
+        {t("questDetail.openChat")}
+      </Button>
+    ) : undefined;
   }
 
   return (

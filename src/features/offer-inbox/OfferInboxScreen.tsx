@@ -21,6 +21,7 @@ import { FeeBreakdown } from "@design/components/FeeBreakdown";
 import { Dialog } from "@design/components/Dialog";
 import { Button } from "@design/components/Button";
 import { money, formatMoney, type Offer } from "@data/contracts";
+import { threadFor } from "@data/domain/threads";
 import { formatWhenAt } from "@lib/format";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -96,18 +97,22 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
           <Text style={styles.eyebrow}>
             {t("offerInbox.pendingCount", { count: pending.length, noun: pending.length === 1 ? "offer" : "offers" })}
           </Text>
-          {pending.map((offer) => (
-            <OfferRow
-              key={offer.id}
-              offer={offer}
-              doer={doers.get(offer.doerId) ?? null}
-              askingPriceMinor={quest.payoutMinor}
-              now={now}
-              onAccept={() => setConfirming(offer)}
-              onDecline={() => declineOffer.mutate(offer.id)}
-              testID={`offer-row-${offer.id}`}
-            />
-          ))}
+          {pending.map((offer) => {
+            const offerThread = threadFor(inbox.threads, questId, offer.doerId);
+            return (
+              <OfferRow
+                key={offer.id}
+                offer={offer}
+                doer={doers.get(offer.doerId) ?? null}
+                askingPriceMinor={quest.payoutMinor}
+                now={now}
+                onAccept={() => setConfirming(offer)}
+                onDecline={() => declineOffer.mutate(offer.id)}
+                onMessage={offerThread ? () => router.push(`/chats/${offerThread.id}`) : undefined}
+                testID={`offer-row-${offer.id}`}
+              />
+            );
+          })}
         </>
       )}
 
