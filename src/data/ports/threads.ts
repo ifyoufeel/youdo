@@ -8,6 +8,12 @@ export interface ThreadsPort {
   getThread(id: string): Promise<Thread | null>;
   listMessages(threadId: string): Promise<Message[]>;
 
+  /** Server-side only — a client can't compute this itself without being
+      handed every other participant's raw last-read timestamp, which
+      nothing else in this port exposes (markThreadRead only writes one,
+      never reads one back). */
+  unreadCountForThread(threadId: string, userId: string): Promise<number>;
+
   /** Read-only once the quest closes (PRD §7.5) — the adapter refuses a
       send on a closed thread's quest, same as QuestsPort refuses an
       illegal lifecycle transition. */

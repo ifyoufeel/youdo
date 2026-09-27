@@ -16,6 +16,8 @@ import {
   OfferSchema,
   type Thread,
   ThreadSchema,
+  type Message,
+  MessageSchema,
   type Notification,
   NotificationSchema,
   PointSchema,
@@ -59,18 +61,29 @@ export const savedQuestIds: Map<string, Set<string>> = new Map(
   Object.entries(seed.savedByUser).map(([userId, questIds]) => [userId, new Set(questIds)])
 );
 
-/** Mutable — sendOffer/withdrawOffer (M2) push and rewrite entries here
-    directly, same pattern as savedQuestIds above. acceptOffer/
-    declineOffer stay unimplemented until M4, so nothing here mutates
-    `status` to "accepted"/"declined" yet. */
+/** Mutable — sendOffer/withdrawOffer (M2) and acceptOffer/declineOffer
+    (M4) all push and rewrite entries here directly, same pattern as
+    savedQuestIds above. */
 export const offers: Offer[] = parseArray(OfferSchema, seed.offers);
 
 /** Mutable — sendOffer (M2) creates one of these, find-or-create by
-    (questId, doerId), the moment a doer's first offer on a quest lands.
-    `messagesByThread`/`threadReadAt` are parsed in threads.ts's own module
-    (M4), not here — they're Maps keyed differently than this file's other
-    exports and belong next to the code that owns their shape. */
+    (questId, doerId), the moment a doer's first offer on a quest lands. */
 export const threads: Thread[] = parseArray(ThreadSchema, seed.threads);
+
+/** Mutable — sendMessage (M4) pushes onto the array for its thread's key
+    (creating one on first send if this thread has no seeded messages).
+    Keyed by thread id, matching seed.messagesByThread's own shape — a Map
+    rather than a Thread field, since a client never gets the whole
+    message list without asking for it explicitly (listMessages). */
+export const messages: Map<string, Message[]> = new Map(
+  Object.entries(seed.messagesByThread).map(([threadId, msgs]) => [threadId, parseArray(MessageSchema, msgs)])
+);
+
+/** Mutable — markThreadRead (M4) writes through this directly, flat
+    `"${userId}:${threadId}"` keys exactly matching seed.threadReadAt's own
+    shape (no reshaping needed) since a per-(user, thread) read timestamp
+    has no other natural home among this file's other Maps. */
+export const threadReadAt: Map<string, string> = new Map(Object.entries(seed.threadReadAt));
 
 /** Mutable — offers/quests/threads mutations (M4) push into this via the
     shared notify() helper (./notify.ts) the moment an event worth telling

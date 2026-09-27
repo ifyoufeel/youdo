@@ -289,11 +289,12 @@ describe("memory adapter — real slice", () => {
         /not implemented yet/
       );
 
-      // Threads/notifications go real in M4 Phase 1 — still stubs here.
-      await expect(adapter.listThreadsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
+      // Threads/notifications are real as of M4 Phase 1
+      // (src/data/adapters/memory/__tests__/{threads,notifications}.test.ts
+      // cover them) — LedgerPort stays 100% stubbed until M5, ReviewsPort
+      // until M6.
       await expect(adapter.listEntriesForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
       await expect(adapter.listReviewsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
-      await expect(adapter.listForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
     });
   });
 });

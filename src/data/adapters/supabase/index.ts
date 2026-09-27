@@ -55,6 +55,7 @@ export function createSupabaseAdapter(): Repository {
     listThreadsForUser: () => stub("listThreadsForUser"),
     getThread: () => stub("getThread"),
     listMessages: () => stub("listMessages"),
+    unreadCountForThread: () => stub("unreadCountForThread"),
     sendMessage: () => stub("sendMessage"),
     markThreadRead: () => stub("markThreadRead"),
     subscribeToThread: () => stubSync("subscribeToThread"),

@@ -149,3 +149,16 @@ export function addressVisibleTo(quest: Quest, offers: Offer[], userId: string):
   if (!accepted || accepted.doerId !== userId) return false;
   return quest.status !== "open";
 }
+
+/** PRD §8's 72-hour auto-release window — a "completed" quest becomes
+    "paid" on its own once this much time has passed with no dispute
+    (M5's job; ConfirmWindow (M4) only ever displays this deadline,
+    never enforces it). */
+export const CONFIRM_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+/** null until the quest has actually reached "completed" — there's
+    nothing to count down to before then. */
+export function confirmDeadline(quest: Quest): string | null {
+  if (!quest.completedAt) return null;
+  return new Date(Date.parse(quest.completedAt) + CONFIRM_WINDOW_MS).toISOString();
+}
