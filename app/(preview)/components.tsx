@@ -28,9 +28,13 @@ import { UserChip } from "@design/components/UserChip";
 import { Tabs } from "@design/components/Tabs";
 import { InfoRow } from "@design/components/InfoRow";
 import { FeeBreakdown } from "@design/components/FeeBreakdown";
+import { Avatar } from "@design/components/Avatar";
+import { StatusTrack } from "@design/components/StatusTrack";
+import { ConfirmWindow } from "@design/components/ConfirmWindow";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
+import type { Quest } from "@data/contracts";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const LABEL_FONT = fontFamilyName(raw.font.mono, raw.fontWeight.regular);
@@ -278,6 +282,58 @@ function WizardGallery() {
   );
 }
 
+const CONFIRM_WINDOW_QUEST: Quest = {
+  id: "q-specimen",
+  posterId: "u1",
+  title: "Walk Biscuit for an hour",
+  payoutMinor: 40000,
+  payoutUnit: "fixed",
+  categoryId: "dog-walking",
+  point: { x: 0, y: 0 },
+  estimatedMinutes: 60,
+  durationLabel: null,
+  scheduledFor: "2026-09-16T18:00:00+08:00",
+  expiresAt: "2026-09-16T17:00:00+08:00",
+  createdAt: "2026-09-15T20:10:00+08:00",
+  status: "completed",
+  acceptedOfferId: "o1",
+  addressLine: "14B, Lane 31, Yongkang St",
+  area: "Da'an",
+  details: "",
+  requirements: [],
+  completedAt: "2026-09-16T19:00:00+08:00",
+};
+const CONFIRM_WINDOW_NOW = Date.parse("2026-09-16T20:00:00+08:00"); // 1h in — still well within the 72h window
+const CONFIRM_WINDOW_CLOSED_QUEST: Quest = { ...CONFIRM_WINDOW_QUEST, completedAt: "2026-09-10T19:00:00+08:00" };
+
+function LifecycleGallery() {
+  return (
+    <View style={styles.formColumn}>
+      <Text style={styles.chromeLabel}>Avatar — sm/md/lg, verified — standalone, no name/rating alongside it</Text>
+      <View style={styles.badgeRow}>
+        <Avatar name="Wei-Ting C." size="sm" verified />
+        <Avatar name="Jason H." size="md" />
+        <Avatar name="Mei-Ling W." size="lg" verified />
+      </View>
+
+      <Text style={styles.chromeLabel}>StatusTrack — every current value, incl. the paid collapse</Text>
+      <View style={styles.formColumn}>
+        <StatusTrack current={-1} />
+        <StatusTrack current={0} />
+        <StatusTrack current={1} />
+        <StatusTrack current={2} />
+      </View>
+
+      <Text style={styles.chromeLabel}>ConfirmWindow — time left, doer vs poster, and closed</Text>
+      <View style={styles.formColumn}>
+        <ConfirmWindow quest={CONFIRM_WINDOW_QUEST} now={CONFIRM_WINDOW_NOW} doerSide />
+        <ConfirmWindow quest={CONFIRM_WINDOW_QUEST} now={CONFIRM_WINDOW_NOW} />
+        <ConfirmWindow quest={CONFIRM_WINDOW_CLOSED_QUEST} now={CONFIRM_WINDOW_NOW} />
+      </View>
+    </View>
+  );
+}
+
 export default function ComponentsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -361,6 +417,9 @@ export default function ComponentsScreen() {
 
       <SectionHeading>Post & My quests — Tabs, InfoRow, FeeBreakdown (M3)</SectionHeading>
       <WizardGallery />
+
+      <SectionHeading>Lifecycle — Avatar, StatusTrack, ConfirmWindow (M4)</SectionHeading>
+      <LifecycleGallery />
     </ScrollView>
   );
 }

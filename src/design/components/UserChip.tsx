@@ -1,15 +1,10 @@
-/* Ports ds-bundle.js's UserChip (1508-1576) composed with Avatar
-   (113-187) — promoted from QuestCard's private PosterRow now that a
-   second consumer (M2's quest detail trust panel) needs the full
-   surface, including the verified badge PosterRow never rendered even
-   though QuestCardPoster.verified has existed since M1. Avatar itself
-   stays folded in here rather than becoming its own public primitive —
-   nothing else needs a bare avatar yet, same "build it when a second
-   consumer needs it" call this file itself is the result of. No `src`/
-   photo support — there's no image/asset pipeline yet, so this is always
-   the initials-circle path. */
+/* Ports ds-bundle.js's UserChip (1508-1576), composed with Avatar
+   (promoted to its own file, ./Avatar.tsx, in M4 — a second consumer,
+   OfferRow's decided-offers list and ThreadScreen's message bubbles,
+   needed a bare avatar with no name/rating/meta alongside it). */
 import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { Icon } from "./Icon";
+import { Avatar, type AvatarSize } from "./Avatar";
 import { raw } from "../tokens/raw";
 import { semantic } from "../tokens/semantic";
 import { fontFamilyName } from "../tokens/font-family";
@@ -17,53 +12,8 @@ import { fontFamilyName } from "../tokens/font-family";
 const NAME_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
 const META_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 const RATING_FONT = fontFamilyName(raw.font.text, raw.fontWeight.semibold);
-const INITIALS_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 
-export type UserChipSize = "sm" | "md" | "lg";
-
-const AVATAR_SIZES: Record<UserChipSize, number> = { sm: 32, md: 40, lg: 56 };
-const TINTS = [raw.color.lime["300"], raw.color.coin["300"], raw.color.flare["300"], raw.color.info["200"], raw.color.success["200"]];
-
-function initialsFor(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
-
-function tintFor(name: string): string {
-  return TINTS[(name.charCodeAt(0) || 0) % TINTS.length];
-}
-
-function Avatar({ name, size, verified }: { name: string; size: UserChipSize; verified: boolean }) {
-  const d = AVATAR_SIZES[size];
-  const badgeSize = Math.max(14, Math.round(d * 0.34));
-  return (
-    <View style={{ width: d, height: d }}>
-      <View
-        style={[
-          styles.avatarCircle,
-          { width: d, height: d, borderRadius: raw.radius.avatar, backgroundColor: tintFor(name) },
-        ]}
-      >
-        <Text style={[styles.initials, { fontSize: Math.round(d * 0.38) }]}>{initialsFor(name)}</Text>
-      </View>
-      {verified ? (
-        <View
-          style={[
-            styles.verifiedBadge,
-            { width: badgeSize, height: badgeSize, borderRadius: raw.radius.pill },
-          ]}
-        >
-          <Icon name="check" size={Math.max(8, Math.round(d * 0.2))} strokeWidth={2.25} color={raw.color.ink["900"]} />
-        </View>
-      ) : null}
-    </View>
-  );
-}
+export type UserChipSize = AvatarSize;
 
 export interface UserChipProps {
   name: string;
@@ -117,28 +67,6 @@ const styles = StyleSheet.create({
     gap: 10,
     minWidth: 0,
     flexShrink: 1,
-  },
-  avatarCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: raw.border.width,
-    borderColor: semantic.color.border.strong,
-    overflow: "hidden",
-  },
-  initials: {
-    fontFamily: INITIALS_FONT,
-    letterSpacing: -0.02,
-    color: raw.color.ink["900"],
-  },
-  verifiedBadge: {
-    position: "absolute",
-    right: -2,
-    bottom: -2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: raw.color.lime["500"],
-    borderWidth: raw.border.width,
-    borderColor: semantic.color.border.strong,
   },
   textColumn: {
     gap: 2,
