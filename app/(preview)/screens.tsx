@@ -249,14 +249,16 @@ export default function ScreensScreen() {
         </AutoSignedIn>
       </ScreenFrame>
 
-      <Text style={styles.specimenLabel}>Poster · your own quest — offer count only, no dead button</Text>
+      <Text style={styles.specimenLabel}>Poster · your own quest — real &quot;Review 3 offers&quot; button (M4)</Text>
       <ScreenFrame tall>
         <AutoSignedIn>
           <QuestDetailScreen questId="q6" />
         </AutoSignedIn>
       </ScreenFrame>
 
-      <Text style={styles.specimenLabel}>Doer · your offer was accepted, quest in progress — address now visible</Text>
+      <Text style={styles.specimenLabel}>
+        Doer · your offer was accepted, quest in progress — address visible, real Cancel + Mark as done slab (M4)
+      </Text>
       <ScreenFrame tall>
         <AutoSignedIn>
           <QuestDetailScreen questId="q1" />

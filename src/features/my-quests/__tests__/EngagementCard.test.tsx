@@ -282,4 +282,93 @@ describe("EngagementCard", () => {
     await fireEvent.press(getByTestId("engagement-view"));
     expect(onOpen).toHaveBeenCalled();
   });
+
+  it("shows StatusTrack whenever the status has a track position, hides it when it doesn't", async () => {
+    // QUEST is in_progress — track 1 ("Doing"). "Doing" legitimately
+    // appears twice once StatusTrack renders: once in the status Badge,
+    // once in StatusTrack's own line label.
+    const { getAllByText } = await render(
+      <EngagementCard quest={QUEST} role="doer" amountMinor={40000} counterpart={POSTER} pendingOfferCount={0} now={NOW} onOpen={() => {}} />
+    );
+    expect(getAllByText("Doing")).toHaveLength(2);
+
+    const openQuest = { ...QUEST, status: "open" as const, acceptedOfferId: null }; // track -1
+    const { getAllByText: getAllOpen } = await render(
+      <EngagementCard quest={openQuest} role="poster" amountMinor={40000} counterpart={null} pendingOfferCount={0} now={NOW} onOpen={() => {}} />
+    );
+    expect(getAllOpen("Open")).toHaveLength(1); // just the status Badge — StatusTrack renders nothing
+  });
+
+  it("shows ConfirmWindow only once completed", async () => {
+    const completedQuest = { ...QUEST, status: "completed" as const, completedAt: "2026-09-16T08:00:00+08:00" };
+    const { getByText } = await render(
+      <EngagementCard quest={completedQuest} role="doer" amountMinor={40000} counterpart={POSTER} pendingOfferCount={0} now={NOW} onOpen={() => {}} />
+    );
+    expect(getByText(/left to confirm|confirm window has closed/)).toBeTruthy();
+
+    const { queryByText } = await render(
+      // QUEST is in_progress, not completed.
+      <EngagementCard quest={QUEST} role="doer" amountMinor={40000} counterpart={POSTER} pendingOfferCount={0} now={NOW} onOpen={() => {}} />
+    );
+    expect(queryByText(/left to confirm|confirm window has closed/)).toBeNull();
+  });
+
+  it("shows Start quest only for the accepted doer once assigned, and calls onStartQuest", async () => {
+    const assignedQuest = { ...QUEST, status: "assigned" as const };
+    const onStartQuest = jest.fn();
+    const { getByTestId, queryByTestId } = await render(
+      <EngagementCard
+        quest={assignedQuest}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onStartQuest={onStartQuest}
+      />
+    );
+    expect(queryByTestId("engagement-mark-as-done")).toBeNull();
+    await fireEvent.press(getByTestId("engagement-start-quest"));
+    expect(onStartQuest).toHaveBeenCalled();
+  });
+
+  it("shows Mark as done only for the accepted doer once in_progress, and calls onMarkAsDone", async () => {
+    const onMarkAsDone = jest.fn();
+    const { getByTestId, queryByTestId } = await render(
+      // QUEST is already in_progress.
+      <EngagementCard
+        quest={QUEST}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onMarkAsDone={onMarkAsDone}
+      />
+    );
+    expect(queryByTestId("engagement-start-quest")).toBeNull();
+    await fireEvent.press(getByTestId("engagement-mark-as-done"));
+    expect(onMarkAsDone).toHaveBeenCalled();
+  });
+
+  it("never shows Start quest/Mark as done for a poster or applicant, even with both handlers given", async () => {
+    const assignedQuest = { ...QUEST, status: "assigned" as const };
+    const { queryByTestId } = await render(
+      <EngagementCard
+        quest={assignedQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onStartQuest={() => {}}
+        onMarkAsDone={() => {}}
+      />
+    );
+    expect(queryByTestId("engagement-start-quest")).toBeNull();
+    expect(queryByTestId("engagement-mark-as-done")).toBeNull();
+  });
 });

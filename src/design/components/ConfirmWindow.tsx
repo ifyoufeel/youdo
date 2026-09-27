@@ -4,7 +4,7 @@
    no "Confirm and pay" button here or anywhere in M4 (confirmDone needs
    real escrow release, M5's job; this component only ever displays the
    deadline confirmDeadline() computes, never enforces it). */
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { Card } from "./Card";
 import { Icon } from "./Icon";
 import { raw } from "../tokens/raw";
@@ -21,9 +21,10 @@ export interface ConfirmWindowProps {
   quest: Quest;
   now: number;
   doerSide?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function ConfirmWindow({ quest, now, doerSide = false }: ConfirmWindowProps) {
+export function ConfirmWindow({ quest, now, doerSide = false, style }: ConfirmWindowProps) {
   const deadline = confirmDeadline(quest);
   const left = deadline ? formatRemaining(deadline, now) : null;
 
@@ -36,7 +37,7 @@ export function ConfirmWindow({ quest, now, doerSide = false }: ConfirmWindowPro
       : "Payment released automatically.";
 
   return (
-    <Card variant="money" padding="md">
+    <Card variant="money" padding="md" style={style}>
       <View style={styles.row}>
         <Icon name="clock" size={18} strokeWidth={2} style={styles.icon} />
         <View style={styles.textColumn}>

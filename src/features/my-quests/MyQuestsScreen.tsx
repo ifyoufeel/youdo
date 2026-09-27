@@ -15,9 +15,12 @@ import { ErrorState } from "@design/components/ErrorState";
 import { Toast } from "@design/components/Toast";
 import { Tabs } from "@design/components/Tabs";
 import type { Bucket } from "@data/domain/lifecycle";
+import { useAuthSession } from "@data/auth-session";
 import { t } from "../../i18n/t";
 import { useMyQuests } from "./useMyQuests";
 import { EngagementCard } from "./EngagementCard";
+import { useStartQuest } from "../quest-detail/useStartQuest";
+import { useMarkDone } from "../quest-detail/useMarkDone";
 
 const EMPTY_COPY: Record<Bucket, { title: string; action: string }> = {
   active: { title: t("myQuests.empty.active.title"), action: t("myQuests.empty.active.action") },
@@ -29,6 +32,9 @@ export function MyQuestsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ posted?: string }>();
   const myQuests = useMyQuests();
+  const { session } = useAuthSession();
+  const startQuest = useStartQuest();
+  const markDone = useMarkDone();
   const [tab, setTab] = useState<Bucket>("active");
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
@@ -93,6 +99,12 @@ export function MyQuestsScreen() {
             now={now}
             onOpen={() => router.push(`/quest/${e.quest.id}`)}
             onReviewOffers={() => router.push(`/offers/${e.quest.id}`)}
+            onStartQuest={
+              session ? () => startQuest.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
+            onMarkAsDone={
+              session ? () => markDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
           />
         ))
       )}

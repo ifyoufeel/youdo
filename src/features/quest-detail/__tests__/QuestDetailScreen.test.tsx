@@ -3,9 +3,25 @@ import { render, fireEvent } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
+import { quests as questStore } from "@data/adapters/memory/store";
+import type { QuestStatus } from "@data/contracts";
 import { QuestDetailScreen } from "../QuestDetailScreen";
 
 const LONG_TIMEOUT = { timeout: 5000 };
+
+// Whitebox — no seed quest is ever "assigned" (a real fixture gap), so
+// slab states that need it force the store's own Quest object directly,
+// before render() (the initial fetch then reads the forced state, same
+// as any other query), and restore it after — same technique
+// src/data/adapters/memory/__tests__/quests.test.ts already established.
+function forceQuestStatus(id: string, status: QuestStatus) {
+  const quest = questStore.find((q) => q.id === id)!;
+  const original = quest.status;
+  quest.status = status;
+  return () => {
+    quest.status = original;
+  };
+}
 
 // Mirrors app/index.tsx's real cold-start gate: a screen behind auth
 // never mounts until status is "signedIn", so children only render once
@@ -109,6 +125,61 @@ describe("QuestDetailScreen", () => {
       await fireEvent.press(await findByTestId("offer-submit", {}, LONG_TIMEOUT));
 
       expect(await findByText(/Offer sent to/, {}, LONG_TIMEOUT)).toBeTruthy();
+    },
+    15000
+  );
+
+  it(
+    "shows Cancel + Mark as done for the accepted doer on an in_progress quest",
+    async () => {
+      // q1 is naturally in_progress, u0 the accepted doer.
+      const { findByTestId, queryByTestId } = await render(<QuestDetailScreen questId="q1" />, { wrapper: Providers });
+      expect(await findByTestId("mark-as-done", {}, LONG_TIMEOUT)).toBeTruthy();
+      expect(queryByTestId("start-quest")).toBeNull();
+    },
+    15000
+  );
+
+  it(
+    "shows Cancel + Start quest for the accepted doer once assigned",
+    async () => {
+      const restore = forceQuestStatus("q1", "assigned");
+      const { findByTestId, queryByTestId } = await render(<QuestDetailScreen questId="q1" />, { wrapper: Providers });
+      expect(await findByTestId("start-quest", {}, LONG_TIMEOUT)).toBeTruthy();
+      expect(queryByTestId("mark-as-done")).toBeNull();
+      restore();
+    },
+    15000
+  );
+
+  it(
+    "shows only Cancel for the poster once assigned — no Review offers, no dead confirm/issue buttons",
+    async () => {
+      // q6: posted by u0, forced out of "open".
+      const restore = forceQuestStatus("q6", "assigned");
+      const { findByText, queryByText } = await render(<QuestDetailScreen questId="q6" />, { wrapper: Providers });
+      await findByText("Accepted", {}, LONG_TIMEOUT); // the StatusBadge/StatusTrack label, confirms the forced state rendered
+      expect(queryByText(/Review/)).toBeNull();
+      expect(queryByText("Take this quest")).toBeNull();
+      restore();
+    },
+    15000
+  );
+
+  it(
+    "cancelling from the slab moves the quest to cancelled — the real mutation, not just a whitebox render",
+    async () => {
+      // q1: signed-in u0 is already its naturally in_progress accepted
+      // doer — no forcing needed. The last test in this file, since a
+      // real cancel is a one-way trip for q1's shared module state.
+      const { findByTestId, findByText, findByLabelText } = await render(<QuestDetailScreen questId="q1" />, {
+        wrapper: Providers,
+      });
+      await fireEvent.press(await findByTestId("cancel-quest-slab", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByLabelText("My plans changed", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByTestId("cancel-sheet-confirm", {}, LONG_TIMEOUT));
+
+      await findByText("Cancelled", {}, LONG_TIMEOUT);
     },
     15000
   );

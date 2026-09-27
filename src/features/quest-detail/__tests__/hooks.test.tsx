@@ -6,6 +6,9 @@ import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
 import { useQuestDetail } from "../useQuestDetail";
 import { useSendOffer } from "../useSendOffer";
 import { useWithdrawOffer } from "../useWithdrawOffer";
+import { useStartQuest } from "../useStartQuest";
+import { useMarkDone } from "../useMarkDone";
+import { useCancelQuest } from "../useCancelQuest";
 
 // Every test that actually creates an offer uses a distinct (quest, doer)
 // pair, global across this file — same reasoning as
@@ -31,7 +34,10 @@ function useHarness(questId: string) {
   const detail = useQuestDetail(questId);
   const send = useSendOffer();
   const withdraw = useWithdrawOffer(questId);
-  return { auth, detail, send, withdraw };
+  const start = useStartQuest();
+  const markDone = useMarkDone();
+  const cancel = useCancelQuest(questId);
+  return { auth, detail, send, withdraw, start, markDone, cancel };
 }
 
 async function renderSignedIn(questId: string) {
@@ -114,5 +120,58 @@ describe("useWithdrawOffer", () => {
       () => expect(result.current.detail.offers.find((o) => o.id === offerId)?.status).toBe("withdrawn"),
       { timeout: 3000 }
     );
+  });
+});
+
+describe("useStartQuest", () => {
+  it("rejects starting a quest that isn't assigned", async () => {
+    // q1 is naturally in_progress (u0 doer) — legal only from "assigned".
+    const result = await renderSignedIn("q1");
+    await act(async () => {
+      await expect(result.current.start.mutateAsync({ questId: "q1", actorId: "u0" })).rejects.toThrow(
+        /can't move this/
+      );
+    });
+  });
+});
+
+describe("useCancelQuest", () => {
+  it("cancels a still-open quest with no reason required, reflected once invalidated", async () => {
+    // q4: posterId u4, open, no accepted offer yet.
+    const result = await renderSignedIn("q4");
+    await act(async () => {
+      await result.current.cancel.mutateAsync({ actorId: "u4", reason: "" });
+    });
+    await waitFor(() => expect(result.current.detail.quest?.status).toBe("cancelled"), { timeout: 3000 });
+  });
+
+  it("requires a reason once an offer has been accepted", async () => {
+    // q1: u0 is the accepted doer, still naturally in_progress here — this
+    // test runs before useMarkDone (below) moves q1 to completed, since
+    // that transition would make cancelling illegal outright rather than
+    // exercising this reason-required guard specifically.
+    const result = await renderSignedIn("q1");
+    await act(async () => {
+      await expect(result.current.cancel.mutateAsync({ actorId: "u0", reason: "" })).rejects.toThrow(/Say why/);
+    });
+  });
+
+  it("rejects a non-participant actor", async () => {
+    const result = await renderSignedIn("q2");
+    await act(async () => {
+      await expect(
+        result.current.cancel.mutateAsync({ actorId: "u-nobody", reason: "Not mine" })
+      ).rejects.toThrow(/not on this quest/);
+    });
+  });
+});
+
+describe("useMarkDone", () => {
+  it("moves q1 (naturally in_progress, u0 the accepted doer) to completed, reflected once invalidated", async () => {
+    const result = await renderSignedIn("q1");
+    await act(async () => {
+      await result.current.markDone.mutateAsync({ questId: "q1", actorId: "u0" });
+    });
+    await waitFor(() => expect(result.current.detail.quest?.status).toBe("completed"), { timeout: 3000 });
   });
 });

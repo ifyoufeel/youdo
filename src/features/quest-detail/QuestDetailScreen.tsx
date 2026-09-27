@@ -1,14 +1,15 @@
 /* Ports preview/app.js's QuestDetailScreen (1760-2073). M2 scoped this to
    payout, meta rows, description, requirements, poster trust panel,
    offer count, address privacy, and the offer sheet. M4 adds the
-   poster's real "Review offers" button (the offer-inbox screen at
-   /offers/[id] now exists to open). Still deferred: the doer's "Start
-   quest"/"Mark as done" lifecycle actions and Cancel (M4 Phase 4), the
-   completed/paid fee breakdown and rating card (M5/M6) — the slab below
-   still only ever renders a visitor's offer CTAs or an applicant's
-   withdraw action, per the same "slab actions scoped to what's real"
-   discipline this file's own history already established. */
-import { useState } from "react";
+   poster's real "Review offers" button, and (this phase) Start quest/
+   Mark as done/Cancel — the real subset of app.js's slabActions() that
+   doesn't need Chats (M4 Phase 5) or Confirm-and-pay/Leave-a-rating/
+   Issue (M5/M6). "Open chat" stays unwired everywhere in this file until
+   Phase 5 gives it a real route — a lone Cancel button for poster/doer
+   mid-quest, or no slab at all for a completed quest, over a button to
+   nowhere ("no dead buttons"). ConfirmWindow (Phase 2) already covers
+   "completed" informationally in the body regardless of role. */
+import { useState, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthSession } from "@data/auth-session";
@@ -24,8 +25,9 @@ import { InfoRow } from "@design/components/InfoRow";
 import { Button } from "@design/components/Button";
 import { Icon } from "@design/components/Icon";
 import { Toast } from "@design/components/Toast";
+import { ConfirmWindow } from "@design/components/ConfirmWindow";
 import { money, formatMoney } from "@data/contracts";
-import { statusMeta } from "@data/domain/lifecycle";
+import { statusMeta, acceptedOfferFor } from "@data/domain/lifecycle";
 import { questDuration, formatWhenAt } from "@lib/format";
 import { questBadges } from "@lib/questBadges";
 import { raw } from "@design/tokens/raw";
@@ -35,7 +37,11 @@ import { t } from "../../i18n/t";
 import { useQuestDetail } from "./useQuestDetail";
 import { useSendOffer } from "./useSendOffer";
 import { useWithdrawOffer } from "./useWithdrawOffer";
+import { useStartQuest } from "./useStartQuest";
+import { useMarkDone } from "./useMarkDone";
+import { useCancelQuest } from "./useCancelQuest";
 import { OfferSheet } from "./OfferSheet";
+import { CancelSheet } from "./CancelSheet";
 
 const TITLE_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const BODY_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
@@ -53,7 +59,11 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const detail = useQuestDetail(questId);
   const sendOffer = useSendOffer();
   const withdrawOffer = useWithdrawOffer(questId);
+  const startQuest = useStartQuest();
+  const markDone = useMarkDone();
+  const cancelQuest = useCancelQuest(questId);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
 
@@ -86,17 +96,72 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const badges = quest.status === "open" ? questBadges(quest, now) : [{ label: meta.label, tone: meta.tone }];
   const pendingCount = detail.offers.filter((o) => o.status === "pending").length;
   const canOffer = detail.isSignedIn && role === "visitor" && quest.status === "open";
+  const acceptedOffer = acceptedOfferFor(detail.offers, quest);
+  const actorId = session?.userId;
 
-  const slab = canOffer ? (
-    <>
-      <Button variant="secondary" onPress={() => setSheetOpen(true)}>
-        {t("questDetail.ask")}
+  function runCancel(reason: string) {
+    if (!actorId) return;
+    cancelQuest.mutate(
+      { actorId, reason },
+      { onSuccess: () => setCancelSheetOpen(false) }
+    );
+  }
+
+  let slab: ReactNode = undefined;
+  if (canOffer) {
+    slab = (
+      <>
+        <Button variant="secondary" onPress={() => setSheetOpen(true)}>
+          {t("questDetail.ask")}
+        </Button>
+        <Button variant="primary" fullWidth onPress={() => setSheetOpen(true)}>
+          {t("questDetail.takeQuest")}
+        </Button>
+      </>
+    );
+  } else if (role === "poster" && (quest.status === "assigned" || quest.status === "in_progress") && actorId) {
+    slab = (
+      <Button variant="secondary" onPress={() => setCancelSheetOpen(true)} testID="cancel-quest-slab">
+        {t("questDetail.cancel")}
       </Button>
-      <Button variant="primary" fullWidth onPress={() => setSheetOpen(true)}>
-        {t("questDetail.takeQuest")}
-      </Button>
-    </>
-  ) : undefined;
+    );
+  } else if (role === "doer" && quest.status === "assigned" && actorId) {
+    slab = (
+      <>
+        <Button variant="secondary" onPress={() => setCancelSheetOpen(true)} testID="cancel-quest-slab">
+          {t("questDetail.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          fullWidth
+          icon="zap"
+          onPress={() => startQuest.mutate({ questId, actorId })}
+          disabled={startQuest.isPending}
+          testID="start-quest"
+        >
+          {t("questDetail.startQuest")}
+        </Button>
+      </>
+    );
+  } else if (role === "doer" && quest.status === "in_progress" && actorId) {
+    slab = (
+      <>
+        <Button variant="secondary" onPress={() => setCancelSheetOpen(true)} testID="cancel-quest-slab">
+          {t("questDetail.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          fullWidth
+          icon="check"
+          onPress={() => markDone.mutate({ questId, actorId })}
+          disabled={markDone.isPending}
+          testID="mark-as-done"
+        >
+          {t("questDetail.markAsDone")}
+        </Button>
+      </>
+    );
+  }
 
   return (
     <Screen title={quest.title} onBack={() => router.back()} slab={slab}>
@@ -140,6 +205,8 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
           <InfoRow label={t("questDetail.meta.offersClose")} value={formatWhenAt(quest.expiresAt, now)} />
         ) : null}
       </Card>
+
+      {quest.status === "completed" ? <ConfirmWindow quest={quest} now={now} doerSide={role === "doer"} /> : null}
 
       {quest.requirements.length > 0 ? (
         <Card variant="sunken" padding="md">
@@ -233,6 +300,14 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
           }}
         />
       ) : null}
+
+      <CancelSheet
+        open={cancelSheetOpen}
+        onClose={() => setCancelSheetOpen(false)}
+        hasAcceptedOffer={!!acceptedOffer}
+        onConfirm={runCancel}
+        submitting={cancelQuest.isPending}
+      />
     </Screen>
   );
 }

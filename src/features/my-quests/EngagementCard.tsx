@@ -1,17 +1,28 @@
 /* Feature-local, not promoted — a single-consumer composition of already-
    public primitives (Card/Badge/RewardPill/UserChip/Button), same call as
    quest-detail's OfferSheet in M2. Ported from app.js:2959-3045
-   (EngagementCard). M4 adds the poster+open "Review offers" action
-   (primary() 's first branch); "Start quest"/"Mark as done" land in M4
-   Phase 4, "Confirm and pay"/"Leave a rating" stay out until M5/M6 —
-   still no dead buttons, per this file's own original discipline. */
+   (EngagementCard), including StatusTrack/ConfirmWindow (M4 Phase 2) at
+   the same spots the source puts them. "Confirm and pay"/"Leave a
+   rating" stay out until M5/M6 — still no dead buttons.
+
+   One deliberate layout divergence: the source puts its one primary
+   action inline in the footer row, next to the counterpart/fallback text,
+   and makes the whole card clickable (stopping propagation on the
+   action). M3 already chose an explicit "View" button over a
+   whole-card-press affordance; keeping both "View" and a second inline
+   action would crowd a narrow footer row. The primary action (Review
+   offers / Start quest / Mark as done) instead renders as its own
+   full-width button below the footer — one clear action per card, same
+   information, no new gesture handling. */
 import { View, Text, StyleSheet } from "react-native";
 import { Card } from "@design/components/Card";
 import { Badge } from "@design/components/Badge";
 import { RewardPill } from "@design/components/RewardPill";
 import { UserChip } from "@design/components/UserChip";
-import { Button } from "@design/components/Button";
-import { Icon } from "@design/components/Icon";
+import { Button, type ButtonVariant } from "@design/components/Button";
+import { Icon, type IconName } from "@design/components/Icon";
+import { StatusTrack } from "@design/components/StatusTrack";
+import { ConfirmWindow } from "@design/components/ConfirmWindow";
 import { money, formatMoney, type Quest, type User } from "@data/contracts";
 import { statusMeta, type Role } from "@data/domain/lifecycle";
 import { formatWhenAt, formatRemaining } from "@lib/format";
@@ -32,10 +43,20 @@ export interface EngagementCardProps {
   pendingOfferCount: number;
   now: number;
   onOpen: () => void;
-  /** Present only once a "Review offers" action is real to wire —
-      MyQuestsScreen passes it; gallery specimens with nothing to
-      navigate to simply omit it, and the button doesn't render. */
+  /** Each stays optional and unwired until its real destination/mutation
+      exists — MyQuestsScreen passes what it has; gallery specimens with
+      nothing to call simply omit it, and no action button renders. */
   onReviewOffers?: () => void;
+  onStartQuest?: () => void;
+  onMarkAsDone?: () => void;
+}
+
+interface PrimaryAction {
+  label: string;
+  icon: IconName;
+  variant: ButtonVariant;
+  onPress: () => void;
+  testID: string;
 }
 
 export function EngagementCard({
@@ -47,6 +68,8 @@ export function EngagementCard({
   now,
   onOpen,
   onReviewOffers,
+  onStartQuest,
+  onMarkAsDone,
 }: EngagementCardProps) {
   const meta = statusMeta(quest.status);
   const roleLabel =
@@ -59,7 +82,27 @@ export function EngagementCard({
       ? t("myQuests.offersClosed")
       : t("myQuests.noOffers");
 
-  const showReviewOffers = role === "poster" && quest.status === "open" && !!onReviewOffers;
+  // Ported from app.js's own primary() — one action per card, chosen by
+  // role and status, so this card and QuestDetailScreen's slab can never
+  // disagree. Scoped to what's real: the poster+completed ("Confirm and
+  // pay") and paid+unrated ("Leave a rating") branches stay out (M5/M6).
+  let action: PrimaryAction | null = null;
+  if (role === "poster" && quest.status === "open" && onReviewOffers) {
+    action = {
+      label:
+        pendingOfferCount > 0
+          ? t("myQuests.action.reviewOffersCount", { count: pendingOfferCount, noun: pendingOfferCount === 1 ? "offer" : "offers" })
+          : t("myQuests.action.reviewOffers"),
+      icon: "users",
+      variant: pendingOfferCount > 0 ? "primary" : "secondary",
+      onPress: onReviewOffers,
+      testID: "engagement-review-offers",
+    };
+  } else if (role === "doer" && quest.status === "assigned" && onStartQuest) {
+    action = { label: t("myQuests.action.startQuest"), icon: "zap", variant: "primary", onPress: onStartQuest, testID: "engagement-start-quest" };
+  } else if (role === "doer" && quest.status === "in_progress" && onMarkAsDone) {
+    action = { label: t("myQuests.action.markAsDone"), icon: "check", variant: "primary", onPress: onMarkAsDone, testID: "engagement-mark-as-done" };
+  }
 
   return (
     <Card padding="md" testID="engagement-card">
@@ -75,6 +118,12 @@ export function EngagementCard({
         </View>
         <RewardPill amount={formatMoney(money(amountMinor))} />
       </View>
+
+      {meta.track >= 0 ? <StatusTrack current={meta.track} style={styles.statusTrack} /> : null}
+      {quest.status === "completed" ? (
+        <ConfirmWindow quest={quest} now={now} doerSide={role === "doer"} style={styles.confirmWindow} />
+      ) : null}
+
       <View style={styles.footer}>
         {counterpart ? (
           <UserChip
@@ -92,19 +141,17 @@ export function EngagementCard({
           {t("myQuests.view")}
         </Button>
       </View>
-      {showReviewOffers ? (
+      {action ? (
         <Button
           size="sm"
-          variant={pendingOfferCount > 0 ? "primary" : "secondary"}
-          icon="users"
+          variant={action.variant}
+          icon={action.icon}
           fullWidth
-          style={styles.reviewOffersButton}
-          onPress={onReviewOffers}
-          testID="engagement-review-offers"
+          style={styles.actionButton}
+          onPress={action.onPress}
+          testID={action.testID}
         >
-          {pendingOfferCount > 0
-            ? t("myQuests.action.reviewOffersCount", { count: pendingOfferCount, noun: pendingOfferCount === 1 ? "offer" : "offers" })
-            : t("myQuests.action.reviewOffers")}
+          {action.label}
         </Button>
       ) : null}
     </Card>
@@ -162,7 +209,13 @@ const styles = StyleSheet.create({
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,
   },
-  reviewOffersButton: {
+  statusTrack: {
+    marginTop: 12,
+  },
+  confirmWindow: {
+    marginTop: 10,
+  },
+  actionButton: {
     marginTop: 8,
   },
 });
