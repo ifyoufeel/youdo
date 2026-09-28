@@ -1,17 +1,17 @@
 /* Ports preview/app.js:793-834's app.sendOffer/app.withdrawOffer guards
-   verbatim, plus M4's acceptOffer/declineOffer (app.js:836-888) — with
-   zero ledger interaction. LedgerPort is entirely NotImplementedYet("M5")
-   (see its own module comment), so acceptOffer here does the real status
-   transition, auto-decline, and address reveal but never holds money —
-   that's M5's job once it wires a real ledger call into this same
-   mutation. Money-free, cancelQuest (quests.ts) mirrors the same
-   boundary: nothing was ever held, so there's nothing to refund either. */
+   verbatim, plus M4's acceptOffer/declineOffer (app.js:836-888). As of M5,
+   acceptOffer holds real escrow (escrow.ts) once its own guards pass —
+   the poster's spendable balance must cover the offer, matching
+   app.js:857-860's own "you need NT$X more" check. Money-free,
+   cancelQuest/confirmDone (quests.ts) refund/release that same hold. */
 import type { OffersPort } from "../../ports/offers";
 import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
 import { isFirstUse } from "./idempotency";
-import { offers, threads, quests, users } from "./store";
+import { offers, threads, quests, users, ledger, payments } from "./store";
 import { myOfferOn } from "../../domain/lifecycle";
+import { spendableOf } from "../../domain/ledger";
+import { holdEscrow } from "./escrow";
 import { nextId } from "./next-id";
 import { nowIso } from "./clock";
 import { notify } from "./notify";
@@ -174,6 +174,13 @@ export function createMemoryOffersPort(): OffersPort {
       if (offer.status !== "pending") {
         throw new Error("That offer can't be accepted");
       }
+      const spendable = spendableOf(ledger, payments, quest.posterId);
+      if (spendable < offer.amountMinor) {
+        const short = offer.amountMinor - spendable;
+        throw new Error(`You need ${formatMoney(money(short))} more in your wallet to hold this`);
+      }
+
+      holdEscrow(quest, offer);
 
       const now = nowIso();
       offer.status = "accepted";

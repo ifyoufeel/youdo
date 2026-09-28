@@ -1,7 +1,10 @@
 import { createMemoryQuestsPort } from "../quests";
-import { quests as questStore, notifications } from "../store";
+import { quests as questStore, notifications, ledger as ledgerStore } from "../store";
 import { resetIdempotencyForTests } from "../idempotency";
 import { setFaultInjectionRate } from "../fault-injection";
+import { postTxn } from "../post-txn";
+import { holdEntries } from "../../../domain/ledger";
+import { nextId } from "../next-id";
 import type { PostQuestInput } from "../../../ports/quests";
 import type { QuestStatus } from "../../../contracts";
 
@@ -19,6 +22,19 @@ function forceQuestState(id: string, status: QuestStatus, acceptedOfferId: strin
   return () => {
     quest.status = snapshot.status;
     quest.acceptedOfferId = snapshot.acceptedOfferId;
+  };
+}
+
+/** Whitebox pair to forceQuestState — cancelQuest/confirmDone (M5) assert
+    real escrow is held before refunding/releasing it, so a forced
+    assigned/in_progress state also needs a matching ledger hold or that
+    invariant check throws. postTxn only ever appends, so restoring to the
+    pre-call length undoes it cleanly. */
+function forceHold(questId: string, posterId: string, amountMinor: number) {
+  const before = ledgerStore.length;
+  postTxn(nextId("tx-test-hold"), holdEntries(posterId, questId, amountMinor));
+  return () => {
+    ledgerStore.length = before;
   };
 }
 
@@ -180,6 +196,43 @@ describe("memory quests adapter", () => {
     });
   });
 
+  describe("confirmDone", () => {
+    it("releases the held escrow to the doer minus the fee, notifies the doer, and is idempotent on replay", async () => {
+      // q7 is naturally completed with a real accepted offer (o7, u5,
+      // 30000) and a real held escrow in the seed — no whitebox forcing
+      // needed, unlike the other describe blocks' assigned/in_progress gaps.
+      const before = notifications.length;
+      const k = key();
+      const first = await port.confirmDone("q7", "u0", k);
+      expect(first.status).toBe("paid");
+      expect(first.paidAt).toBeTruthy();
+
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("payment");
+      expect(created[0].userId).toBe("u5"); // q7's accepted doer
+      expect(created[0].body).toMatch(/NT\$270/); // net = 30000 - floor(30000*10%) fee, minor->display /100
+
+      const second = await port.confirmDone("q7", "u0", k);
+      expect(second.paidAt).toBe(first.paidAt);
+      expect(notifications.length).toBe(before + 1); // no duplicate notification on replay
+    });
+
+    it("rejects a non-poster actor", async () => {
+      const restore = forceQuestState("q2", "completed", "o2"); // o2: q2, doerId u3, amountMinor 20000
+      const restoreHold = forceHold("q2", "u2", 20000);
+      await expect(port.confirmDone("q2", "u3", key())).rejects.toThrow(/can't move this/); // u3 is the doer, not poster
+      restoreHold();
+      restore();
+    });
+
+    it("rejects a quest with no accepted offer", async () => {
+      const restore = forceQuestState("q2", "completed", null);
+      await expect(port.confirmDone("q2", "u2", key())).rejects.toThrow(/no accepted offer/);
+      restore();
+    });
+  });
+
   describe("cancelQuest", () => {
     it("cancels a still-open quest with no reason required, withdrawing every pending offer on it", async () => {
       const posted = await port.postQuest(BASE_INPUT, key());
@@ -189,20 +242,29 @@ describe("memory quests adapter", () => {
       expect(cancelled.cancelReason).toBeUndefined();
     });
 
-    it("requires a reason once an offer has been accepted, and notifies the counterpart", async () => {
+    it("requires a reason once an offer has been accepted, refunds the hold in full, and notifies the counterpart", async () => {
       const restore = forceQuestState("q4", "in_progress", "o5"); // o5: q4, doerId u2, posterId u4
+      const restoreHold = forceHold("q4", "u4", 60000); // o5.amountMinor
       await expect(port.cancelQuest("q4", "u4", "", key())).rejects.toThrow(/Say why/);
 
       const before = notifications.length;
+      const availableBefore = ledgerStore
+        .filter((e) => e.account === "user_available" && e.userId === "u4")
+        .reduce((s, e) => s + e.amountMinor, 0);
       const cancelled = await port.cancelQuest("q4", "u4", "Change of plans", key());
       expect(cancelled.status).toBe("cancelled");
       expect(cancelled.cancelReason).toBe("Change of plans");
+      const availableAfter = ledgerStore
+        .filter((e) => e.account === "user_available" && e.userId === "u4")
+        .reduce((s, e) => s + e.amountMinor, 0);
+      expect(availableAfter).toBe(availableBefore + 60000); // refunded in full, no fee
       const created = notifications.slice(before);
       expect(created).toHaveLength(1);
       expect(created[0].type).toBe("quest_cancelled");
       expect(created[0].userId).toBe("u2"); // the accepted doer, counterpart to the poster who cancelled
       expect(created[0].body).toMatch(/Change of plans/);
 
+      restoreHold();
       restore();
     });
 

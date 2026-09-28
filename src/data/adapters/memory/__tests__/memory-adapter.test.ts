@@ -283,14 +283,12 @@ describe("memory adapter — real slice", () => {
   describe("stubbed methods", () => {
     it("throw NotImplementedYet, not silently no-op", async () => {
       const adapter = createMemoryAdapter();
-      // confirmDone (needs real escrow release, M5 Phase 3) and
-      // disputeQuest (needs an admin actor, M6) stay stubs — every other
-      // QuestsPort/OffersPort lifecycle mutation is real as of M4
+      // disputeQuest (needs an admin actor, M6) stays a stub. confirmDone
+      // is real as of M5 Phase 3
+      // (src/data/adapters/memory/__tests__/quests.test.ts covers it) —
+      // every other QuestsPort/OffersPort lifecycle mutation is real too
       // (src/data/adapters/memory/__tests__/{quests,offers}.test.ts cover
       // startQuest/markDone/cancelQuest/acceptOffer/declineOffer).
-      await expect(adapter.confirmDone("q1", seed.meId, { idempotencyKey: "k" })).rejects.toThrow(
-        /not implemented yet/
-      );
       await expect(adapter.disputeQuest("q1", seed.meId, "reason", { idempotencyKey: "k" })).rejects.toThrow(
         /not implemented yet/
       );

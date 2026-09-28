@@ -1,6 +1,6 @@
 import type { QuestsPort, QuestSort, PostQuestInput } from "../../ports/quests";
 import type { Point, Quest } from "../../contracts";
-import { distanceBetween } from "../../contracts";
+import { distanceBetween, money, formatMoney } from "../../contracts";
 import { paginate } from "./pagination";
 import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
@@ -8,9 +8,18 @@ import { quests, offers, users, savedQuestIds } from "./store";
 import { isFirstUse } from "./idempotency";
 import { NotImplementedYet } from "./not-implemented";
 import { nextId } from "./next-id";
-import { offersFor, roleOn, statusMeta, canTransition, counterpartIdOn, type Actor } from "../../domain/lifecycle";
+import {
+  offersFor,
+  roleOn,
+  statusMeta,
+  canTransition,
+  counterpartIdOn,
+  acceptedOfferFor,
+  type Actor,
+} from "../../domain/lifecycle";
 import { notify } from "./notify";
 import { nowIso, nowMs } from "./clock";
+import { releaseEscrow, refundEscrow } from "./escrow";
 
 /* postQuest has no natural post-hoc lookup a replay could fall back on
    (unlike sendOffer's myOfferOn, or saveQuest's idempotent-by-nature
@@ -188,8 +197,29 @@ export function createMemoryQuestsPort(): QuestsPort {
       return quest;
     },
 
-    async confirmDone() {
-      throw new NotImplementedYet("confirmDone", "M5");
+    async confirmDone(questId, actorId, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("confirmDone");
+
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest) {
+        throw new Error("confirmDone: no such quest");
+      }
+      if (!isFirstUse("confirmDone", idempotency.idempotencyKey)) {
+        return quest;
+      }
+      guard(quest, "paid", actorId);
+
+      const accepted = acceptedOfferFor(offers, quest);
+      if (!accepted) {
+        throw new Error("This quest has no accepted offer to pay");
+      }
+      const { net } = releaseEscrow(quest, accepted, "tx-release");
+
+      quest.status = "paid";
+      quest.paidAt = nowIso();
+      notify(accepted.doerId, "payment", quest.id, `${formatMoney(money(net))} released to your wallet for "${quest.title}"`);
+      return quest;
     },
 
     async cancelQuest(questId, actorId, reason, idempotency) {
@@ -210,10 +240,13 @@ export function createMemoryQuestsPort(): QuestsPort {
         throw new Error("Say why, so the other side knows what happened");
       }
 
-      // Nothing was ever held (acceptOffer never touches LedgerPort — see
-      // this file's header comment), so there's no escrow to refund here,
-      // only pending offers left dangling to clean up.
-      if (!quest.acceptedOfferId) {
+      // An accepted offer means real escrow is held — refund it in full,
+      // no fee (matches preview/app.js:957-962). Otherwise nothing was
+      // ever held, only pending offers left dangling to clean up.
+      const accepted = acceptedOfferFor(offers, quest);
+      if (accepted) {
+        refundEscrow(quest, accepted);
+      } else {
         for (const offer of offersFor(offers, quest.id)) {
           if (offer.status === "pending") {
             offer.status = "withdrawn";

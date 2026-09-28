@@ -1,7 +1,8 @@
 import { createMemoryOffersPort } from "../offers";
-import { threads, offers as offerStore, notifications, quests as questStore } from "../store";
+import { threads, offers as offerStore, notifications, quests as questStore, ledger as ledgerStore } from "../store";
 import { resetIdempotencyForTests } from "../idempotency";
 import { setFaultInjectionRate } from "../fault-injection";
+import { balanceOf } from "../../../domain/ledger";
 
 // Every test that actually creates an offer uses a distinct (quest, doer)
 // pair, global across this whole file — offers/threads are module-level
@@ -161,13 +162,21 @@ describe("memory offers adapter", () => {
   });
 
   describe("acceptOffer", () => {
-    it("accepts a pending offer, auto-declines every other pending offer on the quest, and assigns the quest", async () => {
+    it("accepts a pending offer, holds real escrow, auto-declines every other pending offer, and assigns the quest", async () => {
       const before = notifications.length;
-      const accepted = await port.acceptOffer("o10", key());
+      const availableBefore = balanceOf(ledgerStore, "user_available", "u0"); // q6's poster
+      const heldBefore = balanceOf(ledgerStore, "user_held", "u0");
+
+      const accepted = await port.acceptOffer("o10", key()); // o10: q6, doerId u5, 25000
 
       expect(accepted.offer.status).toBe("accepted");
       expect(accepted.quest.status).toBe("assigned");
       expect(accepted.quest.acceptedOfferId).toBe("o10");
+
+      expect(balanceOf(ledgerStore, "user_available", "u0")).toBe(availableBefore - 25000);
+      expect(balanceOf(ledgerStore, "user_held", "u0")).toBe(heldBefore + 25000);
+      const holdEntries = ledgerStore.filter((e) => e.questId === "q6" && e.userId === "u0");
+      expect(holdEntries.reduce((s, e) => s + e.amountMinor, 0)).toBe(0);
 
       const o11 = offerStore.find((o) => o.id === "o11");
       const o12 = offerStore.find((o) => o.id === "o12");
@@ -178,6 +187,19 @@ describe("memory offers adapter", () => {
       expect(created).toHaveLength(3); // accepted (u5) + 2 auto-declined (u3, u2)
       expect(created.filter((n) => n.type === "offer_accepted")).toHaveLength(1);
       expect(created.filter((n) => n.type === "offer_declined")).toHaveLength(2);
+    });
+
+    it("rejects accepting an offer the poster can't afford to hold, writing no ledger entries", async () => {
+      const available = balanceOf(ledgerStore, "user_available", "u2"); // q2's poster
+      const sent = await port.sendOffer("q2", "u9", available + 100000, "", key());
+      const ledgerLengthBefore = ledgerStore.length;
+
+      await expect(port.acceptOffer(sent.id, key())).rejects.toThrow(/more in your wallet/);
+
+      expect(ledgerStore.length).toBe(ledgerLengthBefore);
+      const stillPending = offerStore.find((o) => o.id === sent.id)!;
+      expect(stillPending.status).toBe("pending");
+      expect(questStore.find((q) => q.id === "q2")!.status).toBe("open");
     });
 
     it("rejects accepting an offer once the quest is no longer open", async () => {
