@@ -371,4 +371,54 @@ describe("EngagementCard", () => {
     expect(queryByTestId("engagement-start-quest")).toBeNull();
     expect(queryByTestId("engagement-mark-as-done")).toBeNull();
   });
+
+  it("shows Confirm and pay only for the poster once completed, and calls onConfirmDone", async () => {
+    const completedQuest = { ...QUEST, status: "completed" as const, completedAt: "2026-09-16T08:00:00+08:00" };
+    const onConfirmDone = jest.fn();
+    const { getByTestId, getByText } = await render(
+      <EngagementCard
+        quest={completedQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onConfirmDone={onConfirmDone}
+      />
+    );
+    expect(getByText("Confirm and pay")).toBeTruthy();
+    await fireEvent.press(getByTestId("engagement-confirm-and-pay"));
+    expect(onConfirmDone).toHaveBeenCalled();
+  });
+
+  it("never shows Confirm and pay for a doer or applicant, or without onConfirmDone", async () => {
+    const completedQuest = { ...QUEST, status: "completed" as const, completedAt: "2026-09-16T08:00:00+08:00" };
+    const { queryByTestId: doerQuery } = await render(
+      <EngagementCard
+        quest={completedQuest}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onConfirmDone={() => {}}
+      />
+    );
+    expect(doerQuery("engagement-confirm-and-pay")).toBeNull();
+
+    const { queryByTestId: posterNoHandlerQuery } = await render(
+      <EngagementCard
+        quest={completedQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+      />
+    );
+    expect(posterNoHandlerQuery("engagement-confirm-and-pay")).toBeNull();
+  });
 });

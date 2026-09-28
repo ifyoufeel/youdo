@@ -1,18 +1,23 @@
-/* Ports app.js's CancelSheet (1197-1248). One deliberate copy divergence:
-   the web version's accepted-offer subtitle and refund card both claim
-   "the money goes straight back" — but M4's acceptOffer never actually
-   holds anything (LedgerPort stays 100% NotImplementedYet until M5), so
-   there is nothing to refund yet either. Reworded to state only what's
-   actually true today: the other side is told. CANCEL_REASONS stays a
-   plain literal-string list, not routed through t() — same precedent
-   wizardForm.ts's DURATIONS/EXPIRY_OPTIONS already set. */
+/* Ports app.js's CancelSheet (1197-1248) in full now that M5's escrow is
+   real: the accepted-offer subtitle and the "Refunded in full" InfoRow
+   both restore the web version's exact money-forward copy, since
+   cancelQuest genuinely refunds the held amount (escrow.ts's
+   refundEscrow) rather than the M4-era "nothing was ever held" state.
+   `refundMinor` replaces the boolean `hasAcceptedOffer` — null means no
+   offer was ever accepted (nothing to refund, matching the plain "Cancel
+   quest" subtitle); a number is the exact amount that comes back.
+   CANCEL_REASONS stays a plain literal-string list, not routed through
+   t() — same precedent wizardForm.ts's DURATIONS/EXPIRY_OPTIONS already
+   set. */
 import { useState } from "react";
 import { Text, StyleSheet } from "react-native";
-import { Dialog } from "@design/components/Dialog";
 import { Card } from "@design/components/Card";
+import { Dialog } from "@design/components/Dialog";
+import { InfoRow } from "@design/components/InfoRow";
 import { Radio } from "@design/components/Radio";
 import { Input } from "@design/components/Input";
 import { Button } from "@design/components/Button";
+import { money, formatMoney } from "@data/contracts";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -32,12 +37,14 @@ const EYEBROW_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
 export interface CancelSheetProps {
   open: boolean;
   onClose: () => void;
-  hasAcceptedOffer: boolean;
+  /** null when no offer was ever accepted (nothing to refund); the exact
+      amount that comes back otherwise. */
+  refundMinor: number | null;
   onConfirm: (reason: string) => void;
   submitting?: boolean;
 }
 
-export function CancelSheet({ open, onClose, hasAcceptedOffer, onConfirm, submitting = false }: CancelSheetProps) {
+export function CancelSheet({ open, onClose, refundMinor, onConfirm, submitting = false }: CancelSheetProps) {
   const [reason, setReason] = useState<string>(CANCEL_REASONS[0]);
   const [other, setOther] = useState("");
 
@@ -59,7 +66,7 @@ export function CancelSheet({ open, onClose, hasAcceptedOffer, onConfirm, submit
       open={open}
       onClose={onClose}
       title={t("cancelSheet.title")}
-      subtitle={hasAcceptedOffer ? t("cancelSheet.subtitleAccepted") : t("cancelSheet.subtitleOpen")}
+      subtitle={refundMinor !== null ? t("cancelSheet.subtitleAccepted") : t("cancelSheet.subtitleOpen")}
       testID="cancel-sheet"
       actions={
         <>
@@ -78,9 +85,9 @@ export function CancelSheet({ open, onClose, hasAcceptedOffer, onConfirm, submit
         </>
       }
     >
-      {hasAcceptedOffer ? (
+      {refundMinor !== null ? (
         <Card variant="sunken" padding="md">
-          <Text style={styles.bodyText}>{t("cancelSheet.noRefundNote")}</Text>
+          <InfoRow icon="coins" label={t("cancelSheet.refundedInFull")} value={formatMoney(money(refundMinor))} />
         </Card>
       ) : null}
       <Text style={styles.eyebrow}>{t("cancelSheet.whyLabel")}</Text>
@@ -110,12 +117,6 @@ const styles = StyleSheet.create({
     letterSpacing: raw.letterSpacing.caps,
     textTransform: "uppercase",
     color: semantic.color.text.secondary,
-  },
-  bodyText: {
-    fontFamily: BODY_FONT,
-    fontSize: raw.fontSize.sm,
-    lineHeight: raw.fontSize.sm * raw.lineHeight.normal,
-    color: semantic.color.text.primary,
   },
   footnote: {
     fontFamily: BODY_FONT,

@@ -1,14 +1,15 @@
-/* Ports app.js's OfferInboxScreen (2824-2938), scoped to what M4 can
-   actually do: the wallet-balance row, the short-by-this-much warning,
-   and the "Add money" DepositSheet escape hatch are all dropped — there's
-   no LedgerPort.balanceOf to call against (LedgerPort stays 100%
-   NotImplementedYet until M5). The accept-confirmation dialog keeps
-   FeeBreakdown and the auto-decline note, since both describe what
-   accepting *will* do (true today, before or after M5 wires the ledger
-   call into acceptOffer) rather than a live balance check. */
+/* Ports app.js's OfferInboxScreen (2824-2938) in full now that M5's
+   LedgerPort is real: the wallet-balance row, the short-by-this-much
+   warning, and the "Add money" DepositSheet escape hatch (M4's header
+   comment named all three as dropped pending exactly this) are restored
+   here. useWallet() gives the signed-in user's real available/held —
+   correct for this screen specifically because only a quest's own poster
+   ever reaches this route (routing-level, same implicit-actor precedent
+   OffersPort's own doc comment already flags as risk #1). */
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@design/components/Screen";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
@@ -20,9 +21,11 @@ import { InfoRow } from "@design/components/InfoRow";
 import { FeeBreakdown } from "@design/components/FeeBreakdown";
 import { Dialog } from "@design/components/Dialog";
 import { Button } from "@design/components/Button";
+import { Icon } from "@design/components/Icon";
 import { money, formatMoney, type Offer } from "@data/contracts";
 import { threadFor } from "@data/domain/threads";
-import { useNow } from "@data/composition-root";
+import { useNow, useRepository } from "@data/composition-root";
+import { useAuthSession } from "@data/auth-session";
 import { formatWhenAt } from "@lib/format";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -32,6 +35,9 @@ import { useOfferInbox } from "./useOfferInbox";
 import { useAcceptOffer } from "./useAcceptOffer";
 import { useDeclineOffer } from "./useDeclineOffer";
 import { OfferRow } from "./OfferRow";
+import { useWallet } from "../wallet/useWallet";
+import { useDeposit } from "../wallet/useDeposit";
+import { DepositSheet } from "../wallet/DepositSheet";
 
 const EYEBROW_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
 const DOER_NAME_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
@@ -43,11 +49,22 @@ export interface OfferInboxScreenProps {
 
 export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
   const router = useRouter();
+  const repository = useRepository();
+  const { session } = useAuthSession();
   const inbox = useOfferInbox(questId);
   const acceptOffer = useAcceptOffer(questId);
   const declineOffer = useDeclineOffer(questId);
+  const wallet = useWallet();
+  const deposit = useDeposit();
   const [confirming, setConfirming] = useState<Offer | null>(null);
+  const [depositOpen, setDepositOpen] = useState(false);
   const now = useNow();
+
+  const userQuery = useQuery({
+    queryKey: ["users", session?.userId],
+    queryFn: () => repository.getUser(session?.userId as string),
+    enabled: !!session?.userId,
+  });
 
   if (inbox.isLoading) {
     return (
@@ -75,11 +92,13 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
   const offersOpen = Date.parse(quest.expiresAt) > now;
   const confirmingDoer = confirming ? (doers.get(confirming.doerId) ?? null) : null;
   const otherPendingCount = confirming ? pending.length - 1 : 0;
+  const short = confirming ? Math.max(0, confirming.amountMinor - wallet.available) : 0;
 
   return (
     <Screen title={t("offerInbox.title")} subtitle={quest.title} onBack={() => router.back()}>
       <Card variant="sunken" padding="md">
         <InfoRow icon="coins" label={t("offerInbox.asking")} value={formatMoney(money(quest.payoutMinor))} />
+        <InfoRow icon="wallet" label={t("offerInbox.wallet")} value={formatMoney(money(wallet.available))} />
         <InfoRow
           icon="clock"
           label={t("offerInbox.offersClose")}
@@ -149,16 +168,17 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
               {t("offerInbox.back")}
             </Button>
             <Button
-              variant="primary"
+              variant="money"
               fullWidth
               icon="check"
-              disabled={acceptOffer.isPending}
+              disabled={acceptOffer.isPending || short > 0}
               onPress={() => {
                 if (!confirming) return;
                 const offerId = confirming.id;
                 setConfirming(null);
                 acceptOffer.mutate(offerId);
               }}
+              testID="accept-offer-submit"
             >
               {t("offerInbox.acceptButton")}
             </Button>
@@ -167,7 +187,28 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
       >
         {confirming ? (
           <>
-            <FeeBreakdown amountMinor={confirming.amountMinor} />
+            <FeeBreakdown
+              amountMinor={confirming.amountMinor}
+              note={t("offerInbox.feeNote", {
+                amount: formatMoney(money(confirming.amountMinor)),
+                name: confirmingDoer?.name ?? "",
+              })}
+            />
+            <Card variant="sunken" padding="md">
+              <InfoRow icon="wallet" label={t("offerInbox.wallet")} value={formatMoney(money(wallet.available))} />
+              <InfoRow icon="lock" label={t("offerInbox.heldAfter")} value={formatMoney(money(wallet.held + confirming.amountMinor))} />
+            </Card>
+            {short > 0 ? (
+              <Card padding="md" style={styles.shortCard}>
+                <View style={styles.shortRow}>
+                  <Icon name="alert-triangle" size={17} color={raw.color.danger["600"]} style={styles.shortIcon} />
+                  <Text style={styles.shortText}>{t("offerInbox.shortWarning", { amount: formatMoney(money(short)) })}</Text>
+                </View>
+                <Button variant="money" size="sm" icon="plus" fullWidth style={styles.addMoneyButton} onPress={() => setDepositOpen(true)}>
+                  {t("offerInbox.addMoney")}
+                </Button>
+              </Card>
+            ) : null}
             {otherPendingCount > 0 ? (
               <Text style={styles.autoDeclineNote}>
                 {t("offerInbox.autoDeclineNote", {
@@ -179,6 +220,20 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
           </>
         ) : null}
       </Dialog>
+
+      <DepositSheet
+        open={depositOpen}
+        onClose={() => setDepositOpen(false)}
+        onSubmit={(amountMinor) => {
+          setDepositOpen(false);
+          deposit.mutate(amountMinor);
+        }}
+        bank={userQuery.data?.bank ?? ""}
+        availableMinor={wallet.available}
+        presetMinor={short}
+        reason={short > 0 ? t("offerInbox.depositReason", { amount: formatMoney(money(short)) }) : undefined}
+        submitting={deposit.isPending}
+      />
     </Screen>
   );
 }
@@ -216,5 +271,26 @@ const styles = StyleSheet.create({
     fontSize: raw.fontSize["2xs"],
     lineHeight: raw.fontSize["2xs"] * raw.lineHeight.normal,
     color: semantic.color.text.secondary,
+  },
+  shortCard: {
+    borderColor: semantic.color.text.danger,
+  },
+  shortRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+  },
+  shortIcon: {
+    marginTop: 1,
+  },
+  shortText: {
+    flex: 1,
+    fontFamily: DOER_NAME_FONT,
+    fontSize: raw.fontSize.sm,
+    lineHeight: raw.fontSize.sm * raw.lineHeight.normal,
+    color: semantic.color.text.primary,
+  },
+  addMoneyButton: {
+    marginTop: 10,
   },
 });

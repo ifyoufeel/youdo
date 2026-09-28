@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { render, fireEvent } from "@testing-library/react-native";
 import { CancelSheet } from "../CancelSheet";
 
-function Harness({ hasAcceptedOffer = false, onConfirm = () => {} }: { hasAcceptedOffer?: boolean; onConfirm?: (reason: string) => void }) {
+function Harness({ refundMinor = null, onConfirm = () => {} }: { refundMinor?: number | null; onConfirm?: (reason: string) => void }) {
   const [open, setOpen] = useState(true);
   return (
     <CancelSheet
       open={open}
       onClose={() => setOpen(false)}
-      hasAcceptedOffer={hasAcceptedOffer}
+      refundMinor={refundMinor}
       onConfirm={(reason) => {
         onConfirm(reason);
         setOpen(false);
@@ -18,23 +18,24 @@ function Harness({ hasAcceptedOffer = false, onConfirm = () => {} }: { hasAccept
 }
 
 describe("CancelSheet", () => {
-  it("renders with no console warnings/errors, with and without an accepted offer", async () => {
+  it("renders with no console warnings/errors, with and without a refund", async () => {
     const error = jest.spyOn(console, "error").mockImplementation(() => {});
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     await render(<Harness />);
-    await render(<Harness hasAcceptedOffer />);
+    await render(<Harness refundMinor={40000} />);
     expect(error).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
     error.mockRestore();
     warn.mockRestore();
   });
 
-  it("shows the no-refund note only once an offer has been accepted — no money claim, since nothing was ever held", async () => {
+  it("shows the real refund amount only once an offer was accepted — real money, real escrow since M5", async () => {
     const { queryByText: withoutOffer } = await render(<Harness />);
-    expect(withoutOffer(/nothing to refund/)).toBeNull();
+    expect(withoutOffer("Refunded in full")).toBeNull();
 
-    const { getByText: withOffer } = await render(<Harness hasAcceptedOffer />);
-    expect(withOffer(/nothing to refund/)).toBeTruthy();
+    const { getByText: withOffer } = await render(<Harness refundMinor={40000} />);
+    expect(withOffer("Refunded in full")).toBeTruthy();
+    expect(withOffer("NT$400")).toBeTruthy();
   });
 
   it("defaults to the first reason selected, Confirm enabled", async () => {

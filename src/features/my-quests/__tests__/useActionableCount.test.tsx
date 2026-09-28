@@ -27,17 +27,16 @@ function useHarness() {
 }
 
 describe("useActionableCount", () => {
-  it("counts only poster+open-with-pending-offers and doer+assigned/in_progress engagements", async () => {
+  it("counts poster+open-with-pending-offers, poster+completed, and doer+assigned/in_progress engagements", async () => {
     const { result } = await renderHook(() => useHarness(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.auth.status).toBe("signedOut"));
     await act(() => result.current.auth.signInWithGoogle());
     await waitFor(() => expect(result.current.auth.status).toBe("signedIn"));
 
     // u0's fixture: q1 (doer, in_progress) + q11 (doer, assigned) + q6
-    // (poster, open, 3 pending offers) = 3. q7 (poster, completed) and
-    // q8/q9 (doer, paid/cancelled) are excluded — the M5/M6-scoped
-    // branches useActionableCount's own header comment names as
-    // deliberately out of scope for M4.
-    await waitFor(() => expect(result.current.count).toBe(3), { timeout: 3000 });
+    // (poster, open, 3 pending offers) + q7 (poster, completed — real
+    // "Confirm and pay" since M5) = 4. q8/q9 (doer, paid/cancelled) are
+    // excluded (closed); paid+unrated ("Leave a rating") stays M6.
+    await waitFor(() => expect(result.current.count).toBe(4), { timeout: 3000 });
   });
 });

@@ -1,14 +1,12 @@
 /* Ports preview/app.js's QuestDetailScreen (1760-2073). M2 scoped this to
    payout, meta rows, description, requirements, poster trust panel,
-   offer count, address privacy, and the offer sheet. M4 adds the
-   poster's real "Review offers" button, and (this phase) Start quest/
-   Mark as done/Cancel — the real subset of app.js's slabActions() that
-   doesn't need Chats (M4 Phase 5) or Confirm-and-pay/Leave-a-rating/
-   Issue (M5/M6). "Open chat" stays unwired everywhere in this file until
-   Phase 5 gives it a real route — a lone Cancel button for poster/doer
-   mid-quest, or no slab at all for a completed quest, over a button to
-   nowhere ("no dead buttons"). ConfirmWindow (Phase 2) already covers
-   "completed" informationally in the body regardless of role. */
+   offer count, address privacy, and the offer sheet. M4 added the
+   poster's real "Review offers" button and Start quest/Mark as done/
+   Cancel. M5 adds the poster's "Confirm and pay" — the one remaining
+   slab action needing real escrow release — leaving only Leave-a-rating/
+   Issue (M6, no admin/rating actor exists yet) unwired. ConfirmWindow
+   (Phase 2) already covers "completed" informationally in the body
+   regardless of role. */
 import { useState, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -29,6 +27,7 @@ import { Toast } from "@design/components/Toast";
 import { ConfirmWindow } from "@design/components/ConfirmWindow";
 import { money, formatMoney } from "@data/contracts";
 import { statusMeta, acceptedOfferFor } from "@data/domain/lifecycle";
+import { netOn } from "@data/domain/fees";
 import { questDuration, formatWhenAt } from "@lib/format";
 import { questBadges } from "@lib/questBadges";
 import { raw } from "@design/tokens/raw";
@@ -40,6 +39,7 @@ import { useSendOffer } from "./useSendOffer";
 import { useWithdrawOffer } from "./useWithdrawOffer";
 import { useStartQuest } from "./useStartQuest";
 import { useMarkDone } from "./useMarkDone";
+import { useConfirmDone } from "./useConfirmDone";
 import { useCancelQuest } from "./useCancelQuest";
 import { useQuestThread } from "./useQuestThread";
 import { OfferSheet } from "./OfferSheet";
@@ -63,6 +63,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const withdrawOffer = useWithdrawOffer(questId);
   const startQuest = useStartQuest();
   const markDone = useMarkDone();
+  const confirmDone = useConfirmDone();
   const cancelQuest = useCancelQuest(questId);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
@@ -177,6 +178,34 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
           {t("questDetail.markAsDone")}
         </Button>
       </>
+    );
+  } else if (role === "poster" && quest.status === "completed" && actorId) {
+    // No Cancel here either — completed->cancelled isn't a legal
+    // transition for either role (see the doer/applicant branch below).
+    slab = (
+      <Button
+        variant="money"
+        fullWidth
+        icon="check"
+        onPress={() =>
+          confirmDone.mutate(
+            { questId, actorId },
+            {
+              onSuccess: () => {
+                if (acceptedOffer) {
+                  setConfirmation(
+                    t("questDetail.confirmedToast", { amount: formatMoney(money(netOn(acceptedOffer.amountMinor))) })
+                  );
+                }
+              },
+            }
+          )
+        }
+        disabled={confirmDone.isPending}
+        testID="confirm-and-pay"
+      >
+        {t("questDetail.confirmAndPay")}
+      </Button>
     );
   } else if ((role === "doer" && quest.status === "completed") || role === "applicant") {
     // No Cancel here — cancelling from "completed" isn't a legal
@@ -331,7 +360,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
       <CancelSheet
         open={cancelSheetOpen}
         onClose={() => setCancelSheetOpen(false)}
-        hasAcceptedOffer={!!acceptedOffer}
+        refundMinor={acceptedOffer ? acceptedOffer.amountMinor : null}
         onConfirm={runCancel}
         submitting={cancelQuest.isPending}
       />

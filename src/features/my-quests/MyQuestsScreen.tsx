@@ -24,6 +24,7 @@ import { useMyQuests } from "./useMyQuests";
 import { EngagementCard } from "./EngagementCard";
 import { useStartQuest } from "../quest-detail/useStartQuest";
 import { useMarkDone } from "../quest-detail/useMarkDone";
+import { useConfirmDone } from "../quest-detail/useConfirmDone";
 
 const EMPTY_COPY: Record<Bucket, { title: string; action: string }> = {
   active: { title: t("myQuests.empty.active.title"), action: t("myQuests.empty.active.action") },
@@ -38,6 +39,7 @@ export function MyQuestsScreen() {
   const { session } = useAuthSession();
   const startQuest = useStartQuest();
   const markDone = useMarkDone();
+  const confirmDone = useConfirmDone();
   const unreadNotifications = useUnreadNotificationCount();
   const [tab, setTab] = useState<Bucket>("active");
   const [confirmation, setConfirmation] = useState<string | null>(null);
@@ -119,6 +121,9 @@ export function MyQuestsScreen() {
             }
             onMarkAsDone={
               session ? () => markDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
+            onConfirmDone={
+              session ? () => confirmDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
             }
           />
         ))
