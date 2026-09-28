@@ -43,19 +43,32 @@ export function WalletCard({ availableMinor, heldMinor, incomingMinor, onAddMone
         {heldMinor <= 0 && incomingMinor <= 0 ? <Badge label={t("wallet.nothingHeld")} /> : null}
       </View>
       <View style={styles.actions}>
-        <Button variant="money" icon="plus" fullWidth onPress={onAddMoney} testID={testID ? `${testID}-add` : undefined}>
-          {t("wallet.addMoney")}
-        </Button>
-        <Button
-          variant="secondary"
-          icon="wallet"
-          fullWidth
-          disabled={availableMinor <= 0}
-          onPress={onCashOut}
-          testID={testID ? `${testID}-cash-out` : undefined}
-        >
-          {t("wallet.cashOut")}
-        </Button>
+        {/* Button's `fullWidth` is a literal width:100% of its own
+            immediate parent, not flex:1 of the row (Button.tsx) — two
+            fullWidth buttons side by side in one row would both claim
+            100% of the ROW and overflow (every existing two-button row
+            elsewhere sidesteps this by pairing one fullWidth button with
+            one plain-sized one). Wrapping each in its own flex:1 slot
+            gives fullWidth a narrower parent to fill instead, without
+            touching Button's shared style — a change there would ripple
+            into every other consumer. */}
+        <View style={styles.actionSlot}>
+          <Button variant="money" icon="plus" fullWidth onPress={onAddMoney} testID={testID ? `${testID}-add` : undefined}>
+            {t("wallet.addMoney")}
+          </Button>
+        </View>
+        <View style={styles.actionSlot}>
+          <Button
+            variant="secondary"
+            icon="wallet"
+            fullWidth
+            disabled={availableMinor <= 0}
+            onPress={onCashOut}
+            testID={testID ? `${testID}-cash-out` : undefined}
+          >
+            {t("wallet.cashOut")}
+          </Button>
+        </View>
       </View>
     </Card>
   );
@@ -86,5 +99,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginTop: 14,
+  },
+  actionSlot: {
+    flex: 1,
   },
 });
