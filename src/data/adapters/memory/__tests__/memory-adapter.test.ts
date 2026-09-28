@@ -283,8 +283,8 @@ describe("memory adapter — real slice", () => {
   describe("stubbed methods", () => {
     it("throw NotImplementedYet, not silently no-op", async () => {
       const adapter = createMemoryAdapter();
-      // confirmDone (needs real escrow release) and disputeQuest (needs an
-      // admin actor) stay stubs until M5/M6 respectively — every other
+      // confirmDone (needs real escrow release, M5 Phase 3) and
+      // disputeQuest (needs an admin actor, M6) stay stubs — every other
       // QuestsPort/OffersPort lifecycle mutation is real as of M4
       // (src/data/adapters/memory/__tests__/{quests,offers}.test.ts cover
       // startQuest/markDone/cancelQuest/acceptOffer/declineOffer).
@@ -297,9 +297,13 @@ describe("memory adapter — real slice", () => {
 
       // Threads/notifications are real as of M4 Phase 1
       // (src/data/adapters/memory/__tests__/{threads,notifications}.test.ts
-      // cover them) — LedgerPort stays 100% stubbed until M5, ReviewsPort
-      // until M6.
-      await expect(adapter.listEntriesForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
+      // cover them). LedgerPort is real as of M5 Phase 2
+      // (src/data/adapters/memory/__tests__/ledger.test.ts covers it) —
+      // listEntriesForUser resolves to u0's real seeded entries now.
+      // ReviewsPort stays stubbed until M6.
+      expect(await adapter.listEntriesForUser(seed.meId)).toEqual(
+        expect.arrayContaining([expect.objectContaining({ userId: seed.meId })])
+      );
       await expect(adapter.listReviewsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
     });
   });

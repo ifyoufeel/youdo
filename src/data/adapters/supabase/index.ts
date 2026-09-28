@@ -62,6 +62,7 @@ export function createSupabaseAdapter(): Repository {
 
     listEntriesForUser: () => stub("listEntriesForUser"),
     balanceOf: () => stub("balanceOf"),
+    listPaymentsForUser: () => stub("listPaymentsForUser"),
     deposit: () => stub("deposit"),
     cashOut: () => stub("cashOut"),
 

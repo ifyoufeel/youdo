@@ -21,9 +21,8 @@ import { nowIso, nowMs } from "./clock";
    replay rather than either a duplicate or nothing. */
 const postedByKey = new Map<string, Quest>();
 
-/** Same calendar date (local time) as the adapter's notion of "now" — the
-    real device clock, since nothing wires the preview's simulated clock
-    into the data layer (that's dev-only chrome, a separate concern). */
+/** Same calendar date (local time) as the adapter's notion of "now" —
+    the seed-anchored clock (M5, clock.ts), not the device clock. */
 function isToday(iso: string, now: Date): boolean {
   const d = new Date(iso);
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();

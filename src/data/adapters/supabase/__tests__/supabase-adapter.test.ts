@@ -23,6 +23,7 @@ describe("supabase adapter stub", () => {
       () => adapter.listOffersForQuest("x"),
       () => adapter.listThreadsForUser("x"),
       () => adapter.listEntriesForUser("x"),
+      () => adapter.listPaymentsForUser("x"),
       () => adapter.listReviewsForUser("x"),
       () => adapter.listForUser("x"),
     ];

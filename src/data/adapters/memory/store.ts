@@ -20,6 +20,9 @@ import {
   MessageSchema,
   type Notification,
   NotificationSchema,
+  type LedgerEntry,
+  LedgerEntrySchema,
+  type Payment,
   PointSchema,
 } from "../../contracts";
 import type { Area } from "../../ports/areas";
@@ -90,3 +93,17 @@ export const threadReadAt: Map<string, string> = new Map(Object.entries(seed.thr
     a user about happens. Seeded from the fixture's own notifications so
     the preview gallery has real unread rows to show from cold start. */
 export const notifications: Notification[] = parseArray(NotificationSchema, seed.notifications);
+
+/** Mutable — post-txn.ts (M5) is the only writer, appending the entries
+    escrow hold/release/refund and deposit/cash-out settlement create.
+    Seeded from the fixture's own real ledger history (opening balances,
+    q8's full hold+release+fee cycle, the still-open q1/q7/q11 holds). */
+export const ledger: LedgerEntry[] = parseArray(LedgerEntrySchema, seed.ledger);
+
+/** Mutable — ledger.ts's deposit/cashOut (M5) push a `pending` row here
+    immediately, then settle it in place once payment-settlement.ts's
+    jittered timer fires. No seed data: the fixture's historical
+    transactions (tx-open, tx-cash-1, ...) predate the payments table —
+    modeling them as payments that "already settled" would invent a
+    provider reference nothing backs. */
+export const payments: Payment[] = [];
