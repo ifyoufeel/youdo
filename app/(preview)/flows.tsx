@@ -26,11 +26,23 @@
    real pending offers on q6 triggers the live acceptOffer mutation — the
    other two auto-decline for real; frame 6's "Mark as done" on q1
    triggers the live markDone mutation and renders ConfirmWindow's
-   countdown for real. */
-import type { ReactNode } from "react";
+   countdown for real. Frames 7-9 (M5) close the money loop for real, all
+   sharing the same ambient wallet a LiveWalletStrip reads live above
+   each one: frame 7's "Confirm and pay" on q7 releases real escrow;
+   frame 8 seeds one real oversized offer on q6 (SeedShortfallOffer, via
+   the real sendOffer port, not a mock) so the shortfall warning, the
+   contextual DepositSheet, and a real accept afterward all have
+   something genuine to react to; frame 9 starts/completes q11 then asks
+   the reviewer to use the DevStrip's own +3d button (ADR-009's clock,
+   already ambient above every (preview) route) to sweep the 72h confirm
+   window for real — put last since advancing the clock is one-way for
+   this whole page, per risk flag #2 in the M5 plan. */
+import { useEffect, useState, type ReactNode } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
-import { RepositoryProvider } from "@data/composition-root";
+import { RepositoryProvider, useRepository } from "@data/composition-root";
 import { AuthSessionProvider } from "@data/auth-session";
+import { money, formatMoney } from "@data/contracts";
+import { newIdempotencyKey } from "@lib/idempotency";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -39,6 +51,9 @@ import { BrowseScreen } from "@features/browse/BrowseScreen";
 import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
 import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
 import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
+import { OfferInboxScreen } from "@features/offer-inbox/OfferInboxScreen";
+import { LoadingState } from "@design/components/LoadingState";
+import { useWallet } from "@features/wallet/useWallet";
 import { AutoSignInAmbient } from "./_components/AutoSignInAmbient";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -47,6 +62,57 @@ const LABEL_FONT = fontFamilyName(raw.font.mono, raw.fontWeight.regular);
 
 function FlowFrame({ children }: { children: ReactNode }) {
   return <View style={styles.frame}>{children}</View>;
+}
+
+/* A compact, always-visible readout of the real wallet — reads
+   useWallet() against the same ambient session/query cache the frame's
+   own screen does, so a mutation made below (confirm-and-pay, an
+   auto-release swept in by the DevStrip's +3d button) shows up here the
+   moment that query invalidates, with no extra wiring. */
+function LiveWalletStrip() {
+  const wallet = useWallet();
+  return (
+    <View style={styles.walletStrip}>
+      <Text style={styles.walletStripText}>
+        Available {formatMoney(money(wallet.available))} · Held {formatMoney(money(wallet.held))} · Coming{" "}
+        {formatMoney(money(wallet.incoming))}
+      </Text>
+    </View>
+  );
+}
+
+const SHORTFALL_DOER_ID = "u9";
+const SHORTFALL_AMOUNT_MINOR = 99999900; // larger than any real wallet in the fixture
+
+/* Seeds one real pending offer on q6, larger than u0's real balance,
+   through the actual sendOffer port — not a mock — so frame 9 below has
+   a real shortfall to demonstrate without permanently draining u0's own
+   wallet (every other frame in this gallery shares that same balance).
+   Best-effort: if q6 is no longer open (a reviewer already accepted an
+   offer on it in frame 3 or 5), this silently does nothing and the frame
+   below just shows q6's real current state instead. */
+function SeedShortfallOffer({ children }: { children: ReactNode }) {
+  const repository = useRepository();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    repository
+      .sendOffer("q6", SHORTFALL_DOER_ID, SHORTFALL_AMOUNT_MINOR, "A demo offer bigger than any real wallet.", {
+        idempotencyKey: newIdempotencyKey(),
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!ready) return <LoadingState label="Setting up the demo…" />;
+  return <>{children}</>;
 }
 
 export default function FlowsScreen() {
@@ -62,7 +128,11 @@ export default function FlowsScreen() {
         Browser back returns you here. The fourth frame is the real posting wizard — fill it in and
         submit to land for real on My Quests, with your new quest&apos;s own card and the &quot;Quest
         posted&quot; toast. The fifth and sixth frames (M4) close the loop for real: accept a pending
-        offer and mark a quest done, both live mutations against the same memory adapter.
+        offer and mark a quest done, both live mutations against the same memory adapter. The
+        seventh through ninth frames (M5) make the money real too — confirm-and-pay releasing real
+        escrow, a real wallet shortfall walked through Add money to a successful accept, and the
+        72-hour confirm window swept for real via the dev strip&apos;s own clock. Try the ninth frame
+        last — advancing the clock is one-way for the whole page.
       </Text>
 
       <Text style={styles.specimenLabel}>1 · Sign in — real AuthSessionProvider, memory adapter</Text>
@@ -122,6 +192,43 @@ export default function FlowsScreen() {
           <QuestDetailScreen questId="q1" />
         </AutoSignInAmbient>
       </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        7 · Your completed quest (q7) — tap &quot;Confirm and pay&quot; live and watch the wallet
+        strip above flip Held to zero for real (M5)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <LiveWalletStrip />
+          <QuestDetailScreen questId="q7" />
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        8 · Shortfall → Add money → Accept — a demo offer bigger than any real wallet is pending on
+        q6; tap Accept on it to see the real shortfall warning, add money, then accept for real (M5)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <SeedShortfallOffer>
+            <OfferInboxScreen questId="q6" />
+          </SeedShortfallOffer>
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        9 · Clock-driven auto-release (M5) — your accepted-but-not-started quest (q11): tap
+        &quot;Start quest&quot;, then &quot;Mark as done&quot;, then use the dev strip&apos;s own +3d
+        button above to sweep the 72h confirm window — the wallet strip flips Coming into Available
+        for real. The +3d advance is one-way for this whole page (every other frame shares the same
+        clock), so try this one last.
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <LiveWalletStrip />
+          <QuestDetailScreen questId="q11" />
+        </AutoSignInAmbient>
+      </FlowFrame>
     </ScrollView>
   );
 }
@@ -147,6 +254,18 @@ const styles = StyleSheet.create({
     color: semantic.color.text.secondary,
   },
   specimenLabel: {
+    fontFamily: LABEL_FONT,
+    fontSize: raw.fontSize["2xs"],
+    color: semantic.color.text.secondary,
+  },
+  walletStrip: {
+    paddingVertical: 8,
+    paddingHorizontal: raw.layout.gutterScreen,
+    backgroundColor: semantic.color.surface.sunken,
+    borderBottomWidth: raw.border.hair,
+    borderBottomColor: semantic.color.border.default,
+  },
+  walletStripText: {
     fontFamily: LABEL_FONT,
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,

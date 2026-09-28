@@ -242,3 +242,62 @@ even to someone who never clicks through it live.
 prior session to default into, so the real product — unlike this preview —
 should gate on auth from a cold start. That is a different codebase and a
 different default, not a reason to change this one.
+
+---
+
+## ADR-013 · Pending payments scoped to deposit/cash-out; the memory adapter's clock is seed-anchored
+
+**Decision (pending scope).** ADR-005's "every payment passes through
+`pending` even in the mock" applies to `deposit`/`cashOut` only. Accepting an
+offer (hold), confirming a quest (release), and cancelling (refund) are
+ledger-internal `user_available`↔`user_held` moves that settle atomically
+with the lifecycle transition causing them — no `Payment` record, no
+`pending` state, exactly like `balanceOf` never exposing a stored field.
+`docs/HANDOFF.md`'s broader claim that pending applies to all five
+transactions is superseded by this ADR.
+
+**Why.** `pending` exists to model a real payment provider sitting behind
+`deposit`/`cashOut` — they're the only two transactions that cross the
+`external_bank` boundary (PRD §9's `payments` table is keyed on
+`provider`/`provider_id`, a shape only those two ever populate). Hold,
+release, and refund never leave the ledger: there's no provider on the other
+side of an escrow hold to model a webhook for. Modeling `pending` there too
+would invent latency and a settlement race with nothing real behind it —
+the same "don't build infrastructure for a caller that doesn't exist" reasoning
+this codebase has applied since M1.
+
+**Mechanism.** `deposit`/`cashOut` return a `Payment` in state `pending`
+immediately; `payment-settlement.ts` settles it on a jittered 800–1600ms
+timer (`scheduleSettlement`) — writing the real ledger entries and flipping
+the state to `succeeded`, or, on a simulated fault, `failed` with nothing
+written. `LedgerPort` stays deliberately narrow (`listEntriesForUser`,
+`balanceOf`, `listPaymentsForUser`, `deposit`, `cashOut`) — no general "post a
+transaction" method, so hold/release/refund can only ever happen as a side
+effect of a real `QuestsPort`/`OffersPort` transition, never called directly.
+
+**Decision (clock).** The memory adapter's clock is a value in the store,
+anchored to `seed.now` at boot, moved only through an explicit
+`advanceClock(deltaMs)` — never `Date.now()`. `src/data/domain/clock.ts`'s
+`planSweep(quests, offers, nowMs)` is ADR-009's "one pure function that runs
+whenever the clock moves," applied for real: every mutation-path timestamp
+(`quests.ts`, `offers.ts`, `threads.ts`, `notifications.ts`) now reads
+`nowIso()`/`nowMs()` from this clock, and real screens read time only through
+`useNow()` (a `useSyncExternalStore` subscription) — never `advanceClock`,
+which stays dev-only plumbing re-exported through `composition-root.tsx` the
+same way the fault-injection switch already was.
+
+**Why (clock).** `seed.ts`'s `now` is `2026-09-16T09:00:00+08:00` —
+consistently behind the real device clock by construction, since the fixture
+is a snapshot, not a moving target. A sweep run against `Date.now()` would
+silently expire most of the open feed and auto-pay every completed quest the
+instant it first ran, destroying the fixture on load. Anchoring to the seed
+makes every previously-checked-in adapter test's exact deltas (an offer
+closes in *n* hours, a confirm window has *m* hours left) durable regardless
+of which real calendar day the suite happens to run on.
+
+**Cost.** `useNow()`/`advanceClock` are memory-adapter-specific — M7's
+Supabase swap must source time from the server or device instead, not carry
+this forward. The DevStrip's clock buttons are `__DEV__`-gated, same as the
+actor switcher (ADR-008); a production `expo export -p web` build never
+shows them, so the clock only moves by a real timer's own tick, exactly like
+production would.

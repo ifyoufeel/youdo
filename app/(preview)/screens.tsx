@@ -3,7 +3,7 @@
    in its four states. Each is a real, standalone Screen render, not a
    mockup — proving the shell + EmptyState/LoadingState/ErrorState
    actually compose the way a real feature screen will use them. */
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { Screen } from "@design/components/Screen";
 import { EmptyState } from "@design/components/EmptyState";
@@ -16,6 +16,7 @@ import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
 import { t } from "../../src/i18n/t";
+import type { Payment } from "@data/contracts";
 import { OnboardingProvider, useOnboardingDraft } from "@features/onboarding/OnboardingContext";
 import WelcomeScreen from "@features/onboarding/WelcomeScreen";
 import LocationScreen from "@features/onboarding/LocationScreen";
@@ -29,6 +30,12 @@ import { ChatsScreen } from "@features/chats/ChatsScreen";
 import { ThreadScreen } from "@features/chats/ThreadScreen";
 import { OfferInboxScreen } from "@features/offer-inbox/OfferInboxScreen";
 import { NotificationsScreen } from "@features/notifications/NotificationsScreen";
+import { WalletCard } from "@features/wallet/WalletCard";
+import { WalletHistory } from "@features/wallet/WalletHistory";
+import { DepositSheet } from "@features/wallet/DepositSheet";
+import { CashOutSheet } from "@features/wallet/CashOutSheet";
+import type { WalletHistoryRow } from "@features/wallet/useWallet";
+import { ProfileScreen } from "@features/profile/ProfileScreen";
 import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -69,6 +76,84 @@ function SeedDraft({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
+}
+
+const WALLET_NOW = Date.parse("2026-09-16T09:00:00+08:00"); // seed.now itself
+
+/* One synthetic row per real WalletRowKind (domain/ledger.ts's
+   classifyWalletRow) — the seed's own real history only ever produces 4
+   of the 7 kinds for one user, so this set is fabricated to show every
+   face the wallet can put on a transaction. */
+const WALLET_HISTORY_ROWS: WalletHistoryRow[] = [
+  { txnId: "spec-held", at: "2026-09-16T08:00:00+08:00", memo: "Held for a quest", questId: "q6", kind: "held", amountMinor: -25000, signed: true },
+  { txnId: "spec-released", at: "2026-09-15T18:00:00+08:00", memo: "Released to the doer", questId: "q1", kind: "released", amountMinor: 40000, signed: false },
+  { txnId: "spec-refunded", at: "2026-09-15T09:00:00+08:00", memo: "Refunded after cancellation", questId: "q9", kind: "refunded", amountMinor: 50000, signed: true },
+  { txnId: "spec-paid-in", at: "2026-09-14T20:00:00+08:00", memo: "Quest paid", questId: "q8", kind: "paid_in", amountMinor: 31500, signed: true },
+  { txnId: "spec-added", at: "2026-09-13T12:00:00+08:00", memo: "Added from CTBC •••• 4417", questId: null, kind: "added", amountMinor: 100000, signed: true },
+  { txnId: "spec-sent", at: "2026-09-10T16:00:00+08:00", memo: "Cash out to CTBC •••• 4417", questId: null, kind: "sent", amountMinor: -150000, signed: true },
+];
+
+function specimenPayment(overrides: Partial<Payment>): Payment {
+  return {
+    id: "spec-pay",
+    txnId: "spec-pay-tx",
+    kind: "deposit",
+    userId: "u0",
+    amountMinor: 50000,
+    state: "pending",
+    provider: "simulated",
+    providerId: "spec-sim",
+    createdAt: "2026-09-16T08:55:00+08:00",
+    settledAt: null,
+    ...overrides,
+  };
+}
+
+/* Mirrors DialogGallery's own toggle-button pattern (components.tsx) —
+   DepositSheet/CashOutSheet are Dialogs, so the gallery shows them via a
+   real open/close toggle rather than a permanently-open sheet. */
+function WalletSheetsGallery() {
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [shortfallOpen, setShortfallOpen] = useState(false);
+  const [cashOutOpen, setCashOutOpen] = useState(false);
+
+  return (
+    <View style={styles.buttonRow}>
+      <Button variant="secondary" size="sm" onPress={() => setDepositOpen(true)}>
+        Open Deposit sheet
+      </Button>
+      <Button variant="secondary" size="sm" onPress={() => setShortfallOpen(true)}>
+        Open Deposit — shortfall trigger
+      </Button>
+      <Button variant="secondary" size="sm" onPress={() => setCashOutOpen(true)}>
+        Open Cash out sheet
+      </Button>
+
+      <DepositSheet
+        open={depositOpen}
+        onClose={() => setDepositOpen(false)}
+        onSubmit={() => setDepositOpen(false)}
+        bank="CTBC •••• 4417"
+        availableMinor={535500}
+      />
+      <DepositSheet
+        open={shortfallOpen}
+        onClose={() => setShortfallOpen(false)}
+        onSubmit={() => setShortfallOpen(false)}
+        bank="CTBC •••• 4417"
+        availableMinor={15500}
+        presetMinor={9500}
+        reason="You're NT$95 short of holding this offer. Adding at least that much lets you accept it."
+      />
+      <CashOutSheet
+        open={cashOutOpen}
+        onClose={() => setCashOutOpen(false)}
+        onSubmit={() => setCashOutOpen(false)}
+        bank="CTBC •••• 4417"
+        spendableMinor={535500}
+      />
+    </View>
+  );
 }
 
 export default function ScreensScreen() {
@@ -356,6 +441,66 @@ export default function ScreensScreen() {
           <NotificationsScreen />
         </AutoSignedIn>
       </ScreenFrame>
+
+      <SectionHeading>Wallet (M5)</SectionHeading>
+
+      <Text style={styles.specimenLabel}>WalletCard · held + incoming badges, both non-zero</Text>
+      <ScreenFrame>
+        <Screen title="Profile">
+          <WalletCard availableMinor={535500} heldMinor={30000} incomingMinor={49500} onAddMoney={() => {}} onCashOut={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>WalletCard · nothing held or coming — Cash out disabled at zero</Text>
+      <ScreenFrame>
+        <Screen title="Profile">
+          <WalletCard availableMinor={0} heldMinor={0} incomingMinor={0} onAddMoney={() => {}} onCashOut={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>
+        WalletHistory · pending + failed payments first, then every real WalletRowKind
+        (domain/ledger.ts&apos;s classifyWalletRow)
+      </Text>
+      <ScreenFrame tall>
+        <Screen title="Profile">
+          <WalletHistory
+            history={WALLET_HISTORY_ROWS}
+            pendingPayments={[specimenPayment({ id: "spec-pending", kind: "deposit", amountMinor: 50000, state: "pending" })]}
+            failedPayments={[specimenPayment({ id: "spec-failed", kind: "cashout", amountMinor: 10000, state: "failed" })]}
+            now={WALLET_NOW}
+          />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>WalletHistory · empty, with a real &quot;Find a quest&quot; action</Text>
+      <ScreenFrame>
+        <Screen title="Profile">
+          <WalletHistory history={[]} pendingPayments={[]} failedPayments={[]} now={WALLET_NOW} onBrowse={() => {}} />
+        </Screen>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>
+        DepositSheet / CashOutSheet — real Dialogs, opened via the buttons below (mirrors
+        DialogGallery&apos;s own toggle pattern). The shortfall variant is the offer inbox&apos;s own
+        contextual trigger, prefilled to the exact amount short.
+      </Text>
+      <ScreenFrame>
+        <Screen title="Profile">
+          <WalletSheetsGallery />
+        </Screen>
+      </ScreenFrame>
+
+      <SectionHeading>Profile (M5)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        The real screen, auto-signed-in — real identity, real wallet balance/history, deposit and
+        cash-out both wired to the live LedgerPort.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <ProfileScreen />
+        </AutoSignedIn>
+      </ScreenFrame>
     </ScrollView>
   );
 }
@@ -373,6 +518,12 @@ const styles = StyleSheet.create({
     fontFamily: HEADING_FONT,
     fontSize: raw.fontSize["3xl"],
     color: semantic.color.text.primary,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
   },
   sectionHeading: {
     fontFamily: HEADING_FONT,

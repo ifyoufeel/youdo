@@ -132,18 +132,23 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** money is real arithmetic, even though no real money moves.
 
-- [ ] `Money` type + `formatMoney` boundary; lint-ban `Intl.NumberFormat` elsewhere
-- [ ] Append-only ledger across the five named accounts
-- [ ] Hold on acceptance · release on confirm minus fee · refund on cancel · payout on cash-out
-- [ ] Balances derived by summation — never stored
-- [ ] Wallet: available, held, full ledger with real running effects
-- [ ] Cash-out flow; payment methods screen (simulated) behind `PaymentsPort`
-- [ ] Every payment passes through `pending`, mirroring Stripe's webhook-driven reality
-- [ ] Tests: entries sum to zero per transaction; each lifecycle transition emits the expected entries
+- [x] `Money` type + `formatMoney` boundary; lint-ban `Intl.NumberFormat` elsewhere
+- [x] Append-only ledger across the five named accounts
+- [x] Hold on acceptance · release on confirm minus fee · refund on cancel · payout on cash-out
+- [x] Balances derived by summation — never stored
+- [x] Wallet: available, held, full ledger with real running effects
+- [x] Cash-out flow — no separate payment-methods screen or `PaymentsPort`; ADR-013 records why
+  (`deposit`/`cashOut` live on the existing `LedgerPort`, and the bank string on `User` is display-only)
+- [x] Deposit/cash-out pass through `pending`, settling asynchronously like a real webhook (ADR-013
+  scopes this to the two transactions that cross the `external_bank` boundary — hold/release/refund
+  settle atomically with their lifecycle transition, same as the prototype)
+- [x] Tests: entries sum to zero per transaction; each lifecycle transition emits the expected entries
 
 **Exit:** complete a quest and watch the exact amount move poster → held → doer, fee deducted, balances reconciling.
 
-**Preview:** wallet before/after a completed quest.
+**Preview:** wallet before/after a completed quest, live in the flows gallery — confirm-and-pay
+releasing real escrow, a real shortfall walked through Add money to a successful accept, and the
+72-hour window swept for real via the dev clock.
 
 ---
 
@@ -284,9 +289,11 @@ the artifact):
   hour before it starts / in 24 hours / when it starts, and ships with the
   first. One line in `EXPIRY_OPTIONS`.
 - Photo picker on the posting wizard (M3) — no image handling anywhere yet.
-- Deposits and cash-outs settle instantly. ADR-005 requires every payment to
-  pass through `pending` even in the mock, because Stripe's transitions are
-  webhook-driven; that is M5 and applies to both directions.
+- ~~Deposits and cash-outs settle instantly~~ — landed in the real app (M5):
+  both pass through a real `pending` state, settling asynchronously on a
+  jittered timer like a real webhook (ADR-005/ADR-013). `preview/app.js`
+  itself is untouched and still settles synchronously — that file is frozen,
+  not a second implementation to keep in sync.
 - Notification *delivery* (M6): the inbox and the per-category toggles are
   built, but the toggles are screen state, not stored preference, and there is
   no push registration. That is M7/M8 work.
