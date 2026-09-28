@@ -1,5 +1,7 @@
 import { strings, type StringKey } from "./strings";
 
+export type { StringKey };
+
 /** The whole i18n runtime, deliberately: a typed lookup plus `{{var}}`
     interpolation, nothing else. No plural rules, no namespace loading, no
     provider — see strings.ts's header for why a full i18n library isn't
