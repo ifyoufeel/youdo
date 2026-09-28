@@ -5,6 +5,7 @@ export * from "./quest";
 export * from "./offer";
 export * from "./thread";
 export * from "./ledger-entry";
+export * from "./payment";
 export * from "./review";
 export * from "./notification";
 export * from "./category";

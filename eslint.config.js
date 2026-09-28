@@ -17,6 +17,18 @@ module.exports = defineConfig([
   },
   {
     rules: {
+      // ADR-005/PRD §11: formatMoney (src/data/contracts/money.ts) is the
+      // one formatting boundary. The prototype enforces the equivalent
+      // rule with a regex against preview/app.js (test/rules.js:48) —
+      // this is the real ESLint version of the same ban.
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "Intl",
+          property: "NumberFormat",
+          message: "Money formatting goes through formatMoney() (src/data/contracts/money.ts) — the one boundary, per ADR-005.",
+        },
+      ],
       "import/no-restricted-paths": [
         "error",
         {
