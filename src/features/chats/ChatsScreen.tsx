@@ -1,6 +1,5 @@
-/* Ports app.js's ChatsScreen (3210-3269). The bell/notifications action
-   lands in M4 Phase 6 alongside the Notifications screen it opens — this
-   phase's TopBar has no actions yet ("no dead buttons"). */
+/* Ports app.js's ChatsScreen (3210-3269), including the bell/notifications
+   action (M4 Phase 6). */
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -11,9 +10,11 @@ import { EmptyState } from "@design/components/EmptyState";
 import { Card } from "@design/components/Card";
 import { UserChip } from "@design/components/UserChip";
 import { Badge } from "@design/components/Badge";
+import { IconButton } from "@design/components/IconButton";
 import { statusMeta } from "@data/domain/lifecycle";
 import { formatStamp } from "@lib/format";
 import { useAuthSession } from "@data/auth-session";
+import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -29,6 +30,7 @@ export function ChatsScreen() {
   const router = useRouter();
   const threads = useThreads();
   const { session } = useAuthSession();
+  const unreadNotifications = useUnreadNotificationCount();
   const [now] = useState(() => Date.now());
 
   if (threads.isLoading) {
@@ -47,7 +49,18 @@ export function ChatsScreen() {
   }
 
   return (
-    <Screen title={t("tabs.chats")}>
+    <Screen
+      title={t("tabs.chats")}
+      topBarActions={
+        <IconButton
+          icon="bell"
+          accessibilityLabel={t("notifications.title")}
+          size="sm"
+          badge={unreadNotifications || undefined}
+          onPress={() => router.push("/notifications")}
+        />
+      }
+    >
       {threads.summaries.length === 0 ? (
         <EmptyState title={t("chats.empty")} action={t("chats.browse")} onAction={() => router.push("/")} />
       ) : (

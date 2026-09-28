@@ -14,8 +14,10 @@ import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
 import { Toast } from "@design/components/Toast";
 import { Tabs } from "@design/components/Tabs";
+import { IconButton } from "@design/components/IconButton";
 import type { Bucket } from "@data/domain/lifecycle";
 import { useAuthSession } from "@data/auth-session";
+import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
 import { t } from "../../i18n/t";
 import { useMyQuests } from "./useMyQuests";
 import { EngagementCard } from "./EngagementCard";
@@ -35,6 +37,7 @@ export function MyQuestsScreen() {
   const { session } = useAuthSession();
   const startQuest = useStartQuest();
   const markDone = useMarkDone();
+  const unreadNotifications = useUnreadNotificationCount();
   const [tab, setTab] = useState<Bucket>("active");
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
@@ -66,7 +69,18 @@ export function MyQuestsScreen() {
   const list = myQuests.buckets[tab];
 
   return (
-    <Screen title={t("tabs.quests")}>
+    <Screen
+      title={t("tabs.quests")}
+      topBarActions={
+        <IconButton
+          icon="bell"
+          accessibilityLabel={t("notifications.title")}
+          size="sm"
+          badge={unreadNotifications || undefined}
+          onPress={() => router.push("/notifications")}
+        />
+      }
+    >
       {confirmation ? (
         <Toast tone="success" style={styles.confirmationToast}>
           {confirmation}

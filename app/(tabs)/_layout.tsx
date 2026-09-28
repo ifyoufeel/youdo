@@ -7,6 +7,8 @@
 import { Tabs } from "expo-router";
 import { TabBar, type TabBarItem } from "@design/components/TabBar";
 import type { IconName } from "@design/components/Icon";
+import { useActionableCount } from "@features/my-quests/useActionableCount";
+import { useUnreadThreadCount } from "@features/chats/useUnreadThreadCount";
 import { t } from "../../src/i18n/t";
 
 const TAB_META: Record<string, { label: string; icon: IconName }> = {
@@ -23,9 +25,17 @@ export interface TabBarRenderProps {
 }
 
 export function CustomTabBar({ state, navigation }: TabBarRenderProps) {
+  const actionableCount = useActionableCount();
+  const unreadThreadCount = useUnreadThreadCount();
+
+  const BADGE_BY_ROUTE: Record<string, number | undefined> = {
+    quests: actionableCount || undefined,
+    chats: unreadThreadCount || undefined,
+  };
+
   const items: TabBarItem[] = state.routes.map((route) => {
     const meta = TAB_META[route.name] ?? { label: route.name, icon: "home" as IconName };
-    return { key: route.name, label: meta.label, icon: meta.icon };
+    return { key: route.name, label: meta.label, icon: meta.icon, badge: BADGE_BY_ROUTE[route.name] };
   });
   const value = state.routes[state.index]?.name ?? "index";
 

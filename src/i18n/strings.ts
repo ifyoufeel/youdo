@@ -251,6 +251,10 @@ export const strings = {
   "thread.closedBanner": "This quest is {{status}}, so the thread is read-only. It stays here for the record.",
   "thread.composerPlaceholder": "Message",
   "thread.send": "Send",
+
+  "notifications.title": "Notifications",
+  "notifications.empty": "Nothing yet — offers, messages and payments land here.",
+  "notifications.browse": "Browse quests",
 } as const;
 
 export type StringKey = keyof typeof strings;
