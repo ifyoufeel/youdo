@@ -24,6 +24,7 @@ describe("memory threads adapter", () => {
         "t-q6-u2",
         "t-q6-u3",
         "t-q6-u5",
+        "t-q11-u0",
         "t-q7-u5",
         "t-q8-u0",
       ]);

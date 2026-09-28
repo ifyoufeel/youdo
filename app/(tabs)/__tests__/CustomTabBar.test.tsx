@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { render, fireEvent } from "@testing-library/react-native";
+import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
@@ -107,17 +107,21 @@ describe("CustomTabBar", () => {
   it(
     "shows real badge counts on My quests and Chats, not placeholders",
     async () => {
-      // u0's seed fixture: q1 (doer, in_progress) + q6 (poster, open with
-      // 3 pending offers) = actionableCount 2. Unread: t-q1-u0 has 2
-      // (per threads.test.ts's own truth table) + t-q6-u5 has 1 (never
-      // read) = unreadThreadCount 3. Both cross-checked against
-      // src/data/adapters/memory/__tests__/threads.test.ts's own numbers.
-      const { findByText } = await render(
+      // u0's seed fixture: q1 (doer, in_progress) + q11 (doer, assigned)
+      // + q6 (poster, open with 3 pending offers) = actionableCount 3.
+      // Unread: t-q1-u0 has 2 (per threads.test.ts's own truth table) +
+      // t-q6-u5 has 1 (never read) = unreadThreadCount 3 (t-q11-u0 is
+      // already read in the fixture, contributing 0). Both cross-checked
+      // against src/data/adapters/memory/__tests__/threads.test.ts's own
+      // numbers.
+      const { findAllByText } = await render(
         <CustomTabBar state={makeState(0)} navigation={{ navigate: () => {} }} />,
         { wrapper: Providers }
       );
-      expect(await findByText("2", {}, LONG_TIMEOUT)).toBeTruthy();
-      expect(await findByText("3", {}, LONG_TIMEOUT)).toBeTruthy();
+      // Both badges settle to "3" independently (actionableCount and
+      // unreadThreadCount are separate hooks) — wait for both, not just
+      // the first one to resolve.
+      await waitFor(async () => expect((await findAllByText("3")).length).toBe(2), LONG_TIMEOUT);
     },
     15000
   );

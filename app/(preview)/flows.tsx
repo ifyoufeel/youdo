@@ -20,7 +20,13 @@
    frame 2's card tap already leaves for the real quest-detail route.
    Frame 3 (QuestDetailScreen on one of the signed-in demo user's own
    posted quests) still substitutes for a dev actor switcher the same way
-   M1's Browse gallery originally called for. */
+   M1's Browse gallery originally called for. Frames 5-6 (M4) extend the
+   same real-navigation discipline: frame 5's "Review offers" tap lands
+   on the actual /offers/[id] route, where accepting one of the three
+   real pending offers on q6 triggers the live acceptOffer mutation — the
+   other two auto-decline for real; frame 6's "Mark as done" on q1
+   triggers the live markDone mutation and renders ConfirmWindow's
+   countdown for real. */
 import type { ReactNode } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { RepositoryProvider } from "@data/composition-root";
@@ -32,6 +38,7 @@ import SignInScreen from "@features/onboarding/SignInScreen";
 import { BrowseScreen } from "@features/browse/BrowseScreen";
 import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
 import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
+import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
 import { AutoSignInAmbient } from "./_components/AutoSignInAmbient";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -48,12 +55,14 @@ export default function FlowsScreen() {
       <Text style={styles.title}>Flow gallery</Text>
       <Text style={styles.intro}>
         Sign in → browse → filter → save → detail → offer → confirmation → post → discoverable → My
-        quests. Each frame below is the real screen, wired to the real memory adapter — try it: sign
-        in with Google in the first frame, then in the second search, open Sort and filter, tap a
-        heart, then tap any quest that isn&apos;t your own to open its real detail page, make an
-        offer, and watch the confirmation toast name the real poster. Browser back returns you here.
-        The fourth frame is the real posting wizard — fill it in and submit to land for real on My
-        Quests, with your new quest&apos;s own card and the &quot;Quest posted&quot; toast.
+        quests → accept an offer → mark done. Each frame below is the real screen, wired to the real
+        memory adapter — try it: sign in with Google in the first frame, then in the second search,
+        open Sort and filter, tap a heart, then tap any quest that isn&apos;t your own to open its
+        real detail page, make an offer, and watch the confirmation toast name the real poster.
+        Browser back returns you here. The fourth frame is the real posting wizard — fill it in and
+        submit to land for real on My Quests, with your new quest&apos;s own card and the &quot;Quest
+        posted&quot; toast. The fifth and sixth frames (M4) close the loop for real: accept a pending
+        offer and mark a quest done, both live mutations against the same memory adapter.
       </Text>
 
       <Text style={styles.specimenLabel}>1 · Sign in — real AuthSessionProvider, memory adapter</Text>
@@ -76,8 +85,8 @@ export default function FlowsScreen() {
       </FlowFrame>
 
       <Text style={styles.specimenLabel}>
-        3 · Your own posted quest — the poster&apos;s trust panel replaced by a plain offer count,
-        no dead &quot;Review offers&quot; button
+        3 · Your own posted quest — trust panel replaced by a real offer count and &quot;Review 3
+        offers&quot; button (M4)
       </Text>
       <FlowFrame>
         <AutoSignInAmbient>
@@ -91,6 +100,26 @@ export default function FlowsScreen() {
       <FlowFrame>
         <AutoSignInAmbient>
           <PostQuestScreen />
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        5 · My Quests → tap &quot;Review 3 offers&quot; on q6 for the real /offers/q6 route, then
+        Accept one live — watch the other two auto-decline (M4)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <MyQuestsScreen />
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        6 · Your in-progress quest (q1) — tap &quot;Mark as done&quot; live and watch
+        ConfirmWindow&apos;s countdown appear for real (M4)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <QuestDetailScreen questId="q1" />
         </AutoSignInAmbient>
       </FlowFrame>
     </ScrollView>

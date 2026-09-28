@@ -430,6 +430,29 @@ export const seed = {
       details: "Six or seven clear photos of a road bike, outdoors, for a resale listing.",
       requirements: [],
     },
+    {
+      id: "q11",
+      posterId: "u3",
+      title: "Drop off a library book before it's due",
+      payoutMinor: 15000,
+      payoutUnit: "fixed",
+      categoryId: "delivery",
+      point: {
+        x: 4850,
+        y: 350,
+      },
+      estimatedMinutes: 15,
+      durationLabel: null,
+      scheduledFor: "2026-09-16T11:00:00+08:00",
+      expiresAt: "2026-09-16T10:00:00+08:00",
+      createdAt: "2026-09-15T22:00:00+08:00",
+      status: "assigned",
+      acceptedOfferId: "o15",
+      addressLine: "3F, No. 5, Bade Rd Sec 3",
+      area: "Songshan",
+      details: "A library book is due back this morning — just needs dropping at the return slot near the station.",
+      requirements: [],
+    },
   ],
   offers: [
     {
@@ -572,6 +595,16 @@ export const seed = {
       createdAt: "2026-09-14T10:00:00+08:00",
       respondedAt: "2026-09-14T13:10:00+08:00",
     },
+    {
+      id: "o15",
+      questId: "q11",
+      doerId: "u0",
+      amountMinor: 15000,
+      status: "accepted",
+      note: "I'm heading that way this morning anyway.",
+      createdAt: "2026-09-15T22:10:00+08:00",
+      respondedAt: "2026-09-15T22:30:00+08:00",
+    },
   ],
   threads: [
     {
@@ -622,6 +655,13 @@ export const seed = {
       posterId: "u2",
       doerId: "u0",
       lastMessageAt: "2026-09-13T09:12:00+08:00",
+    },
+    {
+      id: "t-q11-u0",
+      questId: "q11",
+      posterId: "u3",
+      doerId: "u0",
+      lastMessageAt: "2026-09-15T22:30:00+08:00",
     },
   ],
   messagesByThread: {
@@ -703,6 +743,14 @@ export const seed = {
         senderId: "u2",
         body: "You're a hero, thank you",
         at: "2026-09-13T09:12:00+08:00",
+      },
+    ],
+    "t-q11-u0": [
+      {
+        id: "m12",
+        senderId: "u3",
+        body: "Great, thank you! It's at the front desk.",
+        at: "2026-09-15T22:30:00+08:00",
       },
     ],
   },
@@ -977,6 +1025,26 @@ export const seed = {
       at: "2026-09-10T16:00:00+08:00",
       memo: "Cash out to CTBC •••• 4417",
     },
+    {
+      id: "e28",
+      txnId: "tx-q11-hold",
+      account: "user_available",
+      userId: "u3",
+      questId: "q11",
+      amountMinor: -15000,
+      at: "2026-09-15T22:30:00+08:00",
+      memo: "Held for a quest",
+    },
+    {
+      id: "e29",
+      txnId: "tx-q11-hold",
+      account: "user_held",
+      userId: "u3",
+      questId: "q11",
+      amountMinor: 15000,
+      at: "2026-09-15T22:30:00+08:00",
+      memo: "Held for a quest",
+    },
   ],
   reviews: [
     {
@@ -1065,5 +1133,6 @@ export const seed = {
     "u1:t-q1-u0": "2026-09-16T08:45:00+08:00",
     "u5:t-q6-u5": "2026-09-16T07:25:00+08:00",
     "u5:t-q7-u5": "2026-09-15T10:05:00+08:00",
+    "u0:t-q11-u0": "2026-09-15T22:35:00+08:00",
   },
 } as const;

@@ -33,10 +33,11 @@ describe("useActionableCount", () => {
     await act(() => result.current.auth.signInWithGoogle());
     await waitFor(() => expect(result.current.auth.status).toBe("signedIn"));
 
-    // u0's fixture: q1 (doer, in_progress) + q6 (poster, open, 3 pending
-    // offers) = 2. q7 (poster, completed) and q8/q9 (doer, paid/cancelled)
-    // are excluded — the M5/M6-scoped branches useActionableCount's own
-    // header comment names as deliberately out of scope for M4.
-    await waitFor(() => expect(result.current.count).toBe(2), { timeout: 3000 });
+    // u0's fixture: q1 (doer, in_progress) + q11 (doer, assigned) + q6
+    // (poster, open, 3 pending offers) = 3. q7 (poster, completed) and
+    // q8/q9 (doer, paid/cancelled) are excluded — the M5/M6-scoped
+    // branches useActionableCount's own header comment names as
+    // deliberately out of scope for M4.
+    await waitFor(() => expect(result.current.count).toBe(3), { timeout: 3000 });
   });
 });

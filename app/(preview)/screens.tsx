@@ -27,6 +27,8 @@ import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
 import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
 import { ChatsScreen } from "@features/chats/ChatsScreen";
 import { ThreadScreen } from "@features/chats/ThreadScreen";
+import { OfferInboxScreen } from "@features/offer-inbox/OfferInboxScreen";
+import { NotificationsScreen } from "@features/notifications/NotificationsScreen";
 import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -267,6 +269,33 @@ export default function ScreensScreen() {
         </AutoSignedIn>
       </ScreenFrame>
 
+      <Text style={styles.specimenLabel}>
+        Doer · accepted but not yet started (q11) — real Cancel + Start quest slab (M4)
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q11" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Offer inbox (M4)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        Three real pending offers on your own quest — tap Accept to see the fee breakdown and
+        auto-decline dialog for real.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <OfferInboxScreen questId="q6" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <Text style={styles.specimenLabel}>Decided — the one offer you already accepted, no pending left</Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <OfferInboxScreen questId="q7" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
       <SectionHeading>Post a quest (M3)</SectionHeading>
       <Text style={styles.specimenLabel}>
         The real wizard, auto-signed-in — interactive: fill in each step and submit yourself to see
@@ -314,6 +343,17 @@ export default function ScreensScreen() {
       <ScreenFrame tall>
         <AutoSignedIn>
           <ThreadScreen threadId="t-q8-u0" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Notifications (M4)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        The real screen — u0&apos;s seeded notifications, icon per type, unread rows visually distinct
+        until the mount effect marks them all read.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <NotificationsScreen />
         </AutoSignedIn>
       </ScreenFrame>
     </ScrollView>

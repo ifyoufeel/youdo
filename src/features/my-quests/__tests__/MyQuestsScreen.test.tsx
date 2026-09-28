@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { render, fireEvent } from "@testing-library/react-native";
+import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
@@ -49,13 +49,20 @@ describe("MyQuestsScreen", () => {
     warn.mockRestore();
   });
 
-  it("shows the real per-tab counts", async () => {
-    const { findByText } = await render(<MyQuestsScreen />, { wrapper: Providers });
-    await findByText("My quests", {}, LONG_TIMEOUT);
-    expect(await findByText("3", {}, LONG_TIMEOUT)).toBeTruthy(); // Active
-    expect(await findByText("1", {}, LONG_TIMEOUT)).toBeTruthy(); // Offers
-    expect(await findByText("2", {}, LONG_TIMEOUT)).toBeTruthy(); // Done
-  });
+  it(
+    "shows the real per-tab counts",
+    async () => {
+      const { findByText, findAllByText } = await render(<MyQuestsScreen />, { wrapper: Providers });
+      await findByText("My quests", {}, LONG_TIMEOUT);
+      // "4" is ambiguous on its own — u0 also has 4 unread notifications,
+      // so the header bell badge coincidentally shows the same digit as
+      // the Active tab count.
+      await waitFor(async () => expect((await findAllByText("4")).length).toBe(2), LONG_TIMEOUT);
+      expect(await findByText("1", {}, LONG_TIMEOUT)).toBeTruthy(); // Offers
+      expect(await findByText("2", {}, LONG_TIMEOUT)).toBeTruthy(); // Done
+    },
+    15000
+  );
 
   it("switches to the Offers tab and shows the applicant's engagement", async () => {
     const { findByText } = await render(<MyQuestsScreen />, { wrapper: Providers });

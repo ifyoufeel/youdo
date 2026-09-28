@@ -5,11 +5,12 @@ import { setFaultInjectionRate } from "../fault-injection";
 import type { PostQuestInput } from "../../../ports/quests";
 import type { QuestStatus } from "../../../contracts";
 
-/** Whitebox — no seed quest is ever "assigned" (a real fixture gap, per
-    the M4 plan's own Context notes), so tests that need that state force
-    it directly on the store's mutable Quest object and restore it after,
-    the only way to exercise startQuest's guard without a live acceptOffer
-    call (this file only imports QuestsPort, not OffersPort). */
+/** Whitebox — this file only imports QuestsPort, not OffersPort, so it
+    can't reach "assigned" through a live acceptOffer call (q11 is the
+    fixture's one real "assigned" record, but exercising every guard
+    combination still needs more states than one fixture quest can give).
+    Tests that need a specific (status, acceptedOfferId) pair force it
+    directly on the store's mutable Quest object and restore it after. */
 function forceQuestState(id: string, status: QuestStatus, acceptedOfferId: string | null) {
   const quest = questStore.find((q) => q.id === id)!;
   const snapshot = { status: quest.status, acceptedOfferId: quest.acceptedOfferId };
@@ -98,7 +99,8 @@ describe("memory quests adapter", () => {
       const ids = mine.map((q) => q.id).filter((id) => /^q\d+$/.test(id));
       // q1: u0's accepted offer (doer) · q3: u0's pending offer (applicant)
       // q6/q7: posted by u0 · q8/q9: u0's accepted offer, now closed
-      expect(ids.sort()).toEqual(["q1", "q3", "q6", "q7", "q8", "q9"]);
+      // q11: u0's accepted offer (doer), assigned
+      expect(ids.sort()).toEqual(["q1", "q11", "q3", "q6", "q7", "q8", "q9"]);
       // q2/q4/q5/q10: u0 has no relationship to any of these.
       expect(ids).not.toContain("q2");
       expect(ids).not.toContain("q4");

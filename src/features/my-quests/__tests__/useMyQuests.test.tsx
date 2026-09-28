@@ -43,7 +43,8 @@ describe("useMyQuests", () => {
 
     // q1: accepted offer (doer), in_progress -> active
     // q6/q7: posted by u0, open/completed -> active
-    expect(ids("active")).toEqual(["q1", "q6", "q7"]);
+    // q11: accepted offer (doer), assigned -> active
+    expect(ids("active")).toEqual(["q1", "q11", "q6", "q7"]);
     // q3: u0's own pending offer (applicant) -> offers
     expect(ids("offers")).toEqual(["q3"]);
     // q8: accepted offer, paid -> done · q9: accepted offer, cancelled -> done

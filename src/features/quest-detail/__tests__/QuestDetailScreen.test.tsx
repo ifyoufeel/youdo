@@ -9,10 +9,12 @@ import { QuestDetailScreen } from "../QuestDetailScreen";
 
 const LONG_TIMEOUT = { timeout: 5000 };
 
-// Whitebox — no seed quest is ever "assigned" (a real fixture gap), so
-// slab states that need it force the store's own Quest object directly,
-// before render() (the initial fetch then reads the forced state, same
-// as any other query), and restore it after — same technique
+// Whitebox — q11 is the fixture's one real "assigned" quest, but u0 is
+// only ever its doer there (posted by u3), so the poster-side assigned
+// view still has no fixture-native quest to render. Tests below force
+// the store's own Quest object directly, before render() (the initial
+// fetch then reads the forced state, same as any other query), and
+// restore it after — same technique
 // src/data/adapters/memory/__tests__/quests.test.ts already established.
 function forceQuestStatus(id: string, status: QuestStatus) {
   const quest = questStore.find((q) => q.id === id)!;

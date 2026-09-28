@@ -45,7 +45,7 @@ describe("useThreads", () => {
   it("lists u0's threads newest-activity-first, each with a resolved counterpart and unread count", async () => {
     const result = await signIn(useHarness, (r) => r.threads.isLoading);
     const ids = result.current.threads.summaries.map((s) => s.thread.id);
-    expect(ids).toEqual(["t-q3-u0", "t-q1-u0", "t-q6-u2", "t-q6-u3", "t-q6-u5", "t-q7-u5", "t-q8-u0"]);
+    expect(ids).toEqual(["t-q3-u0", "t-q1-u0", "t-q6-u2", "t-q6-u3", "t-q6-u5", "t-q11-u0", "t-q7-u5", "t-q8-u0"]);
 
     const t1 = result.current.threads.summaries.find((s) => s.thread.id === "t-q1-u0")!;
     expect(t1.other?.name).toBeTruthy();

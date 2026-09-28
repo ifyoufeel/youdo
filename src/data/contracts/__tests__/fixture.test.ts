@@ -34,16 +34,12 @@ describe("every seed record parses through its contract schema", () => {
     expect(seed.quests.length).toBeGreaterThan(0);
     for (const q of seed.quests) expect(() => QuestSchema.parse(q)).not.toThrow();
     const statuses = new Set(seed.quests.map((q) => q.status));
-    // ADR-006/data.taiwan.js's own header claims one entry per legal §8
-    // state, but the actual fixture has no `assigned` record — q1 (its
-    // one in-flight quest) already carries a startedAt and sits in
-    // `in_progress`, so `assigned` (accepted but not yet started) is
-    // skipped entirely. Documenting what's really there rather than
-    // trusting the header's claim.
-    for (const s of ["open", "in_progress", "completed", "paid", "cancelled", "expired"]) {
+    // One quest per legal §8 state (ADR-006/data.taiwan.js's own header
+    // comment) — q11 (M4) closed the one gap this test used to document:
+    // accepted but not yet started, distinct from q1's `in_progress`.
+    for (const s of ["open", "assigned", "in_progress", "completed", "paid", "cancelled", "expired"]) {
       expect(statuses.has(s as never)).toBe(true);
     }
-    expect(statuses.has("assigned" as never)).toBe(false);
   });
 
   it("offers — including every offer status", () => {
