@@ -2,19 +2,19 @@
    Router to skip it entirely, so this file is never mistaken for a screen.
 
    ADR-009's actor switcher and clock, and ADR-008's fault-injection
-   switch. Deliberately scoped: no M0 screen reads `actorId` or `now` yet
-   (tokens.tsx/components.tsx are pure design-system specimens, not
-   actor- or time-dependent), so this context exists as real, working
-   state with nothing downstream consuming it yet — exactly ADR-009's
-   "time is a value in the store, never Date.now()" built ahead of the
-   screens that will actually need it, not simulated. */
+   switch. `now`/`advanceClock` are thin wrappers around the real memory
+   adapter's clock (src/data/composition-root's useNow()/advanceClock,
+   M5) — DevStrip's +1h/+1d/+3d buttons now actually move quest/offer/
+   ledger state, not just this context's own display string. `actorId`
+   stays local-only dev state; nothing downstream reads it yet. */
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { advanceClock as advanceRealClock, useNow } from "@data/composition-root";
 
 export interface PreviewControlsValue {
   actorId: string | null;
   setActorId: (id: string) => void;
-  /** ISO instant. Advances only via advanceClock — never read from the
-      real system clock once set. */
+  /** ISO instant, derived from the real memory-adapter clock. */
   now: string;
   advanceClock: (deltaMs: number) => void;
 }
@@ -23,13 +23,17 @@ const PreviewControlsContext = createContext<PreviewControlsValue | null>(null);
 
 export function PreviewControlsProvider({ children }: { children: ReactNode }) {
   const [actorId, setActorId] = useState<string | null>(null);
-  const [now, setNow] = useState<string>(() => new Date().toISOString());
+  const nowMs = useNow();
+  const queryClient = useQueryClient();
 
   const value: PreviewControlsValue = {
     actorId,
     setActorId,
-    now,
-    advanceClock: (deltaMs) => setNow((prev) => new Date(new Date(prev).getTime() + deltaMs).toISOString()),
+    now: new Date(nowMs).toISOString(),
+    advanceClock: (deltaMs) => {
+      advanceRealClock(deltaMs);
+      queryClient.invalidateQueries();
+    },
   };
 
   return <PreviewControlsContext.Provider value={value}>{children}</PreviewControlsContext.Provider>;

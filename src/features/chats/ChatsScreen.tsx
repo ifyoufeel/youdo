@@ -1,6 +1,5 @@
 /* Ports app.js's ChatsScreen (3210-3269), including the bell/notifications
    action (M4 Phase 6). */
-import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@design/components/Screen";
@@ -14,6 +13,7 @@ import { IconButton } from "@design/components/IconButton";
 import { statusMeta } from "@data/domain/lifecycle";
 import { formatStamp } from "@lib/format";
 import { useAuthSession } from "@data/auth-session";
+import { useNow } from "@data/composition-root";
 import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -31,7 +31,7 @@ export function ChatsScreen() {
   const threads = useThreads();
   const { session } = useAuthSession();
   const unreadNotifications = useUnreadNotificationCount();
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   if (threads.isLoading) {
     return (

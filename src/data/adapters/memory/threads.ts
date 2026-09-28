@@ -13,6 +13,7 @@ import { threads, messages, threadReadAt, quests } from "./store";
 import { threadsFor, unreadIn } from "../../domain/threads";
 import { isClosed } from "../../domain/lifecycle";
 import { nextId } from "./next-id";
+import { nowIso } from "./clock";
 import { notify } from "./notify";
 
 const sentByKey = new Map<string, Message>();
@@ -65,7 +66,7 @@ export function createMemoryThreadsPort(): ThreadsPort {
         if (cached) return cached;
       }
 
-      const message: Message = { id: nextId("m"), senderId, body, at: new Date().toISOString() };
+      const message: Message = { id: nextId("m"), senderId, body, at: nowIso() };
       const list = messages.get(threadId);
       if (list) {
         list.push(message);
@@ -87,7 +88,7 @@ export function createMemoryThreadsPort(): ThreadsPort {
       // Naturally idempotent (last-write-wins on a timestamp) — no
       // idempotency-key tracking needed, same reasoning saveQuest's
       // Set.add gives for skipping one.
-      threadReadAt.set(`${userId}:${threadId}`, new Date().toISOString());
+      threadReadAt.set(`${userId}:${threadId}`, nowIso());
     },
 
     subscribeToThread() {

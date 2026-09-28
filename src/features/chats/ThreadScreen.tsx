@@ -4,7 +4,7 @@
    FlashList: fixture thread lengths are 1-4 messages (t-q1-u0's 4 is the
    longest), virtualizing that is the same kind of unneeded complexity M3
    avoided with curated Select lists over bespoke pickers. */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@design/components/Screen";
@@ -22,6 +22,7 @@ import { money, formatMoney, type Message } from "@data/contracts";
 import { statusMeta } from "@data/domain/lifecycle";
 import { formatStamp } from "@lib/format";
 import { useAuthSession } from "@data/auth-session";
+import { useNow } from "@data/composition-root";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -45,7 +46,7 @@ export function ThreadScreen({ threadId }: ThreadScreenProps) {
   const { session } = useAuthSession();
   const thread = useThread(threadId);
   const sendMessage = useSendMessage(threadId);
-  const [now] = useState(() => Date.now());
+  const now = useNow();
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {

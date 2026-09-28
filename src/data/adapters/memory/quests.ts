@@ -10,6 +10,7 @@ import { NotImplementedYet } from "./not-implemented";
 import { nextId } from "./next-id";
 import { offersFor, roleOn, statusMeta, canTransition, counterpartIdOn, type Actor } from "../../domain/lifecycle";
 import { notify } from "./notify";
+import { nowIso, nowMs } from "./clock";
 
 /* postQuest has no natural post-hoc lookup a replay could fall back on
    (unlike sendOffer's myOfferOn, or saveQuest's idempotent-by-nature
@@ -68,7 +69,7 @@ export function createMemoryQuestsPort(): QuestsPort {
     async listQuests(params) {
       await simulateLatency();
       maybeInjectFault("listQuests");
-      const now = new Date();
+      const now = new Date(nowMs());
       const filtered = quests.filter((q) => {
         // The browse feed is the open marketplace, not a per-user activity
         // list — matches preview/app.js's BrowseScreen, which filters to
@@ -124,7 +125,7 @@ export function createMemoryQuestsPort(): QuestsPort {
         durationLabel: input.durationLabel,
         scheduledFor: input.scheduledFor,
         expiresAt: input.expiresAt,
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso(),
         status: "open",
         acceptedOfferId: null,
         addressLine: input.addressLine,
@@ -162,7 +163,7 @@ export function createMemoryQuestsPort(): QuestsPort {
       guard(quest, "in_progress", actorId);
 
       quest.status = "in_progress";
-      quest.startedAt = new Date().toISOString();
+      quest.startedAt = nowIso();
       const actor = users.get(actorId);
       notify(quest.posterId, "quest_started", quest.id, `${actor?.name ?? "The doer"} started "${quest.title}"`);
       return quest;
@@ -182,7 +183,7 @@ export function createMemoryQuestsPort(): QuestsPort {
       guard(quest, "completed", actorId);
 
       quest.status = "completed";
-      quest.completedAt = new Date().toISOString();
+      quest.completedAt = nowIso();
       const actor = users.get(actorId);
       notify(quest.posterId, "quest_done", quest.id, `${actor?.name ?? "The doer"} marked "${quest.title}" as done`);
       return quest;
@@ -217,13 +218,13 @@ export function createMemoryQuestsPort(): QuestsPort {
         for (const offer of offersFor(offers, quest.id)) {
           if (offer.status === "pending") {
             offer.status = "withdrawn";
-            offer.respondedAt = new Date().toISOString();
+            offer.respondedAt = nowIso();
           }
         }
       }
 
       quest.status = "cancelled";
-      quest.cancelledAt = new Date().toISOString();
+      quest.cancelledAt = nowIso();
       quest.cancelledBy = actorId;
       if (trimmedReason) quest.cancelReason = trimmedReason;
 

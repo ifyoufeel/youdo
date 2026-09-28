@@ -6,6 +6,7 @@
 import type { NotificationType } from "../../contracts";
 import { notifications } from "./store";
 import { nextId } from "./next-id";
+import { nowIso } from "./clock";
 
 export function notify(userId: string, type: NotificationType, questId: string | null, body: string): void {
   notifications.push({
@@ -14,7 +15,7 @@ export function notify(userId: string, type: NotificationType, questId: string |
     type,
     questId,
     body,
-    at: new Date().toISOString(),
+    at: nowIso(),
     readAt: null,
   });
 }

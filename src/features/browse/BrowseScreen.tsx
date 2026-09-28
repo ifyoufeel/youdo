@@ -20,7 +20,7 @@ import { QuestCard } from "@design/components/QuestCard";
 import { EmptyState } from "@design/components/EmptyState";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
-import { useRepository } from "@data/composition-root";
+import { useRepository, useNow } from "@data/composition-root";
 import { useAuthSession } from "@data/auth-session";
 import { money, formatMoney, distanceBetween, type Quest } from "@data/contracts";
 import type { QuestSort } from "@data/ports/quests";
@@ -86,7 +86,7 @@ export function BrowseScreen() {
 
   // Captured once, not re-read on every render — badges/when-labels don't
   // need a live clock (same "no ticking countdown" stance as LoadingState).
-  const [now] = useState(() => Date.now());
+  const now = useNow();
   const center = meQuery.data?.home;
   const narrowed = search.length > 0 || categoryId !== ALL_CATEGORY || !browseFilters.isDefault;
 

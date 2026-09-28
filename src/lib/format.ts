@@ -59,8 +59,10 @@ function clockLabel(p: TpeParts): string {
   return h12 + (p.mm ? ":" + String(p.mm).padStart(2, "0") : "") + ap;
 }
 
-/** `now` is a device-clock timestamp (ms), same "now" the memory adapter's
-    own todayOnly filter uses — see quests.ts's isToday(). */
+/** `now` is the memory adapter's own clock (ms), read via useNow() —
+    seed-anchored, not the device clock (M5, src/data/adapters/memory/
+    clock.ts) — same "now" quests.ts's own todayOnly filter (isToday())
+    reads. */
 export function formatWhenAt(iso: string, now: number): string {
   if (!iso) return "";
   const t = Date.parse(iso);

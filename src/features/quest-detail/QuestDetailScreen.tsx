@@ -13,6 +13,7 @@ import { useState, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthSession } from "@data/auth-session";
+import { useNow } from "@data/composition-root";
 import { Screen } from "@design/components/Screen";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
@@ -66,7 +67,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   // Computed before the early returns below (useQuestThread is a hook,
   // so it must run every render) from useQuestDetail's own null-safe

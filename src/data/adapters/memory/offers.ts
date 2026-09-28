@@ -13,6 +13,7 @@ import { isFirstUse } from "./idempotency";
 import { offers, threads, quests, users } from "./store";
 import { myOfferOn } from "../../domain/lifecycle";
 import { nextId } from "./next-id";
+import { nowIso } from "./clock";
 import { notify } from "./notify";
 import { money, formatMoney } from "../../contracts";
 
@@ -72,7 +73,7 @@ export function createMemoryOffersPort(): OffersPort {
         throw new Error("You already have an offer on this quest");
       }
 
-      const now = new Date().toISOString();
+      const now = nowIso();
       const offer = {
         id: nextId("o"),
         questId,
@@ -116,7 +117,7 @@ export function createMemoryOffersPort(): OffersPort {
         throw new Error("That offer can't be withdrawn");
       }
       offer.status = "withdrawn";
-      offer.respondedAt = new Date().toISOString();
+      offer.respondedAt = nowIso();
       return offer;
     },
 
@@ -138,7 +139,7 @@ export function createMemoryOffersPort(): OffersPort {
         throw new Error("That offer can't be declined");
       }
       offer.status = "declined";
-      offer.respondedAt = new Date().toISOString();
+      offer.respondedAt = nowIso();
 
       const quest = quests.find((q) => q.id === offer.questId);
       notify(offer.doerId, "offer_declined", offer.questId, `Your offer on "${quest?.title ?? "a quest"}" wasn't taken this time`);
@@ -174,7 +175,7 @@ export function createMemoryOffersPort(): OffersPort {
         throw new Error("That offer can't be accepted");
       }
 
-      const now = new Date().toISOString();
+      const now = nowIso();
       offer.status = "accepted";
       offer.respondedAt = now;
       quest.status = "assigned";

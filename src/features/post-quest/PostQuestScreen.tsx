@@ -14,7 +14,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSession } from "@data/auth-session";
-import { useRepository } from "@data/composition-root";
+import { useRepository, useNow } from "@data/composition-root";
 import { Screen } from "@design/components/Screen";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
@@ -126,7 +126,7 @@ function Wizard({ posterId, defaultArea, defaultCategoryId, areas, categories }:
   const postQuest = usePostQuest();
   const [step, setStep] = useState(0);
   const [tried, setTried] = useState<Record<string, boolean>>({});
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   const form = draft.hydrated && !draft.form.categoryId ? { ...draft.form, categoryId: defaultCategoryId } : draft.form;
 

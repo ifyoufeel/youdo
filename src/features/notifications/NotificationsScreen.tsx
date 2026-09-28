@@ -1,7 +1,6 @@
 /* Ports app.js's NotificationsScreen (3611-3651). Every notification
    type — including "message" — opens the quest it's about, not the
    thread, matching the prototype exactly (app.js's own onOpen(n.questId)). */
-import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@design/components/Screen";
@@ -11,6 +10,7 @@ import { EmptyState } from "@design/components/EmptyState";
 import { Card } from "@design/components/Card";
 import { Icon, type IconName } from "@design/components/Icon";
 import type { NotificationType } from "@data/contracts";
+import { useNow } from "@data/composition-root";
 import { formatStamp } from "@lib/format";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -38,7 +38,7 @@ const NOTIFICATION_ICON: Record<NotificationType, IconName> = {
 export function NotificationsScreen() {
   const router = useRouter();
   const notifications = useNotifications();
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   if (notifications.isLoading) {
     return (

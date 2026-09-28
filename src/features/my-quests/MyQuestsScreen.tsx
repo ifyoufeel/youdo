@@ -17,6 +17,7 @@ import { Tabs } from "@design/components/Tabs";
 import { IconButton } from "@design/components/IconButton";
 import type { Bucket } from "@data/domain/lifecycle";
 import { useAuthSession } from "@data/auth-session";
+import { useNow } from "@data/composition-root";
 import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
 import { t } from "../../i18n/t";
 import { useMyQuests } from "./useMyQuests";
@@ -40,7 +41,7 @@ export function MyQuestsScreen() {
   const unreadNotifications = useUnreadNotificationCount();
   const [tab, setTab] = useState<Bucket>("active");
   const [confirmation, setConfirmation] = useState<string | null>(null);
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   // Adjusted during render, not a useEffect — the "posted" param only
   // ever needs consuming once, the same shape OfferSheet's own draft-

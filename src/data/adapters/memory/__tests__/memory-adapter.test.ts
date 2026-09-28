@@ -2,6 +2,7 @@ import { setFaultInjectionRate } from "../fault-injection";
 import { resetIdempotencyForTests } from "../idempotency";
 import { createMemoryAdapter } from "../index";
 import { quests as questsStore } from "../store";
+import { nowIso, nowMs } from "../clock";
 import { seed } from "../seed";
 import { InvalidOtpError } from "../../../ports/auth";
 import { distanceBetween } from "../../../contracts";
@@ -161,10 +162,13 @@ describe("memory adapter — real slice", () => {
     it("listQuests filters by todayOnly", async () => {
       const adapter = createMemoryAdapter();
       const me = seed.users[seed.meId as keyof typeof seed.users];
-      // The fixture's own quests are all dated in the past relative to
-      // "now" — inject one synthetic open quest scheduled for the real
-      // wall-clock today so this test is robust to whenever it runs,
-      // rather than assuming today happens to be some fixture date.
+      // The fixture's own quests are all dated relative to seed.now, and
+      // the memory adapter's clock (M5) is anchored there too, not the
+      // device clock — so "today" means the seed's own today, not
+      // whenever this test happens to run. q4 (scheduledFor 2026-09-16,
+      // the same day as seed.now) already qualifies; this synthetic quest
+      // exists to prove the filter is real, not just an accident of one
+      // seeded quest's date.
       const todayQuest = {
         id: "test-today-quest",
         posterId: "u0",
@@ -175,9 +179,9 @@ describe("memory adapter — real slice", () => {
         point: me.home,
         estimatedMinutes: 30,
         durationLabel: null,
-        scheduledFor: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
-        createdAt: new Date().toISOString(),
+        scheduledFor: nowIso(),
+        expiresAt: new Date(nowMs() + 86_400_000).toISOString(),
+        createdAt: nowIso(),
         status: "open" as const,
         acceptedOfferId: null,
         addressLine: "Test address",
@@ -193,7 +197,9 @@ describe("memory adapter — real slice", () => {
           todayOnly: true,
           limit: 100,
         });
-        expect(page.items.map((q) => q.id)).toEqual(["test-today-quest"]);
+        // q4 is also open and scheduled on the seed's own "today" —
+        // both it and the synthetic quest should match.
+        expect(page.items.map((q) => q.id).sort()).toEqual(["q4", "test-today-quest"]);
       } finally {
         questsStore.pop();
       }

@@ -5,6 +5,7 @@ import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
 import { isFirstUse } from "./idempotency";
 import { notifications } from "./store";
+import { nowIso } from "./clock";
 
 export function createMemoryNotificationsPort(): NotificationsPort {
   return {
@@ -20,7 +21,7 @@ export function createMemoryNotificationsPort(): NotificationsPort {
       await simulateLatency();
       maybeInjectFault("markAllRead");
       if (!isFirstUse("markAllRead", idempotency.idempotencyKey)) return;
-      const now = new Date().toISOString();
+      const now = nowIso();
       for (const n of notifications) {
         if (n.userId === userId && !n.readAt) n.readAt = now;
       }

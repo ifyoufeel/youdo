@@ -22,6 +22,7 @@ import { Dialog } from "@design/components/Dialog";
 import { Button } from "@design/components/Button";
 import { money, formatMoney, type Offer } from "@data/contracts";
 import { threadFor } from "@data/domain/threads";
+import { useNow } from "@data/composition-root";
 import { formatWhenAt } from "@lib/format";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
@@ -46,7 +47,7 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
   const acceptOffer = useAcceptOffer(questId);
   const declineOffer = useDeclineOffer(questId);
   const [confirming, setConfirming] = useState<Offer | null>(null);
-  const [now] = useState(() => Date.now());
+  const now = useNow();
 
   if (inbox.isLoading) {
     return (

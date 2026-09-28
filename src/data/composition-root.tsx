@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import type { Repository } from "./repository";
 import { createMemoryAdapter } from "./adapters/memory";
 import { createSupabaseAdapter } from "./adapters/supabase";
+import { nowMs, subscribeClock } from "./adapters/memory/clock";
 
 /** ADR-008's "repository fault-injection switch" — re-exported from the
     one file ADR-004 permits to import adapters/* directly, so the preview
@@ -10,6 +11,18 @@ import { createSupabaseAdapter } from "./adapters/supabase";
     inject faults into there yet), which is fine — the switch is preview
     chrome, not part of the Repository contract every adapter must satisfy. */
 export { setFaultInjectionRate, getFaultInjectionRate } from "./adapters/memory/fault-injection";
+
+/** ADR-009's clock (M5) — same re-export pattern as the fault-injection
+    switch above: dev-only plumbing (app/(preview)'s DevStrip is the only
+    caller of advanceClock), memory-adapter-specific (M7's Supabase swap
+    must source time differently — see clock.ts's own header comment),
+    never something a real user-facing screen calls. Screens read time via
+    useNow() only, never move it. */
+export { advanceClock } from "./adapters/memory/advance-clock";
+
+export function useNow(): number {
+  return useSyncExternalStore(subscribeClock, nowMs, nowMs);
+}
 
 /** Expo only inlines env vars prefixed EXPO_PUBLIC_ into the client bundle
     (its actual convention, not a Node-style process.env read) — this is
