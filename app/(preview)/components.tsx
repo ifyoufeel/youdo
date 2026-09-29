@@ -17,6 +17,7 @@ import { TabBar, type TabBarItem } from "@design/components/TabBar";
 import { Input } from "@design/components/Input";
 import { Checkbox } from "@design/components/Checkbox";
 import { Radio } from "@design/components/Radio";
+import { Switch } from "@design/components/Switch";
 import { Tag } from "@design/components/Tag";
 import { Dialog } from "@design/components/Dialog";
 import { Select } from "@design/components/Select";
@@ -102,6 +103,7 @@ function FormGallery() {
   const [checked, setChecked] = useState(false);
   const [sort, setSort] = useState<"closest" | "pay">("closest");
   const [category, setCategory] = useState("delivery");
+  const [switchOn, setSwitchOn] = useState(true);
 
   return (
     <>
@@ -116,6 +118,19 @@ function FormGallery() {
         <Checkbox label="Verified posters only" checked={checked} onChange={setChecked} />
         <Radio label="Closest" checked={sort === "closest"} onSelect={() => setSort("closest")} />
         <Radio label="Best paid" checked={sort === "pay"} onSelect={() => setSort("pay")} />
+      </View>
+
+      <Text style={styles.chromeLabel}>Switch — on / off / disabled</Text>
+      <View style={styles.formColumn}>
+        <Switch
+          label="Payment notifications"
+          description="Transactional — can't be turned off"
+          checked
+          onChange={() => {}}
+          disabled
+        />
+        <Switch label="Quest updates" checked={switchOn} onChange={setSwitchOn} />
+        <Switch label="Marketing" checked={false} onChange={() => {}} />
       </View>
 
       <Text style={styles.chromeLabel}>Tag — selectable chip row</Text>
@@ -400,7 +415,7 @@ export default function ComponentsScreen() {
       <SectionHeading>Chrome — TopBar, IconButton, TabBar</SectionHeading>
       <ChromeGallery />
 
-      <SectionHeading>Forms — Input, Checkbox, Radio, Tag</SectionHeading>
+      <SectionHeading>Forms — Input, Checkbox, Radio, Switch, Tag</SectionHeading>
       <FormGallery />
 
       <SectionHeading>Dialog — sheet + default, and Select</SectionHeading>
