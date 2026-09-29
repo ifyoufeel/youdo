@@ -166,6 +166,14 @@ export const strings = {
   "publicProfile.noRatings": "No ratings showing yet. They appear once both sides have rated, or after 14 days.",
   "publicProfile.joined": "{{area}} · joined {{when}}",
 
+  "savedQuests.title": "Saved quests",
+  "savedQuests.empty.title": "Nothing saved yet — tap the heart on a quest and it waits here.",
+  "savedQuests.empty.action": "Browse quests",
+
+  "profile.savedQuests": "Saved quests",
+  "profile.meta": "{{area}} · {{quests}} quests · {{pct}}% cancelled",
+  "profile.whatPeopleSaid": "What people said",
+
   "settings.title": "Settings",
   "settings.done": "Done",
   "settings.notifications": "Notifications",

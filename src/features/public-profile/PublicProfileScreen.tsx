@@ -31,13 +31,12 @@ import { usePublicProfile } from "./usePublicProfile";
 import { useReportUser } from "./useReportUser";
 import { useBlockUser } from "./useBlockUser";
 import { ReportSheet } from "./ReportSheet";
+import { ReviewCard } from "@features/reviews/ReviewCard";
 
 const NAME_FONT = fontFamilyName(raw.font.display, raw.fontWeight.black);
 const META_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 const BIO_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 const EYEBROW_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
-const RATER_NAME_FONT = fontFamilyName(raw.font.text, raw.fontWeight.semibold);
-const COMMENT_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 
 export interface PublicProfileScreenProps {
   userId: string;
@@ -140,19 +139,9 @@ export function PublicProfileScreen({ userId }: PublicProfileScreenProps) {
           <Text style={styles.noRatings}>{t("publicProfile.noRatings")}</Text>
         </Card>
       ) : (
-        profile.visibleReviews.map((r) => {
-          const rater = profile.raters.get(r.raterId);
-          return (
-            <Card key={r.id} variant="sunken" padding="md">
-              <View style={styles.raterRow}>
-                <Avatar name={rater?.name ?? "?"} size="sm" />
-                <Text style={styles.raterName}>{rater?.name ?? "—"}</Text>
-                <Badge label={String(r.rating)} tone="money" icon="star" size="sm" />
-              </View>
-              {r.comment ? <Text style={styles.comment}>{r.comment}</Text> : null}
-            </Card>
-          );
-        })
+        profile.visibleReviews.map((r) => (
+          <ReviewCard key={r.id} review={r} raterName={profile.raters.get(r.raterId)?.name} />
+        ))
       )}
 
       {profile.viewerId && profile.viewerId !== user.id ? (
@@ -240,24 +229,6 @@ const styles = StyleSheet.create({
     fontFamily: BIO_FONT,
     fontSize: raw.fontSize.sm,
     color: semantic.color.text.secondary,
-  },
-  raterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  raterName: {
-    flex: 1,
-    fontFamily: RATER_NAME_FONT,
-    fontSize: raw.fontSize.sm,
-    color: semantic.color.text.primary,
-  },
-  comment: {
-    fontFamily: COMMENT_FONT,
-    fontSize: raw.fontSize.sm,
-    lineHeight: raw.fontSize.sm * raw.lineHeight.normal,
-    color: raw.color.ink["700"],
-    marginTop: 8,
   },
   confirmationToast: {
     marginBottom: 8,

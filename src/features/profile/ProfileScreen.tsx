@@ -1,14 +1,15 @@
-/* Ports the identity-and-wallet slice of preview/app.js's ProfileScreen
-   (3323-3466) — deliberately not the whole thing at first. Trust (rating,
-   cancel rate, "what people said") and saved quests stay M6 Phase 5's
-   job, same scope discipline this codebase has applied at every prior
-   milestone boundary (M2's slab actions, M3's post wizard, M4's lifecycle
-   screens). What M5 needed real was the wallet: identity line, WalletCard,
-   and the full ledger history (PRD §7.7 — no row cap). M6 Phase 4 adds
-   the one thing naturally anchored to this screen's own TopBar — the
-   Settings entry point (preview/app.js:3350-3355's sliders-horizontal
-   IconButton), since SettingsSheet needs a real trigger to not be a dead
-   component and this is its one real trigger site. */
+/* Ports preview/app.js's ProfileScreen (3323-3466) in full now. M5
+   shipped identity+wallet (WalletCard, the full ledger history — PRD
+   §7.7, no row cap); M6 Phase 4 added the Settings entry point (its
+   TopBar's sliders-horizontal IconButton). M6 Phase 5 finishes the rest:
+   RatingStar + the quests/cancelRate meta line, the real "Saved quests"
+   row (count + navigation, no longer a placeholder), and "What people
+   said" — the signed-in user's own reveal-gated reviews, reusing
+   ReviewCard from PublicProfileScreen now that this is its second real
+   consumer. Unlike PublicProfileScreen, this section hides entirely when
+   there's nothing to show (mine.length ? ... : null in the source) —
+   your own profile doesn't need reassurance that an empty section isn't
+   a bug the way a stranger's profile does. */
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -17,12 +18,17 @@ import { Screen } from "@design/components/Screen";
 import { Card } from "@design/components/Card";
 import { Avatar } from "@design/components/Avatar";
 import { IconButton } from "@design/components/IconButton";
+import { Icon } from "@design/components/Icon";
+import { Badge } from "@design/components/Badge";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
 import { useRepository, useNow } from "@data/composition-root";
 import { useAuthSession } from "@data/auth-session";
 import { useMyQuests } from "@features/my-quests/useMyQuests";
+import { usePosters } from "@features/browse/usePosters";
 import { SettingsSheet } from "@features/settings/SettingsSheet";
+import { RatingStar } from "@features/reviews/RatingStar";
+import { ReviewCard } from "@features/reviews/ReviewCard";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -38,6 +44,7 @@ import { CashOutSheet } from "../wallet/CashOutSheet";
 const NAME_FONT = fontFamilyName(raw.font.display, raw.fontWeight.black);
 const META_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 const SECTION_LABEL_FONT = fontFamilyName(raw.font.text, raw.fontWeight.bold);
+const SAVED_LABEL_FONT = fontFamilyName(raw.font.text, raw.fontWeight.semibold);
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -59,6 +66,21 @@ export function ProfileScreen() {
     queryFn: () => repository.getUser(userId as string),
     enabled: !!userId,
   });
+
+  const savedIdsQuery = useQuery({
+    queryKey: ["savedQuestIds", userId],
+    queryFn: () => repository.listSavedQuestIds(userId as string),
+    enabled: !!userId,
+  });
+  const savedCount = savedIdsQuery.data?.length ?? 0;
+
+  const reviewsQuery = useQuery({
+    queryKey: ["reviews", "for", userId],
+    queryFn: () => repository.listReviewsForUser(userId as string),
+    enabled: !!userId,
+  });
+  const myReviews = reviewsQuery.data ?? [];
+  const raters = usePosters(myReviews.map((r) => r.raterId));
 
   if (userQuery.isLoading || wallet.isLoading) {
     return (
@@ -100,8 +122,20 @@ export function ProfileScreen() {
           <Avatar name={me.name} size="lg" verified={me.verified} />
           <View style={styles.identityText}>
             <Text style={styles.name}>{me.name}</Text>
-            <Text style={styles.meta}>{me.area}</Text>
+            <Text style={styles.meta}>
+              {t("profile.meta", { area: me.area, quests: me.questsCompleted, pct: Math.round(me.cancelRate * 100) })}
+            </Text>
           </View>
+          <RatingStar value={me.rating} size="lg" />
+        </View>
+      </Card>
+
+      <Card padding="md" onPress={() => router.push("/saved-quests")} testID="profile-saved-quests">
+        <View style={styles.savedRow}>
+          <Icon name="heart" size={18} color={raw.color.flare["500"]} filled={savedCount > 0} />
+          <Text style={styles.savedLabel}>{t("profile.savedQuests")}</Text>
+          <Badge label={String(savedCount)} size="sm" />
+          <Icon name="chevron-right" size={17} color={raw.color.ink["400"]} />
         </View>
       </Card>
 
@@ -124,6 +158,15 @@ export function ProfileScreen() {
         onBrowse={() => router.push("/")}
         testID="profile-wallet-history"
       />
+
+      {myReviews.length > 0 ? (
+        <>
+          <Text style={styles.sectionLabel}>{t("profile.whatPeopleSaid")}</Text>
+          {myReviews.map((r) => (
+            <ReviewCard key={r.id} review={r} raterName={raters.get(r.raterId)?.name} />
+          ))}
+        </>
+      ) : null}
 
       <DepositSheet
         open={depositOpen}
@@ -182,5 +225,16 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: semantic.color.text.secondary,
     marginTop: 4,
+  },
+  savedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  savedLabel: {
+    flex: 1,
+    fontFamily: SAVED_LABEL_FONT,
+    fontSize: raw.fontSize.sm,
+    color: semantic.color.text.primary,
   },
 });

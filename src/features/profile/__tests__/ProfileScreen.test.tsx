@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { render, fireEvent, act, waitFor } from "@testing-library/react-native";
+import { render, fireEvent, act, waitFor, within } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
@@ -101,4 +101,24 @@ describe("ProfileScreen", () => {
     },
     15000
   );
+
+  it("shows the real rating and the quests/cancel-rate meta line", async () => {
+    const { findByText } = await render(<ProfileScreen />, { wrapper: Providers });
+    expect(await findByText("Da'an · 27 quests · 3% cancelled", {}, LONG_TIMEOUT)).toBeTruthy();
+    expect(await findByText("4.8", {}, LONG_TIMEOUT)).toBeTruthy();
+  });
+
+  it("shows the real saved-quests count (u0's one seeded save, q4) and opens it without throwing", async () => {
+    const { findByTestId, findByText } = await render(<ProfileScreen />, { wrapper: Providers });
+    await findByText("Alex L.", {}, LONG_TIMEOUT);
+    const row = await findByTestId("profile-saved-quests", {}, LONG_TIMEOUT);
+    expect(within(row).getByText("1")).toBeTruthy();
+    await fireEvent.press(row);
+  });
+
+  it("hides 'What people said' entirely when nothing is visible yet — u2's rating of u0 hasn't been reciprocated", async () => {
+    const { findByText, queryByText } = await render(<ProfileScreen />, { wrapper: Providers });
+    await findByText("Alex L.", {}, LONG_TIMEOUT);
+    expect(queryByText("What people said")).toBeNull();
+  });
 });
