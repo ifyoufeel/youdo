@@ -53,6 +53,7 @@ export function useQuestsFeed({
         todayOnly,
         verifiedPostersOnly,
         sort,
+        viewerId: userId,
         cursor: pageParam,
       }),
     initialPageParam: null as string | null,

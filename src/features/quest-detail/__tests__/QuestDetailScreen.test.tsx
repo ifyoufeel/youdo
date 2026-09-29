@@ -100,6 +100,15 @@ describe("QuestDetailScreen", () => {
   });
 
   it(
+    "shows a real See profile action in the trust panel for a non-poster viewer",
+    async () => {
+      const { findByTestId } = await render(<QuestDetailScreen questId="q1" />, { wrapper: Providers });
+      expect(await findByTestId("see-profile", {}, LONG_TIMEOUT)).toBeTruthy();
+    },
+    15000
+  );
+
+  it(
     "reveals the address to the accepted doer once the quest has left open",
     async () => {
       // The title legitimately appears twice — once in TopBar, once in the

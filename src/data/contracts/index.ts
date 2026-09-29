@@ -7,5 +7,6 @@ export * from "./thread";
 export * from "./ledger-entry";
 export * from "./payment";
 export * from "./review";
+export * from "./report";
 export * from "./notification";
 export * from "./category";

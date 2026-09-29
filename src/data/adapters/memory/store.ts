@@ -25,6 +25,7 @@ import {
   type Payment,
   type Review,
   ReviewSchema,
+  type Report,
   PointSchema,
 } from "../../contracts";
 import type { Area } from "../../ports/areas";
@@ -116,3 +117,14 @@ export const payments: Payment[] = [];
     once both submit, or after 14 days — are demonstrable from cold
     start. */
 export const reviews: Review[] = parseArray(ReviewSchema, seed.reviews);
+
+/** Mutable — trust.ts's reportUser (M6) pushes here. No seed data: nobody
+    in the fixture has reported anyone. No admin queue reads this back —
+    a frozen, unreachable-by-UI record, same accepted shape as a disputed
+    quest's own resolution half. */
+export const reports: Report[] = [];
+
+/** Mutable — trust.ts's blockUser (M6) writes through this directly,
+    same Map<userId, Set<id>> shape as savedQuestIds above. No seed data:
+    nobody in the fixture has blocked anyone. */
+export const blockedUserIds: Map<string, Set<string>> = new Map();

@@ -31,10 +31,18 @@ describe("memory reviews adapter", () => {
   });
 
   describe("listReviewsForUser / myReviewOnQuest (real seed reads)", () => {
-    it("lists the reviews where the given user is the ratee", async () => {
-      const reviews = await port.listReviewsForUser("u0");
-      expect(reviews.map((r) => r.id)).toContain("r1");
-      expect(reviews.every((r) => r.rateeId === "u0")).toBe(true);
+    it("hides r1 (u2->u0 on q8) until u0 rates u2 back — the reveal rule, enforced server-side", async () => {
+      // Seed's now is 3 days past r1's timestamp, well under the 14-day
+      // fallback, and u0 hasn't rated u2 back yet — invisible to
+      // everyone, u0 included (see listReviewsForUser's own port
+      // comment: the blind is real for the ratee too).
+      const before = await port.listReviewsForUser("u0");
+      expect(before.map((r) => r.id)).not.toContain("r1");
+
+      await port.submitReview("q8", "u0", "u2", 5, "Reliable and quick.", key());
+      const after = await port.listReviewsForUser("u0");
+      expect(after.map((r) => r.id)).toContain("r1");
+      expect(after.every((r) => r.rateeId === "u0")).toBe(true);
     });
 
     it("returns an empty list for a user nobody has rated", async () => {

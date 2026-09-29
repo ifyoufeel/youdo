@@ -22,6 +22,7 @@ import { RewardPill } from "@design/components/RewardPill";
 import { UserChip } from "@design/components/UserChip";
 import { InfoRow } from "@design/components/InfoRow";
 import { Button } from "@design/components/Button";
+import { IconButton } from "@design/components/IconButton";
 import { Icon } from "@design/components/Icon";
 import { Toast } from "@design/components/Toast";
 import { ConfirmWindow } from "@design/components/ConfirmWindow";
@@ -307,13 +308,23 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
         </Card>
       ) : poster ? (
         <Card padding="md">
-          <UserChip
-            name={poster.name}
-            rating={poster.rating}
-            questsCompleted={poster.questsCompleted}
-            verified={poster.verified}
-            meta={role === "doer" ? t("questDetail.doingThisQuest") : t("questDetail.postedThisQuest")}
-          />
+          <View style={styles.trustPanelRow}>
+            <UserChip
+              name={poster.name}
+              rating={poster.rating}
+              questsCompleted={poster.questsCompleted}
+              verified={poster.verified}
+              meta={role === "doer" ? t("questDetail.doingThisQuest") : t("questDetail.postedThisQuest")}
+              style={styles.trustPanelChip}
+            />
+            <IconButton
+              icon="user"
+              accessibilityLabel={t("questDetail.seeProfile")}
+              size="sm"
+              onPress={() => router.push(`/profile/${poster.id}`)}
+              testID="see-profile"
+            />
+          </View>
           <View style={styles.trustBadgeRow}>
             {poster.verified ? <Badge label={t("questDetail.verifiedBadge")} tone="accent" icon="shield-check" /> : null}
             <Badge label={t("questDetail.cancelRate", { pct: Math.round(poster.cancelRate * 100) })} tone="neutral" />
@@ -453,6 +464,15 @@ const styles = StyleSheet.create({
   },
   reviewOffersButton: {
     marginTop: 10,
+  },
+  trustPanelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  trustPanelChip: {
+    flex: 1,
+    minWidth: 0,
   },
   trustBadgeRow: {
     flexDirection: "row",

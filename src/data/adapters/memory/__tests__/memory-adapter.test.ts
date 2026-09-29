@@ -281,7 +281,7 @@ describe("memory adapter — real slice", () => {
   });
 
   describe("no stubbed methods remain", () => {
-    it("resolves rather than throwing NotImplementedYet — disputeQuest (M6) and ReviewsPort (M6) were the last two", async () => {
+    it("resolves rather than throwing NotImplementedYet — disputeQuest, ReviewsPort, and TrustPort (all M6) were the last ones", async () => {
       const adapter = createMemoryAdapter();
       // disputeQuest is real as of M6 Phase 0 (src/data/adapters/memory/
       // __tests__/quests.test.ts covers its own guards) — the resolution
@@ -289,14 +289,18 @@ describe("memory adapter — real slice", () => {
       // no admin actor exists, but filing one is poster-only and real.
       // Threads/notifications real since M4 Phase 1, LedgerPort since M5
       // Phase 2, ReviewsPort since M6 Phase 0
-      // (src/data/adapters/memory/__tests__/reviews.test.ts covers it) —
-      // every port method in this adapter is real now.
+      // (src/data/adapters/memory/__tests__/reviews.test.ts covers it),
+      // TrustPort since M6 Phase 3 — every port method in this adapter is
+      // real now.
       expect(await adapter.listEntriesForUser(seed.meId)).toEqual(
         expect.arrayContaining([expect.objectContaining({ userId: seed.meId })])
       );
-      expect(await adapter.listReviewsForUser(seed.meId)).toEqual(
-        expect.arrayContaining([expect.objectContaining({ rateeId: seed.meId })])
-      );
+      // listReviewsForUser now applies the reveal rule server-side (M6
+      // Phase 3), so it can legitimately resolve empty for a real user
+      // with an unrevealed review pending — the call resolving at all,
+      // without throwing NotImplementedYet, is what this test checks.
+      expect(await adapter.listReviewsForUser(seed.meId)).toEqual([]);
+      expect(await adapter.listBlockedUserIds(seed.meId)).toEqual([]);
     });
   });
 });

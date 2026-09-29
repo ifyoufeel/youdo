@@ -4,7 +4,7 @@ import { distanceBetween, money, formatMoney } from "../../contracts";
 import { paginate } from "./pagination";
 import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
-import { quests, offers, users, savedQuestIds } from "./store";
+import { quests, offers, users, savedQuestIds, blockedUserIds } from "./store";
 import { isFirstUse } from "./idempotency";
 import { nextId } from "./next-id";
 import {
@@ -89,6 +89,7 @@ export function createMemoryQuestsPort(): QuestsPort {
         if (params.categoryId && q.categoryId !== params.categoryId) return false;
         if (params.minPayMinor !== undefined && q.payoutMinor < params.minPayMinor) return false;
         if (params.verifiedPostersOnly && !users.get(q.posterId)?.verified) return false;
+        if (params.viewerId && blockedUserIds.get(params.viewerId)?.has(q.posterId)) return false;
         if (params.todayOnly && !isToday(q.scheduledFor, now)) return false;
         if (params.search) {
           const needle = params.search.toLowerCase();

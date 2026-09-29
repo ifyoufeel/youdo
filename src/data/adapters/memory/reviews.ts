@@ -14,9 +14,9 @@ import { maybeInjectFault } from "./fault-injection";
 import { isFirstUse } from "./idempotency";
 import { reviews, offers, quests } from "./store";
 import { roleOn, counterpartIdOn } from "../../domain/lifecycle";
-import { myReviewOn, canRate } from "../../domain/reviews";
+import { myReviewOn, canRate, reviewsOf, reviewVisible } from "../../domain/reviews";
 import { nextId } from "./next-id";
-import { nowIso } from "./clock";
+import { nowIso, nowMs } from "./clock";
 
 const reviewsByKey = new Map<string, Review>();
 
@@ -25,7 +25,17 @@ export function createMemoryReviewsPort(): ReviewsPort {
     async listReviewsForUser(userId) {
       await simulateLatency();
       maybeInjectFault("listReviewsForUser");
-      return reviews.filter((r) => r.rateeId === userId);
+      // The reveal rule (PRD §7.8) is enforced here, not left to the
+      // caller — reviewVisible needs the full reviews array to check for
+      // a mutual reply, which only the adapter has; a client-side filter
+      // would need every review on every shared quest just to compute
+      // this correctly, the same "over-fetching to work around a missing
+      // server-side rule" problem ADR-004 exists to avoid. The mutual
+      // blind is real for the ratee too, not just third parties — they
+      // don't get to peek at an unrevealed review about themselves
+      // either, matching the prototype's own reviewVisible call site
+      // (app.js:3673), which applies unconditionally.
+      return reviewsOf(reviews, userId).filter((r) => reviewVisible(reviews, r, nowMs()));
     },
 
     async myReviewOnQuest(questId, raterId) {

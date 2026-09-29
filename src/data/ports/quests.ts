@@ -39,6 +39,9 @@ export interface ListQuestsParams extends PageParams {
   todayOnly?: boolean;
   search?: string;
   sort?: QuestSort;
+  /** Excludes quests posted by anyone this viewer has blocked (PRD §7.8).
+      Omitted for a signed-out read — nothing to filter against. */
+  viewerId?: string;
 }
 
 export interface QuestsPort {

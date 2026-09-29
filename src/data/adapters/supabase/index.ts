@@ -70,6 +70,10 @@ export function createSupabaseAdapter(): Repository {
     myReviewOnQuest: () => stub("myReviewOnQuest"),
     submitReview: () => stub("submitReview"),
 
+    reportUser: () => stub("reportUser"),
+    blockUser: () => stub("blockUser"),
+    listBlockedUserIds: () => stub("listBlockedUserIds"),
+
     listForUser: () => stub("listForUser"),
     markAllRead: () => stub("markAllRead"),
     subscribeToUser: () => stubSync("subscribeToUser"),

@@ -5,6 +5,7 @@ import type { OffersPort } from "./ports/offers";
 import type { ThreadsPort } from "./ports/threads";
 import type { LedgerPort } from "./ports/ledger";
 import type { ReviewsPort } from "./ports/reviews";
+import type { TrustPort } from "./ports/trust";
 import type { NotificationsPort } from "./ports/notifications";
 import type { CategoriesPort } from "./ports/categories";
 import type { AreasPort } from "./ports/areas";
@@ -19,6 +20,7 @@ export type Repository = AuthPort &
   ThreadsPort &
   LedgerPort &
   ReviewsPort &
+  TrustPort &
   NotificationsPort &
   CategoriesPort &
   AreasPort;
