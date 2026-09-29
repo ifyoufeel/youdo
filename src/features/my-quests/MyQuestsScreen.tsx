@@ -20,11 +20,13 @@ import { useAuthSession } from "@data/auth-session";
 import { useNow } from "@data/composition-root";
 import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
 import { t } from "../../i18n/t";
-import { useMyQuests } from "./useMyQuests";
+import { useMyQuests, type MyQuestEngagement } from "./useMyQuests";
 import { EngagementCard } from "./EngagementCard";
 import { useStartQuest } from "../quest-detail/useStartQuest";
 import { useMarkDone } from "../quest-detail/useMarkDone";
 import { useConfirmDone } from "../quest-detail/useConfirmDone";
+import { RateSheet } from "@features/reviews/RateSheet";
+import { useSubmitReview } from "@features/reviews/useSubmitReview";
 
 const EMPTY_COPY: Record<Bucket, { title: string; action: string }> = {
   active: { title: t("myQuests.empty.active.title"), action: t("myQuests.empty.active.action") },
@@ -40,9 +42,11 @@ export function MyQuestsScreen() {
   const startQuest = useStartQuest();
   const markDone = useMarkDone();
   const confirmDone = useConfirmDone();
+  const submitReview = useSubmitReview();
   const unreadNotifications = useUnreadNotificationCount();
   const [tab, setTab] = useState<Bucket>("active");
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [rateFor, setRateFor] = useState<MyQuestEngagement | null>(null);
   const now = useNow();
 
   // Adjusted during render, not a useEffect — the "posted" param only
@@ -125,9 +129,30 @@ export function MyQuestsScreen() {
             onConfirmDone={
               session ? () => confirmDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
             }
+            onRate={session ? () => setRateFor(e) : undefined}
           />
         ))
       )}
+
+      <RateSheet
+        open={rateFor !== null}
+        onClose={() => setRateFor(null)}
+        counterpart={rateFor?.counterpart ?? null}
+        submitting={submitReview.isPending}
+        onConfirm={(rating, comment) => {
+          const counterpart = rateFor?.counterpart;
+          if (!session || !rateFor || !counterpart) return;
+          submitReview.mutate(
+            { questId: rateFor.quest.id, raterId: session.userId, rateeId: counterpart.id, rating, comment },
+            {
+              onSuccess: () => {
+                setRateFor(null);
+                setConfirmation(t("questDetail.ratedToast", { name: counterpart.name }));
+              },
+            }
+          );
+        }}
+      />
     </Screen>
   );
 }

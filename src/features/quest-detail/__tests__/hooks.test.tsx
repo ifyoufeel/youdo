@@ -9,6 +9,7 @@ import { useWithdrawOffer } from "../useWithdrawOffer";
 import { useStartQuest } from "../useStartQuest";
 import { useMarkDone } from "../useMarkDone";
 import { useCancelQuest } from "../useCancelQuest";
+import { useSubmitReview } from "../../reviews/useSubmitReview";
 
 // Every test that actually creates an offer uses a distinct (quest, doer)
 // pair, global across this file — same reasoning as
@@ -37,7 +38,8 @@ function useHarness(questId: string) {
   const start = useStartQuest();
   const markDone = useMarkDone();
   const cancel = useCancelQuest(questId);
-  return { auth, detail, send, withdraw, start, markDone, cancel };
+  const submitReview = useSubmitReview();
+  return { auth, detail, send, withdraw, start, markDone, cancel, submitReview };
 }
 
 async function renderSignedIn(questId: string) {
@@ -80,6 +82,15 @@ describe("useQuestDetail", () => {
     const result = await renderSignedIn("q4");
     expect(result.current.detail.role).toBe("visitor");
     expect(result.current.detail.addressVisible).toBe(false);
+  });
+
+  it("resolves counterpart to the poster for a doer, and exposes myReview once the quest is paid", async () => {
+    // q8: posterId u2, accepted offer o8 (doerId u0), naturally "paid" —
+    // the seed's r1 has u2 already rating u0 back, but not the reverse.
+    const result = await renderSignedIn("q8");
+    expect(result.current.detail.role).toBe("doer");
+    expect(result.current.detail.counterpart?.id).toBe("u2");
+    expect(result.current.detail.myReview).toBeNull();
   });
 });
 
@@ -173,5 +184,23 @@ describe("useMarkDone", () => {
       await result.current.markDone.mutateAsync({ questId: "q1", actorId: "u0" });
     });
     await waitFor(() => expect(result.current.detail.quest?.status).toBe("completed"), { timeout: 3000 });
+  });
+});
+
+describe("useSubmitReview", () => {
+  it("lets the doer rate the poster back on q8, reflected in useQuestDetail's myReview once invalidated", async () => {
+    const result = await renderSignedIn("q8");
+    expect(result.current.detail.myReview).toBeNull();
+
+    await act(async () => {
+      await result.current.submitReview.mutateAsync({
+        questId: "q8",
+        raterId: "u0",
+        rateeId: "u2",
+        rating: 5,
+        comment: "Great to work with.",
+      });
+    });
+    await waitFor(() => expect(result.current.detail.myReview?.rating).toBe(5), { timeout: 3000 });
   });
 });

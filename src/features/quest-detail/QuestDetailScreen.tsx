@@ -2,11 +2,11 @@
    payout, meta rows, description, requirements, poster trust panel,
    offer count, address privacy, and the offer sheet. M4 added the
    poster's real "Review offers" button and Start quest/Mark as done/
-   Cancel. M5 adds the poster's "Confirm and pay" — the one remaining
-   slab action needing real escrow release — leaving only Leave-a-rating/
-   Issue (M6, no admin/rating actor exists yet) unwired. ConfirmWindow
-   (Phase 2) already covers "completed" informationally in the body
-   regardless of role. */
+   Cancel. M5 added the poster's "Confirm and pay". M6 adds "Leave a
+   rating" (paid + unrated, either side) — "Issue" (dispute) stays
+   unwired, no admin actor exists to resolve one. ConfirmWindow (Phase 2)
+   already covers "completed" informationally in the body regardless of
+   role. */
 import { useState, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -44,6 +44,8 @@ import { useCancelQuest } from "./useCancelQuest";
 import { useQuestThread } from "./useQuestThread";
 import { OfferSheet } from "./OfferSheet";
 import { CancelSheet } from "./CancelSheet";
+import { RateSheet } from "@features/reviews/RateSheet";
+import { useSubmitReview } from "@features/reviews/useSubmitReview";
 
 const TITLE_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
 const BODY_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
@@ -65,8 +67,10 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
   const markDone = useMarkDone();
   const confirmDone = useConfirmDone();
   const cancelQuest = useCancelQuest(questId);
+  const submitReview = useSubmitReview();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
+  const [rateSheetOpen, setRateSheetOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const now = useNow();
 
@@ -103,7 +107,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
     );
   }
 
-  const { quest, poster, role, addressVisible, myOffer } = detail;
+  const { quest, poster, counterpart, myReview, role, addressVisible, myOffer } = detail;
   const meta = statusMeta(quest.status);
   const badges = quest.status === "open" ? questBadges(quest, now) : [{ label: meta.label, tone: meta.tone }];
   const pendingCount = detail.offers.filter((o) => o.status === "pending").length;
@@ -217,6 +221,12 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
         {t("questDetail.openChat")}
       </Button>
     ) : undefined;
+  } else if (quest.status === "paid" && (role === "poster" || role === "doer") && !myReview && actorId) {
+    slab = (
+      <Button variant="money" fullWidth icon="star" onPress={() => setRateSheetOpen(true)} testID="leave-a-rating">
+        {t("questDetail.leaveARating")}
+      </Button>
+    );
   }
 
   return (
@@ -363,6 +373,25 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
         refundMinor={acceptedOffer ? acceptedOffer.amountMinor : null}
         onConfirm={runCancel}
         submitting={cancelQuest.isPending}
+      />
+
+      <RateSheet
+        open={rateSheetOpen}
+        onClose={() => setRateSheetOpen(false)}
+        counterpart={counterpart}
+        submitting={submitReview.isPending}
+        onConfirm={(rating, comment) => {
+          if (!actorId || !counterpart) return;
+          submitReview.mutate(
+            { questId, raterId: actorId, rateeId: counterpart.id, rating, comment },
+            {
+              onSuccess: () => {
+                setRateSheetOpen(false);
+                setConfirmation(t("questDetail.ratedToast", { name: counterpart.name }));
+              },
+            }
+          );
+        }}
       />
     </Screen>
   );

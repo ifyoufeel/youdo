@@ -421,4 +421,68 @@ describe("EngagementCard", () => {
     );
     expect(posterNoHandlerQuery("engagement-confirm-and-pay")).toBeNull();
   });
+
+  it("shows Leave a rating for either side once paid, and calls onRate", async () => {
+    const paidQuest = { ...QUEST, status: "paid" as const, completedAt: "2026-09-16T08:00:00+08:00", paidAt: "2026-09-16T08:30:00+08:00" };
+    const onRate = jest.fn();
+    const { getByTestId, getByText } = await render(
+      <EngagementCard
+        quest={paidQuest}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onRate={onRate}
+      />
+    );
+    expect(getByText("Leave a rating")).toBeTruthy();
+    await fireEvent.press(getByTestId("engagement-leave-a-rating"));
+    expect(onRate).toHaveBeenCalled();
+
+    const { getByTestId: posterGetByTestId } = await render(
+      <EngagementCard
+        quest={paidQuest}
+        role="poster"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onRate={() => {}}
+      />
+    );
+    expect(posterGetByTestId("engagement-leave-a-rating")).toBeTruthy();
+  });
+
+  it("never shows Leave a rating for an applicant, or without onRate", async () => {
+    const paidQuest = { ...QUEST, status: "paid" as const, completedAt: "2026-09-16T08:00:00+08:00", paidAt: "2026-09-16T08:30:00+08:00" };
+    const { queryByTestId: applicantQuery } = await render(
+      <EngagementCard
+        quest={paidQuest}
+        role="applicant"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+        onRate={() => {}}
+      />
+    );
+    expect(applicantQuery("engagement-leave-a-rating")).toBeNull();
+
+    const { queryByTestId: noHandlerQuery } = await render(
+      <EngagementCard
+        quest={paidQuest}
+        role="doer"
+        amountMinor={40000}
+        counterpart={POSTER}
+        pendingOfferCount={0}
+        now={NOW}
+        onOpen={() => {}}
+      />
+    );
+    expect(noHandlerQuery("engagement-leave-a-rating")).toBeNull();
+  });
 });

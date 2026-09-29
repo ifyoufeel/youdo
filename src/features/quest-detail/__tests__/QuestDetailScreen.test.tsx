@@ -169,6 +169,23 @@ describe("QuestDetailScreen", () => {
   );
 
   it(
+    "shows Leave a rating for the accepted doer on a paid, unrated quest, and submitting shows a real toast",
+    async () => {
+      // q8: naturally paid, u0 the accepted doer — the seed's r1 is only
+      // the poster's rating of u0, not the reverse, so u0 still has none.
+      const { findByTestId, findByText, findByLabelText } = await render(<QuestDetailScreen questId="q8" />, {
+        wrapper: Providers,
+      });
+      await fireEvent.press(await findByTestId("leave-a-rating", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByLabelText("5 stars", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByTestId("rate-sheet-confirm", {}, LONG_TIMEOUT));
+
+      expect(await findByText(/Rated —/, {}, LONG_TIMEOUT)).toBeTruthy();
+    },
+    15000
+  );
+
+  it(
     "cancelling from the slab moves the quest to cancelled — the real mutation, not just a whitebox render",
     async () => {
       // q1: signed-in u0 is already its naturally in_progress accepted

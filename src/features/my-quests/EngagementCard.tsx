@@ -2,9 +2,10 @@
    public primitives (Card/Badge/RewardPill/UserChip/Button), same call as
    quest-detail's OfferSheet in M2. Ported from app.js:2959-3045
    (EngagementCard), including StatusTrack/ConfirmWindow (M4 Phase 2) at
-   the same spots the source puts them. M5 adds "Confirm and pay" (real
-   escrow release); "Leave a rating" stays out until M6 (no rating actor
-   exists yet) — still no dead buttons.
+   the same spots the source puts them. M5 added "Confirm and pay" (real
+   escrow release). M6 adds "Leave a rating" — reachable safely with no
+   extra myReview check here, since bucketOf's own carve-out already
+   keeps a paid-unrated quest in the Active tab. Still no dead buttons.
 
    One deliberate layout divergence: the source puts its one primary
    action inline in the footer row, next to the counterpart/fallback text,
@@ -51,6 +52,7 @@ export interface EngagementCardProps {
   onStartQuest?: () => void;
   onMarkAsDone?: () => void;
   onConfirmDone?: () => void;
+  onRate?: () => void;
 }
 
 interface PrimaryAction {
@@ -73,6 +75,7 @@ export function EngagementCard({
   onStartQuest,
   onMarkAsDone,
   onConfirmDone,
+  onRate,
 }: EngagementCardProps) {
   const meta = statusMeta(quest.status);
   const roleLabel =
@@ -87,8 +90,7 @@ export function EngagementCard({
 
   // Ported from app.js's own primary() — one action per card, chosen by
   // role and status, so this card and QuestDetailScreen's slab can never
-  // disagree. The paid+unrated ("Leave a rating") branch stays out (M6 —
-  // no rating actor exists yet).
+  // disagree.
   let action: PrimaryAction | null = null;
   if (role === "poster" && quest.status === "open" && onReviewOffers) {
     action = {
@@ -107,6 +109,8 @@ export function EngagementCard({
     action = { label: t("myQuests.action.markAsDone"), icon: "check", variant: "primary", onPress: onMarkAsDone, testID: "engagement-mark-as-done" };
   } else if (role === "poster" && quest.status === "completed" && onConfirmDone) {
     action = { label: t("myQuests.action.confirmAndPay"), icon: "check", variant: "money", onPress: onConfirmDone, testID: "engagement-confirm-and-pay" };
+  } else if (quest.status === "paid" && (role === "poster" || role === "doer") && onRate) {
+    action = { label: t("myQuests.action.leaveARating"), icon: "star", variant: "money", onPress: onRate, testID: "engagement-leave-a-rating" };
   }
 
   return (

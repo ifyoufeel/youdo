@@ -88,4 +88,25 @@ describe("MyQuestsScreen", () => {
     expect(queryByText("Confirm and pay")).toBeNull();
     expect(queryByText("Leave a rating")).toBeNull();
   });
+
+  it(
+    "leaving a rating from the Active tab moves the quest to Done, with a real confirmation toast",
+    async () => {
+      // q8: paid, u0 the accepted doer, unrated — the last test in this
+      // file, since submitting a real review is a one-way trip for q8's
+      // shared module state (same "last test" discipline
+      // QuestDetailScreen.test.tsx's own cancel test already follows).
+      const { findByText, findByTestId, findByLabelText } = await render(<MyQuestsScreen />, { wrapper: Providers });
+      await findByText("Queue for the new bakery on Dihua St", {}, LONG_TIMEOUT);
+
+      await fireEvent.press(await findByTestId("engagement-leave-a-rating", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByLabelText("5 stars", {}, LONG_TIMEOUT));
+      await fireEvent.press(await findByTestId("rate-sheet-confirm", {}, LONG_TIMEOUT));
+      expect(await findByText(/Rated —/, {}, LONG_TIMEOUT)).toBeTruthy();
+
+      await fireEvent.press(await findByText("Done", {}, LONG_TIMEOUT));
+      expect(await findByText("Queue for the new bakery on Dihua St", {}, LONG_TIMEOUT)).toBeTruthy();
+    },
+    15000
+  );
 });
