@@ -159,8 +159,12 @@ releasing real escrow, a real shortfall walked through Add money to a successful
 - [x] Profile: own and public; ratings, quests completed, verification, cancellation rate
 - [x] **Ratings capture** after `paid` — today the system only displays them
 - [x] Saved-quests list (saves are tracked today but never listed)
-- [ ] Notification inbox + push registration; per-category toggles
-- [x] Report / block on users and quests
+- [x] Notification inbox + per-category toggles, persisted for real
+- [ ] Push registration — no push pipeline exists yet; M7/M8 work
+- [x] Report / block on users — real records/filtering now, not the
+      prototype's toast-only report and no-op block. Quest-level report
+      stays out: no real trigger site for it exists in the prototype
+      either, only the profile's report-a-person flow does
 - [x] Settings, including account deletion
 - [ ] Decision point: does Chinese localisation block launch?
 
@@ -295,8 +299,9 @@ the artifact):
   itself is untouched and still settles synchronously — that file is frozen,
   not a second implementation to keep in sync.
 - Notification *delivery* (M6): the inbox and the per-category toggles are
-  built, but the toggles are screen state, not stored preference, and there is
-  no push registration. That is M7/M8 work.
+  built, and the toggles are now a real, persisted device preference (M6
+  Phase 4) — but there is still no push registration or anything that
+  actually sends a push. That is M7/M8 work.
 - Auth and onboarding (M1) are built but not the default: the preview still
   boots signed in (ADR-012), reachable via Settings → Sign out. A real i18n
   library, and `FlashList`/cursor pagination/pull-to-refresh for the feed

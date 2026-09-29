@@ -36,11 +36,19 @@
    the reviewer to use the DevStrip's own +3d button (ADR-009's clock,
    already ambient above every (preview) route) to sweep the 72h confirm
    window for real — put last since advancing the clock is one-way for
-   this whole page, per risk flag #2 in the M5 plan. */
+   this whole page, per risk flag #2 in the M5 plan. Frames 10-11 (M6)
+   close PRD §7.8's trust-and-safety loop: frame 10 rates q8's poster
+   for real, which — since the seed's r1 already has that poster's own
+   rating of u0 waiting — makes both sides of the pair visible in the
+   same instant, watched live via LiveReviewsStrip; frame 11 reports and
+   then really blocks a poster (u2) from PublicProfileScreen, then shows
+   their open quest (q2) actually vanish from a live Browse feed below
+   it, proving listQuests' new viewerId filter, not just a toast. */
 import { useEffect, useState, type ReactNode } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { RepositoryProvider, useRepository } from "@data/composition-root";
-import { AuthSessionProvider } from "@data/auth-session";
+import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
 import { money, formatMoney } from "@data/contracts";
 import { newIdempotencyKey } from "@lib/idempotency";
 import { raw } from "@design/tokens/raw";
@@ -52,6 +60,7 @@ import { QuestDetailScreen } from "@features/quest-detail/QuestDetailScreen";
 import { PostQuestScreen } from "@features/post-quest/PostQuestScreen";
 import { MyQuestsScreen } from "@features/my-quests/MyQuestsScreen";
 import { OfferInboxScreen } from "@features/offer-inbox/OfferInboxScreen";
+import { PublicProfileScreen } from "@features/public-profile/PublicProfileScreen";
 import { LoadingState } from "@design/components/LoadingState";
 import { useWallet } from "@features/wallet/useWallet";
 import { AutoSignInAmbient } from "./_components/AutoSignInAmbient";
@@ -76,6 +85,29 @@ function LiveWalletStrip() {
       <Text style={styles.walletStripText}>
         Available {formatMoney(money(wallet.available))} · Held {formatMoney(money(wallet.held))} · Coming{" "}
         {formatMoney(money(wallet.incoming))}
+      </Text>
+    </View>
+  );
+}
+
+/* Mirrors LiveWalletStrip's role for M6's reveal-rule frame — a one-line
+   live readout of listReviewsForUser (already reveal-gated server-side,
+   M6 Phase 3), so a reviewer can watch it go from 0 to 1 the moment they
+   submit the reciprocal rating below. */
+function LiveReviewsStrip() {
+  const repository = useRepository();
+  const { session } = useAuthSession();
+  const userId = session?.userId;
+  const reviews = useQuery({
+    queryKey: ["reviews", "for", userId],
+    queryFn: () => repository.listReviewsForUser(userId as string),
+    enabled: !!userId,
+  });
+  const count = reviews.data?.length ?? 0;
+  return (
+    <View style={styles.walletStrip}>
+      <Text style={styles.walletStripText}>
+        Reviews visible on your own profile: {count} {count === 1 ? "review" : "reviews"}
       </Text>
     </View>
   );
@@ -132,7 +164,9 @@ export default function FlowsScreen() {
         seventh through ninth frames (M5) make the money real too — confirm-and-pay releasing real
         escrow, a real wallet shortfall walked through Add money to a successful accept, and the
         72-hour confirm window swept for real via the dev strip&apos;s own clock. Try the ninth frame
-        last — advancing the clock is one-way for the whole page.
+        last — advancing the clock is one-way for the whole page. The tenth and eleventh frames (M6)
+        close the trust-and-safety loop: rating someone back reveals both sides of a mutual pair for
+        real, and reporting/blocking someone really filters their quests out of Browse.
       </Text>
 
       <Text style={styles.specimenLabel}>1 · Sign in — real AuthSessionProvider, memory adapter</Text>
@@ -227,6 +261,34 @@ export default function FlowsScreen() {
         <AutoSignInAmbient>
           <LiveWalletStrip />
           <QuestDetailScreen questId="q11" />
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        10 · Rate q8&apos;s poster back for real — tap &quot;Leave a rating&quot;, pick a star, submit.
+        Since the seed already has their rating of you waiting, both sides become visible on your own
+        profile in the same instant — watch the strip above flip from 0 to 1 (M6)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <LiveReviewsStrip />
+          <QuestDetailScreen questId="q8" />
+        </AutoSignInAmbient>
+      </FlowFrame>
+
+      <Text style={styles.specimenLabel}>
+        11 · Report, then really block, a real poster (u2) from their public profile — tap the flag
+        icon, send a report, then &quot;Block this person&quot;. Scroll the real Browse feed below and
+        their open quest (&quot;Pick up a parcel from the post office&quot;) is gone (M6)
+      </Text>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <PublicProfileScreen userId="u2" />
+        </AutoSignInAmbient>
+      </FlowFrame>
+      <FlowFrame>
+        <AutoSignInAmbient>
+          <BrowseScreen />
         </AutoSignInAmbient>
       </FlowFrame>
     </ScrollView>

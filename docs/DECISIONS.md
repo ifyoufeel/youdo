@@ -301,3 +301,59 @@ this forward. The DevStrip's clock buttons are `__DEV__`-gated, same as the
 actor switcher (ADR-008); a production `expo export -p web` build never
 shows them, so the clock only moves by a real timer's own tick, exactly like
 production would.
+
+---
+
+## ADR-014 · Trust fields stay seed-authored, not recomputed; report/block scoped to users only
+
+**Decision (rating/quests/cancel-rate).** `User.rating`, `questsCompleted`,
+and `cancelRate` stay exactly what `seed.ts` authored them as. M6's real
+`submitReview` never recomputes them from the review corpus it writes to,
+even though PRD line 176 calls them "(derived)" on the intended production
+schema.
+
+**Why.** The fixture's own numbers make deriving them dishonest at this
+milestone's scale: `u0`'s `rating` is `4.8` across `27` `questsCompleted`,
+and the whole fixture carries exactly one seeded `Review` record (`r1`).
+Recomputing `rating` as an average over what `submitReview` can actually
+produce today would replace a real, PRD-plausible number with a misleading
+one — `27` completed quests' worth of reputation collapsing to whatever the
+one or two reviews a demo session manages to create. The seed's numbers
+represent history this milestone has no way to reconstruct; keeping them
+static is honest about that, the same call M5 made *not* to synthesize a
+deeper ledger history than the fixture actually has. A real backend (M7+),
+with a real review corpus accumulated over real time, is where "(derived)"
+becomes true rather than aspirational.
+
+**Cost.** Submitting reviews in this build never moves the trust numbers a
+viewer sees elsewhere on the app — `RatingStar`, `UserChip`'s inline rating,
+and `PublicProfileScreen`'s badge row all keep showing the seed-authored
+figure regardless of what gets rated in a session. `docs/ROADMAP.md` and any
+later milestone should treat wiring real aggregation as new work, not a gap
+this milestone left half-finished.
+
+**Decision (report/block scope).** PRD §7.8 says "Report and block on any
+user or quest." The real, buildable slice is user-level only: `TrustPort`
+has `reportUser`/`blockUser`/`listBlockedUserIds`, no quest-level report, and
+no `unblockUser`.
+
+**Why.** `preview/app.js`'s own `PublicProfileScreen` is the *only* place
+either action exists anywhere in the source, and it only ever targets a
+user — no quest ever gets a report or block trigger anywhere in the
+prototype, despite the PRD line's broader wording. Building a quest-level
+report path would be inventing a surface the reference product never had,
+not porting one. `unblockUser` is left off the port for the same
+"don't build infrastructure for a caller that doesn't exist" reasoning
+ADR-013 already used for a general `postTxn`: no screen anywhere surfaces a
+"blocked users" list to unblock from, so the method would have no real
+caller. A future milestone adding that list is the natural place to add the
+method alongside it, not before.
+
+**Mechanism.** `blockUser` writes a real per-viewer `Set<blockedUserId>`
+(`blockedUserIds` in `store.ts`); `listQuests` gained a `viewerId` param that
+filters out any quest posted by someone the viewer has blocked — real
+discovery-time filtering, not a cosmetic hide. `reportUser` creates a real,
+persisted `Report` record that nothing in the product reads back — the same
+accepted shape a disputed quest's unreachable admin-resolution half already
+has in this codebase: a frozen record with no resolution UI is a known,
+intentional end state here, not an oversight.

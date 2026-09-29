@@ -36,6 +36,8 @@ import { DepositSheet } from "@features/wallet/DepositSheet";
 import { CashOutSheet } from "@features/wallet/CashOutSheet";
 import type { WalletHistoryRow } from "@features/wallet/useWallet";
 import { ProfileScreen } from "@features/profile/ProfileScreen";
+import { PublicProfileScreen } from "@features/public-profile/PublicProfileScreen";
+import { SavedQuestsScreen } from "@features/saved-quests/SavedQuestsScreen";
 import { AutoSignedIn } from "./_components/AutoSignedIn";
 
 const HEADING_FONT = fontFamilyName(raw.font.display, raw.fontWeight.bold);
@@ -363,6 +365,16 @@ export default function ScreensScreen() {
         </AutoSignedIn>
       </ScreenFrame>
 
+      <Text style={styles.specimenLabel}>
+        Doer · quest is paid, not yet rated (q8) — real &quot;Leave a rating&quot; slab and &quot;See
+        profile&quot; action in the trust panel (M6)
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <QuestDetailScreen questId="q8" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
       <SectionHeading>Offer inbox (M4)</SectionHeading>
       <Text style={styles.specimenLabel}>
         Three real pending offers on your own quest — tap Accept to see the fee breakdown and
@@ -491,14 +503,40 @@ export default function ScreensScreen() {
         </Screen>
       </ScreenFrame>
 
-      <SectionHeading>Profile (M5)</SectionHeading>
+      <SectionHeading>Profile (M5/M6)</SectionHeading>
       <Text style={styles.specimenLabel}>
-        The real screen, auto-signed-in — real identity, real wallet balance/history, deposit and
-        cash-out both wired to the live LedgerPort.
+        The real screen, auto-signed-in — identity + RatingStar + quests/cancel-rate meta (M6),
+        real wallet balance/history (M5), a real &quot;Saved quests&quot; row (M6, count + real
+        navigation), &quot;What people said&quot; once a review is visible (M6), and — tap the
+        gear icon — the real Settings sheet: notification toggles, phone/email/area edits, sign
+        out, and account deletion (M6).
       </Text>
       <ScreenFrame tall>
         <AutoSignedIn>
           <ProfileScreen />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Public profile (M6)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        Someone else&apos;s profile (u2) — identity, trust badges, their real open quest (q2),
+        &quot;What people said&quot; (reveal-gated server-side). Tap the flag icon for the real
+        report sheet, including a real &quot;Block this person&quot; action.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <PublicProfileScreen userId="u2" />
+        </AutoSignedIn>
+      </ScreenFrame>
+
+      <SectionHeading>Saved quests (M6)</SectionHeading>
+      <Text style={styles.specimenLabel}>
+        Your real saved quest (q4, seeded) — the same &quot;heart&quot; unsave action Browse
+        itself uses.
+      </Text>
+      <ScreenFrame tall>
+        <AutoSignedIn>
+          <SavedQuestsScreen />
         </AutoSignedIn>
       </ScreenFrame>
     </ScrollView>
