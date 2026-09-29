@@ -79,4 +79,26 @@ describe("ProfileScreen", () => {
 
     await findByText("NT$5,855", {}, LONG_TIMEOUT);
   });
+
+  it(
+    "opens Settings from the TopBar action and commits a real phone edit on Done",
+    async () => {
+      const { findByTestId, findByText, getByTestId } = await render(<ProfileScreen />, { wrapper: Providers });
+      await findByText("Alex L.", {}, LONG_TIMEOUT);
+
+      await fireEvent.press(await findByTestId("open-settings", {}, LONG_TIMEOUT));
+      await findByTestId("settings-sheet", {}, LONG_TIMEOUT);
+      await fireEvent.changeText(getByTestId("settings-phone"), "+886 900 111 222");
+      await fireEvent.press(getByTestId("settings-done"));
+
+      // The updateProfile mutation's onSuccess writes straight into the
+      // ["users", userId] cache ProfileScreen's own userQuery reads, so
+      // the real, persisted change is checkable by reopening the sheet
+      // and reading the field's real value, not just that a toast
+      // appeared.
+      await fireEvent.press(await findByTestId("open-settings", {}, LONG_TIMEOUT));
+      await waitFor(() => expect(getByTestId("settings-phone").props.value).toBe("+886 900 111 222"), LONG_TIMEOUT);
+    },
+    15000
+  );
 });

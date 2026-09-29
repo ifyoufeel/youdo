@@ -1,11 +1,14 @@
 /* Ports the identity-and-wallet slice of preview/app.js's ProfileScreen
-   (3323-3466) — deliberately not the whole thing. Trust (rating, cancel
-   rate, "what people said"), saved quests, and settings all stay M6's
+   (3323-3466) — deliberately not the whole thing at first. Trust (rating,
+   cancel rate, "what people said") and saved quests stay M6 Phase 5's
    job, same scope discipline this codebase has applied at every prior
    milestone boundary (M2's slab actions, M3's post wizard, M4's lifecycle
-   screens). What M5 needs real is the wallet, so that's what's here:
-   identity line, WalletCard, and the full ledger history (PRD §7.7 —
-   no row cap). */
+   screens). What M5 needed real was the wallet: identity line, WalletCard,
+   and the full ledger history (PRD §7.7 — no row cap). M6 Phase 4 adds
+   the one thing naturally anchored to this screen's own TopBar — the
+   Settings entry point (preview/app.js:3350-3355's sliders-horizontal
+   IconButton), since SettingsSheet needs a real trigger to not be a dead
+   component and this is its one real trigger site. */
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -13,11 +16,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@design/components/Screen";
 import { Card } from "@design/components/Card";
 import { Avatar } from "@design/components/Avatar";
+import { IconButton } from "@design/components/IconButton";
 import { LoadingState } from "@design/components/LoadingState";
 import { ErrorState } from "@design/components/ErrorState";
 import { useRepository, useNow } from "@data/composition-root";
 import { useAuthSession } from "@data/auth-session";
 import { useMyQuests } from "@features/my-quests/useMyQuests";
+import { SettingsSheet } from "@features/settings/SettingsSheet";
 import { raw } from "@design/tokens/raw";
 import { semantic } from "@design/tokens/semantic";
 import { fontFamilyName } from "@design/tokens/font-family";
@@ -46,6 +51,7 @@ export function ProfileScreen() {
 
   const [depositOpen, setDepositOpen] = useState(false);
   const [cashOutOpen, setCashOutOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const now = useNow();
 
   const userQuery = useQuery({
@@ -77,7 +83,18 @@ export function ProfileScreen() {
   }
 
   return (
-    <Screen title={t("tabs.profile")}>
+    <Screen
+      title={t("tabs.profile")}
+      topBarActions={
+        <IconButton
+          icon="sliders-horizontal"
+          accessibilityLabel={t("settings.title")}
+          size="sm"
+          onPress={() => setSettingsOpen(true)}
+          testID="open-settings"
+        />
+      }
+    >
       <Card padding="lg">
         <View style={styles.identityRow}>
           <Avatar name={me.name} size="lg" verified={me.verified} />
@@ -130,6 +147,8 @@ export function ProfileScreen() {
         spendableMinor={wallet.spendable}
         submitting={cashOut.isPending}
       />
+
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} user={me} />
     </Screen>
   );
 }

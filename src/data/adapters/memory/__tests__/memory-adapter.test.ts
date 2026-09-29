@@ -81,6 +81,26 @@ describe("memory adapter — real slice", () => {
         adapter.updateProfile("no-such-user", { bio: "x" }, { idempotencyKey: "k2" })
       ).rejects.toThrow();
     });
+
+    it("deleteAccount anonymizes the PII fields, leaving everything else (rating, area, id) untouched", async () => {
+      const adapter = createMemoryAdapter();
+      const before = await adapter.getUser("u3");
+      await adapter.deleteAccount("u3", { idempotencyKey: "del-1" });
+      const after = await adapter.getUser("u3");
+      expect(after?.name).toBe("Deleted user");
+      expect(after?.bio).toBe("");
+      expect(after?.phone).toBe("");
+      expect(after?.email).toBe("");
+      expect(after?.bank).toBe("");
+      expect(after?.id).toBe(before?.id);
+      expect(after?.rating).toBe(before?.rating);
+      expect(after?.area).toBe(before?.area);
+    });
+
+    it("deleteAccount throws for an unknown user", async () => {
+      const adapter = createMemoryAdapter();
+      await expect(adapter.deleteAccount("no-such-user", { idempotencyKey: "del-2" })).rejects.toThrow();
+    });
   });
 
   describe("quests", () => {

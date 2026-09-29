@@ -29,5 +29,15 @@ export function createMemoryUsersPort(): UsersPort {
       users.set(userId, updated);
       return updated;
     },
+
+    async deleteAccount(userId) {
+      await simulateLatency();
+      maybeInjectFault("deleteAccount");
+      const existing = users.get(userId);
+      if (!existing) {
+        throw new Error(`deleteAccount: no user ${userId}`);
+      }
+      users.set(userId, { ...existing, name: "Deleted user", bio: "", phone: "", email: "", bank: "" });
+    },
   };
 }

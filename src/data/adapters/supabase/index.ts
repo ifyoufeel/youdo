@@ -30,6 +30,7 @@ export function createSupabaseAdapter(): Repository {
     getUser: () => stub("getUser"),
     listUsers: () => stub("listUsers"),
     updateProfile: () => stub("updateProfile"),
+    deleteAccount: () => stub("deleteAccount"),
 
     listQuests: () => stub("listQuests"),
     getQuest: () => stub("getQuest"),
