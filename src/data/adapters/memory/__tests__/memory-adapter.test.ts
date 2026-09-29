@@ -280,29 +280,23 @@ describe("memory adapter — real slice", () => {
     });
   });
 
-  describe("stubbed methods", () => {
-    it("throw NotImplementedYet, not silently no-op", async () => {
+  describe("no stubbed methods remain", () => {
+    it("resolves rather than throwing NotImplementedYet — disputeQuest (M6) and ReviewsPort (M6) were the last two", async () => {
       const adapter = createMemoryAdapter();
-      // disputeQuest (needs an admin actor, M6) stays a stub. confirmDone
-      // is real as of M5 Phase 3
-      // (src/data/adapters/memory/__tests__/quests.test.ts covers it) —
-      // every other QuestsPort/OffersPort lifecycle mutation is real too
-      // (src/data/adapters/memory/__tests__/{quests,offers}.test.ts cover
-      // startQuest/markDone/cancelQuest/acceptOffer/declineOffer).
-      await expect(adapter.disputeQuest("q1", seed.meId, "reason", { idempotencyKey: "k" })).rejects.toThrow(
-        /not implemented yet/
-      );
-
-      // Threads/notifications are real as of M4 Phase 1
-      // (src/data/adapters/memory/__tests__/{threads,notifications}.test.ts
-      // cover them). LedgerPort is real as of M5 Phase 2
-      // (src/data/adapters/memory/__tests__/ledger.test.ts covers it) —
-      // listEntriesForUser resolves to u0's real seeded entries now.
-      // ReviewsPort stays stubbed until M6.
+      // disputeQuest is real as of M6 Phase 0 (src/data/adapters/memory/
+      // __tests__/quests.test.ts covers its own guards) — the resolution
+      // half (disputed->paid/cancelled) stays permanently unreachable,
+      // no admin actor exists, but filing one is poster-only and real.
+      // Threads/notifications real since M4 Phase 1, LedgerPort since M5
+      // Phase 2, ReviewsPort since M6 Phase 0
+      // (src/data/adapters/memory/__tests__/reviews.test.ts covers it) —
+      // every port method in this adapter is real now.
       expect(await adapter.listEntriesForUser(seed.meId)).toEqual(
         expect.arrayContaining([expect.objectContaining({ userId: seed.meId })])
       );
-      await expect(adapter.listReviewsForUser(seed.meId)).rejects.toThrow(/not implemented yet/);
+      expect(await adapter.listReviewsForUser(seed.meId)).toEqual(
+        expect.arrayContaining([expect.objectContaining({ rateeId: seed.meId })])
+      );
     });
   });
 });

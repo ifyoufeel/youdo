@@ -56,6 +56,7 @@ export const QuestSchema = z.object({
   cancelledAt: z.string().optional(),
   cancelledBy: z.string().optional(),
   cancelReason: z.string().optional(),
+  disputedAt: z.string().optional(),
   disputeReason: z.string().optional(),
 });
 

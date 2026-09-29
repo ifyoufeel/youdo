@@ -62,9 +62,11 @@ describe("useWallet", () => {
     expect(result.current.wallet.available).toBe(535500);
     expect(result.current.wallet.held).toBe(30000);
     expect(result.current.wallet.spendable).toBe(535500);
-    // Doer engagements still active (not closed): q1 (in_progress, net
-    // 36000) + q11 (assigned, net 13500) — q8/q9 are already "done".
-    expect(result.current.wallet.incoming).toBe(49500);
+    // Doer engagements still in the "active" bucket: q1 (in_progress, net
+    // 36000) + q11 (assigned, net 13500) + q8 (paid, but u0 hasn't rated
+    // u2 back yet — bucketOf's M6 carve-out keeps a paid-unrated quest
+    // active, net 31500). q9 is cancelled, so it's "done" regardless.
+    expect(result.current.wallet.incoming).toBe(81000);
   });
 
   it("classifies u0's real seeded history, newest first", async () => {

@@ -10,7 +10,7 @@ import {
   bucketOf,
   counterpartIdOn,
 } from "./lifecycle";
-import type { Quest, Offer, QuestStatus } from "../contracts";
+import type { Quest, Offer, QuestStatus, Review } from "../contracts";
 
 const ALL_STATUSES: QuestStatus[] = [
   "draft", "open", "assigned", "in_progress", "completed", "paid", "cancelled", "expired", "disputed",
@@ -103,6 +103,19 @@ function offer(overrides: Partial<Offer> = {}): Offer {
   };
 }
 
+function review(overrides: Partial<Review> = {}): Review {
+  return {
+    id: "r1",
+    questId: "q1",
+    raterId: "u0",
+    rateeId: "u1",
+    rating: 5,
+    comment: "",
+    at: "2026-09-16T09:00:00+08:00",
+    ...overrides,
+  };
+}
+
 describe("roleOn", () => {
   it("the poster is 'poster', regardless of offers", () => {
     const q = quest({ posterId: "u1" });
@@ -180,25 +193,33 @@ describe("bucketOf", () => {
     const offers = [offer({ id: "o1", doerId: "u0", status: "pending" })];
     for (const status of ["open", "assigned"] as QuestStatus[]) {
       const q = quest({ status, acceptedOfferId: null });
-      expect(bucketOf(offers, q, "u0")).toBe("offers");
+      expect(bucketOf(offers, q, "u0", null)).toBe("offers");
     }
   });
 
-  it("every isClosed status (paid/cancelled/expired) is 'done' for a poster or doer", () => {
-    for (const status of ["paid", "cancelled", "expired"] as QuestStatus[]) {
+  it("every isClosed status (cancelled/expired) is 'done' for a poster or doer", () => {
+    for (const status of ["cancelled", "expired"] as QuestStatus[]) {
       const posted = quest({ posterId: "u0", status });
-      expect(bucketOf([], posted, "u0")).toBe("done");
+      expect(bucketOf([], posted, "u0", null)).toBe("done");
 
       const doing = quest({ posterId: "u1", status, acceptedOfferId: "o1" });
       const offers = [offer({ id: "o1", doerId: "u0", status: "accepted" })];
-      expect(bucketOf(offers, doing, "u0")).toBe("done");
+      expect(bucketOf(offers, doing, "u0", null)).toBe("done");
     }
+  });
+
+  it("a paid quest stays 'active' until the viewer rates it, then becomes 'done' (M6's restored carve-out)", () => {
+    const posted = quest({ posterId: "u0", status: "paid" });
+    expect(bucketOf([], posted, "u0", null)).toBe("active");
+
+    const myReview = review({ questId: posted.id, raterId: "u0" });
+    expect(bucketOf([], posted, "u0", myReview)).toBe("done");
   });
 
   it("every non-closed, non-applicant status is 'active' — open/assigned/in_progress/completed/disputed for the poster or doer", () => {
     for (const status of ["open", "assigned", "in_progress", "completed", "disputed"] as QuestStatus[]) {
       const posted = quest({ posterId: "u0", status });
-      expect(bucketOf([], posted, "u0")).toBe("active");
+      expect(bucketOf([], posted, "u0", null)).toBe("active");
     }
   });
 
@@ -207,7 +228,7 @@ describe("bucketOf", () => {
     // listMyQuests (quests.ts) never includes a pure visitor's quest in
     // the first place — this just documents bucketOf's own fallback.
     const q = quest({ posterId: "u1", status: "open", acceptedOfferId: null });
-    expect(bucketOf([], q, "u9")).toBe("active");
+    expect(bucketOf([], q, "u9", null)).toBe("active");
   });
 });
 

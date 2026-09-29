@@ -12,7 +12,8 @@
    Pure and framework-free, reusable by any adapter (the memory adapter
    today, Supabase's RLS-backed guards at M7 should still agree with this
    table even though the real enforcement moves server-side there). */
-import type { Quest, QuestStatus, Offer } from "../contracts";
+import type { Quest, QuestStatus, Offer, Review } from "../contracts";
+import { canRate } from "./reviews";
 
 export type Role = "poster" | "doer" | "applicant" | "visitor";
 export type Actor = Role | "system" | "admin";
@@ -110,17 +111,18 @@ export function roleOn(offers: Offer[], quest: Quest | null, userId: string): Ro
   return "visitor";
 }
 
-/** "My quests" tab bucketing (app.js:2949-2957, bucketOf) — simplified:
-    the prototype's "paid but unrated stays active" carve-out needs
-    myReviewOn (ratings, M6 — ReviewsPort is entirely unimplemented until
-    then), so this treats every paid quest as "done". isClosed() already
-    covers paid/cancelled/expired, which makes this simpler than the
-    prototype's version, not a lesser one. */
+/** "My quests" tab bucketing (app.js:2949-2957, bucketOf) — M6 restores
+    the prototype's "paid but unrated stays active" carve-out, now that
+    ReviewsPort is real: a paid quest you haven't rated yet is still
+    something to act on, not done. `myReview` is the viewer's own review
+    on this quest if they've already left one (or null) — the caller's
+    job to resolve, same division as every other selector here. */
 export type Bucket = "active" | "offers" | "done";
 
-export function bucketOf(offers: Offer[], quest: Quest, userId: string): Bucket {
+export function bucketOf(offers: Offer[], quest: Quest, userId: string, myReview: Review | null): Bucket {
   const role = roleOn(offers, quest, userId);
   if (role === "applicant") return "offers";
+  if (canRate(quest, role, myReview)) return "active";
   if (isClosed(quest.status)) return "done";
   return "active";
 }

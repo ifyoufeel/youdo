@@ -23,6 +23,8 @@ import {
   type LedgerEntry,
   LedgerEntrySchema,
   type Payment,
+  type Review,
+  ReviewSchema,
   PointSchema,
 } from "../../contracts";
 import type { Area } from "../../ports/areas";
@@ -107,3 +109,10 @@ export const ledger: LedgerEntry[] = parseArray(LedgerEntrySchema, seed.ledger);
     modeling them as payments that "already settled" would invent a
     provider reference nothing backs. */
 export const payments: Payment[] = [];
+
+/** Mutable — reviews.ts's submitReview (M6) pushes here. Seeded from the
+    fixture's one deliberately-half-rated pair (q8: u2 has rated u0, u0
+    hasn't rated back yet) so both sides of PRD §7.8's reveal rule — shown
+    once both submit, or after 14 days — are demonstrable from cold
+    start. */
+export const reviews: Review[] = parseArray(ReviewSchema, seed.reviews);

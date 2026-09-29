@@ -1,7 +1,7 @@
 import React from "react";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RepositoryProvider } from "@data/composition-root";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { RepositoryProvider, useRepository } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
 import { useMyQuests } from "../useMyQuests";
 
@@ -23,7 +23,9 @@ function makeWrapper() {
 function useHarness() {
   const auth = useAuthSession();
   const myQuests = useMyQuests();
-  return { auth, myQuests };
+  const repository = useRepository();
+  const queryClient = useQueryClient();
+  return { auth, myQuests, repository, queryClient };
 }
 
 async function renderSignedIn() {
@@ -44,11 +46,31 @@ describe("useMyQuests", () => {
     // q1: accepted offer (doer), in_progress -> active
     // q6/q7: posted by u0, open/completed -> active
     // q11: accepted offer (doer), assigned -> active
-    expect(ids("active")).toEqual(["q1", "q11", "q6", "q7"]);
+    // q8: accepted offer, paid but u0 (doer) hasn't rated u2 back yet ->
+    // stays active per bucketOf's restored M6 carve-out
+    expect(ids("active")).toEqual(["q1", "q11", "q6", "q7", "q8"]);
     // q3: u0's own pending offer (applicant) -> offers
     expect(ids("offers")).toEqual(["q3"]);
-    // q8: accepted offer, paid -> done · q9: accepted offer, cancelled -> done
-    expect(ids("done")).toEqual(["q8", "q9"]);
+    // q9: accepted offer, cancelled (never reaches "paid", so the review
+    // carve-out never applies) -> done
+    expect(ids("done")).toEqual(["q9"]);
+  });
+
+  it("moves a paid quest from active to done once the viewer submits their own rating", async () => {
+    const result = await renderSignedIn();
+    expect(result.current.myQuests.buckets.active.map((e) => e.quest.id)).toContain("q8");
+
+    await act(async () => {
+      await result.current.repository.submitReview("q8", "u0", "u2", 5, "Thanks!", {
+        idempotencyKey: "test-carve-out",
+      });
+    });
+    await act(async () => {
+      await result.current.queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      await result.current.myQuests.refetch();
+    });
+    await waitFor(() => expect(result.current.myQuests.buckets.done.map((e) => e.quest.id)).toContain("q8"));
+    expect(result.current.myQuests.buckets.active.map((e) => e.quest.id)).not.toContain("q8");
   });
 
   it("derives the poster role and 'Posted by you' shape for u0's own quest", async () => {

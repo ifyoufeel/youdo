@@ -6,7 +6,6 @@ import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
 import { quests, offers, users, savedQuestIds } from "./store";
 import { isFirstUse } from "./idempotency";
-import { NotImplementedYet } from "./not-implemented";
 import { nextId } from "./next-id";
 import {
   offersFor,
@@ -15,6 +14,7 @@ import {
   canTransition,
   counterpartIdOn,
   acceptedOfferFor,
+  confirmDeadline,
   type Actor,
 } from "../../domain/lifecycle";
 import { notify } from "./notify";
@@ -269,8 +269,44 @@ export function createMemoryQuestsPort(): QuestsPort {
       return quest;
     },
 
-    async disputeQuest() {
-      throw new NotImplementedYet("disputeQuest", "M6");
+    // The one direction that never needed an admin actor: filing a
+    // dispute is poster-only (TRANSITIONS' completed->disputed row).
+    // Resolving one (disputed->paid/cancelled) stays permanently
+    // unreachable — there's no admin actor anywhere in this product —
+    // matching the prototype's own "held money stays frozen with no code
+    // path to unfreeze it" behavior exactly.
+    async disputeQuest(questId, actorId, reason, idempotency) {
+      await simulateLatency();
+      maybeInjectFault("disputeQuest");
+
+      const quest = quests.find((q) => q.id === questId);
+      if (!quest) {
+        throw new Error("disputeQuest: no such quest");
+      }
+      if (!isFirstUse("disputeQuest", idempotency.idempotencyKey)) {
+        return quest;
+      }
+      guard(quest, "disputed", actorId);
+
+      const trimmedReason = reason.trim();
+      if (!trimmedReason) {
+        throw new Error("Say what happened, so we can look into it");
+      }
+      const deadline = confirmDeadline(quest);
+      if (deadline && nowMs() > Date.parse(deadline)) {
+        throw new Error("The confirm window has already closed");
+      }
+
+      quest.status = "disputed";
+      quest.disputedAt = nowIso();
+      quest.disputeReason = trimmedReason;
+
+      const accepted = acceptedOfferFor(offers, quest);
+      if (accepted) {
+        notify(accepted.doerId, "quest_disputed", quest.id, `"${quest.title}" was disputed: ${trimmedReason}`);
+      }
+
+      return quest;
     },
 
     async listSavedQuestIds(userId) {

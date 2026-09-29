@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react-native";
+import { render, fireEvent, waitFor, within } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
@@ -52,14 +52,20 @@ describe("MyQuestsScreen", () => {
   it(
     "shows the real per-tab counts",
     async () => {
-      const { findByText, findAllByText } = await render(<MyQuestsScreen />, { wrapper: Providers });
+      const { findByText, findByLabelText } = await render(<MyQuestsScreen />, { wrapper: Providers });
       await findByText("My quests", {}, LONG_TIMEOUT);
-      // "4" is ambiguous on its own — u0 also has 4 unread notifications,
-      // so the header bell badge coincidentally shows the same digit as
-      // the Active tab count.
-      await waitFor(async () => expect((await findAllByText("4")).length).toBe(2), LONG_TIMEOUT);
-      expect(await findByText("1", {}, LONG_TIMEOUT)).toBeTruthy(); // Offers
-      expect(await findByText("2", {}, LONG_TIMEOUT)).toBeTruthy(); // Done
+      // Active now includes q8 (paid, but u0 hasn't rated u2 back yet —
+      // bucketOf's M6 carve-out) alongside q1/q11/q6/q7 = 5. Offers (q3)
+      // and Done (q9 only — q8 moved out) are 1 each. Scoped to each
+      // tab's own Pressable (accessibilityLabel = its plain-text label,
+      // "Active"/"Offers"/"Done") since a bare digit like "5" or "1" isn't
+      // unique across the whole screen (engagement cards show numbers
+      // too).
+      await waitFor(async () => {
+        expect(within(await findByLabelText("Active")).getByText("5")).toBeTruthy();
+        expect(within(await findByLabelText("Offers")).getByText("1")).toBeTruthy();
+        expect(within(await findByLabelText("Done")).getByText("1")).toBeTruthy();
+      }, LONG_TIMEOUT);
     },
     15000
   );
@@ -76,7 +82,9 @@ describe("MyQuestsScreen", () => {
     const { findByText, queryByText } = await render(<MyQuestsScreen />, { wrapper: Providers });
     await findByText("My quests", {}, LONG_TIMEOUT);
     await fireEvent.press(await findByText("Done", {}, LONG_TIMEOUT));
-    expect(await findByText("Queue for the new bakery on Dihua St", {}, LONG_TIMEOUT)).toBeTruthy();
+    // q8 (also paid) stays in Active until u0 rates u2 back — bucketOf's
+    // M6 carve-out — so q9 is Done's one real engagement here.
+    expect(await findByText("Take a suitcase to Taipei Main Station", {}, LONG_TIMEOUT)).toBeTruthy();
     expect(queryByText("Confirm and pay")).toBeNull();
     expect(queryByText("Leave a rating")).toBeNull();
   });

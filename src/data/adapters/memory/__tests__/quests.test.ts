@@ -5,6 +5,8 @@ import { setFaultInjectionRate } from "../fault-injection";
 import { postTxn } from "../post-txn";
 import { holdEntries } from "../../../domain/ledger";
 import { nextId } from "../next-id";
+import { CONFIRM_WINDOW_MS } from "../../../domain/lifecycle";
+import { nowMs } from "../clock";
 import type { PostQuestInput } from "../../../ports/quests";
 import type { QuestStatus } from "../../../contracts";
 
@@ -229,6 +231,63 @@ describe("memory quests adapter", () => {
     it("rejects a quest with no accepted offer", async () => {
       const restore = forceQuestState("q2", "completed", null);
       await expect(port.confirmDone("q2", "u2", key())).rejects.toThrow(/no accepted offer/);
+      restore();
+    });
+  });
+
+  describe("disputeQuest", () => {
+    it("moves a completed quest to disputed for the poster, storing the reason, and notifying the accepted doer", async () => {
+      const restore = forceQuestState("q2", "completed", "o2"); // o2: q2, doerId u3, posterId u2
+      const quest = questStore.find((q) => q.id === "q2")!;
+      quest.completedAt = new Date(nowMs() - 60 * 60 * 1000).toISOString(); // 1h ago — well within the 72h window
+
+      const before = notifications.length;
+      const result = await port.disputeQuest("q2", "u2", "The job wasn't finished properly", key());
+      expect(result.status).toBe("disputed");
+      expect(result.disputedAt).toBeTruthy();
+      expect(result.disputeReason).toBe("The job wasn't finished properly");
+
+      const created = notifications.slice(before);
+      expect(created).toHaveLength(1);
+      expect(created[0].type).toBe("quest_disputed");
+      expect(created[0].userId).toBe("u3"); // the accepted doer
+      expect(created[0].body).toMatch(/wasn't finished properly/);
+
+      restore();
+    });
+
+    it("rejects a non-poster actor", async () => {
+      const restore = forceQuestState("q2", "completed", "o2");
+      const quest = questStore.find((q) => q.id === "q2")!;
+      quest.completedAt = new Date(nowMs() - 60 * 60 * 1000).toISOString();
+      await expect(port.disputeQuest("q2", "u3", "reason", key())).rejects.toThrow(/can't move this/); // u3 is the doer, not poster
+      restore();
+    });
+
+    it("requires a reason", async () => {
+      const restore = forceQuestState("q2", "completed", "o2");
+      const quest = questStore.find((q) => q.id === "q2")!;
+      quest.completedAt = new Date(nowMs() - 60 * 60 * 1000).toISOString();
+      await expect(port.disputeQuest("q2", "u2", "  ", key())).rejects.toThrow(/Say what happened/);
+      restore();
+    });
+
+    it("rejects once the 72-hour confirm window has already closed", async () => {
+      const restore = forceQuestState("q2", "completed", "o2");
+      const quest = questStore.find((q) => q.id === "q2")!;
+      quest.completedAt = new Date(nowMs() - CONFIRM_WINDOW_MS - 60 * 60 * 1000).toISOString(); // 73h ago
+      await expect(port.disputeQuest("q2", "u2", "reason", key())).rejects.toThrow(/window has already closed/);
+      restore();
+    });
+
+    it("replaying the same idempotency key returns the identical (already disputed) quest", async () => {
+      const restore = forceQuestState("q2", "completed", "o2");
+      const quest = questStore.find((q) => q.id === "q2")!;
+      quest.completedAt = new Date(nowMs() - 60 * 60 * 1000).toISOString();
+      const k = key();
+      const first = await port.disputeQuest("q2", "u2", "reason", k);
+      const second = await port.disputeQuest("q2", "u2", "reason", k);
+      expect(second.disputedAt).toBe(first.disputedAt);
       restore();
     });
   });
