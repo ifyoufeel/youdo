@@ -5,6 +5,7 @@ import { createSupabaseCategoriesPort } from "./categories";
 import { createSupabaseAreasPort } from "./areas";
 import { createSupabaseQuestsPort } from "./quests";
 import { createSupabaseOffersPort } from "./offers";
+import { createSupabaseLedgerPort } from "./ledger";
 
 /* Proves the adapter-selection seam in composition-root.tsx actually
    exists (ADR-004) — wiring a real Supabase client, schema and realtime
@@ -31,6 +32,7 @@ export function createSupabaseAdapter(): Repository {
   const areas = createSupabaseAreasPort();
   const quests = createSupabaseQuestsPort();
   const offers = createSupabaseOffersPort();
+  const ledger = createSupabaseLedgerPort();
 
   return {
     getSession: () => stub("getSession"),
@@ -51,11 +53,7 @@ export function createSupabaseAdapter(): Repository {
     markThreadRead: () => stub("markThreadRead"),
     subscribeToThread: () => stubSync("subscribeToThread"),
 
-    listEntriesForUser: () => stub("listEntriesForUser"),
-    balanceOf: () => stub("balanceOf"),
-    listPaymentsForUser: () => stub("listPaymentsForUser"),
-    deposit: () => stub("deposit"),
-    cashOut: () => stub("cashOut"),
+    ...ledger,
 
     listReviewsForUser: () => stub("listReviewsForUser"),
     myReviewOnQuest: () => stub("myReviewOnQuest"),

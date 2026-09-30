@@ -11,16 +11,14 @@ describe("supabase adapter stub", () => {
       () => adapter.verifyOtp("x", "x"),
       () => adapter.signOut(),
       () => adapter.listThreadsForUser("x"),
-      () => adapter.listEntriesForUser("x"),
-      () => adapter.listPaymentsForUser("x"),
       () => adapter.listReviewsForUser("x"),
       () => adapter.listForUser("x"),
       // getUser/listUsers/updateProfile/deleteAccount/listCategories/
       // listAreas are real as of M7 Phase 2, listQuests/getQuest/
       // postQuest/listMyQuests/listSavedQuestIds/saveQuest/unsaveQuest as
-      // of Phase 3, and every offers.ts method plus quests.ts's five
-      // lifecycle mutations as of Phase 4 — covered by their own
-      // *.test.ts files instead.
+      // of Phase 3, every offers.ts method plus quests.ts's five
+      // lifecycle mutations as of Phase 4, and every ledger.ts method as
+      // of Phase 5 — covered by their own *.test.ts files instead.
     ];
 
     for (const call of calls) {
