@@ -144,6 +144,10 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
         calls.push({ method: "auth.exchangeCodeForSession", params });
         return Promise.resolve(nextResponse());
       },
+      signInWithIdToken: (...params: unknown[]) => {
+        calls.push({ method: "auth.signInWithIdToken", params });
+        return Promise.resolve(nextResponse());
+      },
       signInWithOtp: (...params: unknown[]) => {
         calls.push({ method: "auth.signInWithOtp", params });
         return Promise.resolve(nextResponse());

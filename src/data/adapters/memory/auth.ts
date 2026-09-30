@@ -28,6 +28,13 @@ export function createMemoryAuthPort(): AuthPort {
       return session;
     },
 
+    async signInWithApple() {
+      await simulateLatency();
+      maybeInjectFault("signInWithApple");
+      session = { userId: meId };
+      return session;
+    },
+
     async sendOtp() {
       await simulateLatency();
       maybeInjectFault("sendOtp");

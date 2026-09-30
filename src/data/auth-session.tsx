@@ -16,6 +16,7 @@ export interface AuthSessionValue {
   status: AuthStatus;
   session: Session | null;
   signInWithGoogle: () => Promise<Session>;
+  signInWithApple: () => Promise<Session>;
   sendOtp: (contact: string, method: "email" | "phone") => Promise<void>;
   verifyOtp: (contact: string, code: string) => Promise<Session>;
   signOut: () => Promise<void>;
@@ -47,6 +48,13 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     return resolved;
   }, [repository]);
 
+  const signInWithApple = useCallback(async () => {
+    const resolved = await repository.signInWithApple();
+    setSession(resolved);
+    setStatus("signedIn");
+    return resolved;
+  }, [repository]);
+
   const sendOtp = useCallback(
     (contact: string, method: "email" | "phone") => repository.sendOtp(contact, method),
     [repository]
@@ -68,7 +76,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     setStatus("signedOut");
   }, [repository]);
 
-  const value: AuthSessionValue = { status, session, signInWithGoogle, sendOtp, verifyOtp, signOut };
+  const value: AuthSessionValue = { status, session, signInWithGoogle, signInWithApple, sendOtp, verifyOtp, signOut };
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;
 }
 

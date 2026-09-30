@@ -30,6 +30,15 @@ describe("AuthSessionProvider", () => {
     expect(result.current.session).toEqual({ userId: seed.meId });
   });
 
+  it("signInWithApple transitions to signedIn", async () => {
+    const { result } = await renderHook(() => useAuthSession(), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe("signedOut"));
+
+    await act(() => result.current.signInWithApple());
+    await waitFor(() => expect(result.current.status).toBe("signedIn"));
+    expect(result.current.session).toEqual({ userId: seed.meId });
+  });
+
   it("verifyOtp with a valid code transitions to signedIn", async () => {
     const { result } = await renderHook(() => useAuthSession(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe("signedOut"));

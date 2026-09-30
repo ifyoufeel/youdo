@@ -26,6 +26,13 @@ describe("memory adapter — real slice", () => {
       expect(await adapter.getSession()).toBeNull();
     });
 
+    it("signInWithApple signs in the same seeded identity as signInWithGoogle", async () => {
+      const adapter = createMemoryAdapter();
+      const session = await adapter.signInWithApple();
+      expect(session.userId).toBe(seed.meId);
+      expect(await adapter.getSession()).toEqual(session);
+    });
+
     it("verifyOtp signs in the same way, independent of a second instance", async () => {
       const a = createMemoryAdapter();
       const b = createMemoryAdapter();

@@ -27,10 +27,12 @@ export const strings = {
   "onboarding.location.skippedToast": "You can turn location on later, in Settings",
 
   "onboarding.signin.title": "Sign in to YouDO",
-  "onboarding.signin.body": "No passwords. Use your Google account, or we'll send a code to your email or phone.",
+  "onboarding.signin.body": "No passwords. Use your Google or Apple account, or we'll send a code to your email or phone.",
   "onboarding.signin.google": "Sign in via Google",
+  "onboarding.signin.apple": "Sign in with Apple",
   "onboarding.signin.useCode": "Use a code instead",
   "onboarding.signin.loading": "Signing in with Google…",
+  "onboarding.signin.loadingApple": "Signing in with Apple…",
 
   "onboarding.contact.title": "Sign in with a code",
   "onboarding.contact.body": "We'll text or email a 6-digit code — nothing to remember.",

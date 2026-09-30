@@ -1,6 +1,13 @@
 /* PRD §7.1 / ADR-007: Google OAuth or 6-digit OTP to email or phone, no
    passwords. Mirrors the mock flow already built in preview/app.js's
-   OnboardingFlow (M1) — this is that same shape, formalized. */
+   OnboardingFlow (M1) — this is that same shape, formalized.
+
+   signInWithApple (M8) fulfills ADR-007's own named consequence: "Sign
+   in with Apple becomes mandatory for App Store review once any
+   third-party social login ships." Same no-params, Promise<Session>
+   shape as signInWithGoogle, deliberately — one named method per
+   provider is this codebase's existing convention, not a generalized
+   signInWithProvider(provider) dispatcher. */
 
 export interface Session {
   userId: string;
@@ -25,6 +32,7 @@ export class InvalidOtpError extends Error {
 export interface AuthPort {
   getSession(): Promise<Session | null>;
   signInWithGoogle(): Promise<Session>;
+  signInWithApple(): Promise<Session>;
   sendOtp(contact: string, method: "email" | "phone"): Promise<void>;
   verifyOtp(contact: string, code: string): Promise<Session>;
   signOut(): Promise<void>;
