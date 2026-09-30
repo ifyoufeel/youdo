@@ -1,16 +1,20 @@
 import type { Repository } from "../../repository";
 import { NotImplementedYet } from "../memory/not-implemented";
+import { createSupabaseUsersPort } from "./users";
+import { createSupabaseCategoriesPort } from "./categories";
+import { createSupabaseAreasPort } from "./areas";
 
 /* Proves the adapter-selection seam in composition-root.tsx actually
    exists (ADR-004) — wiring a real Supabase client, schema and realtime
-   channels is M7 work. Every method below is a real function (so this
-   object structurally satisfies Repository, and the environment-flag
-   selection in composition-root.tsx typechecks today) that fails the
-   moment anything actually calls it — as a rejected Promise for every
-   Promise-returning port method (so a caller's .catch()/await-try still
-   works, matching the port's real type), and only thrown synchronously
-   for the handful of subscribe*() methods whose port signature returns a
-   Subscription directly, never a Promise. */
+   channels is M7 work, underway phase by phase (see docs/ROADMAP.md).
+   Every method below is a real function (so this object structurally
+   satisfies Repository, and the environment-flag selection in
+   composition-root.tsx typechecks today); the ones not yet ported fail
+   the moment anything actually calls them — as a rejected Promise for
+   every Promise-returning port method (so a caller's .catch()/await-try
+   still works, matching the port's real type), and only thrown
+   synchronously for the handful of subscribe*() methods whose port
+   signature returns a Subscription directly, never a Promise. */
 async function stub(method: string): Promise<never> {
   throw new NotImplementedYet(method, "M7");
 }
@@ -20,6 +24,10 @@ function stubSync(method: string): never {
 }
 
 export function createSupabaseAdapter(): Repository {
+  const users = createSupabaseUsersPort();
+  const categories = createSupabaseCategoriesPort();
+  const areas = createSupabaseAreasPort();
+
   return {
     getSession: () => stub("getSession"),
     signInWithGoogle: () => stub("signInWithGoogle"),
@@ -27,10 +35,7 @@ export function createSupabaseAdapter(): Repository {
     verifyOtp: () => stub("verifyOtp"),
     signOut: () => stub("signOut"),
 
-    getUser: () => stub("getUser"),
-    listUsers: () => stub("listUsers"),
-    updateProfile: () => stub("updateProfile"),
-    deleteAccount: () => stub("deleteAccount"),
+    ...users,
 
     listQuests: () => stub("listQuests"),
     getQuest: () => stub("getQuest"),
@@ -79,7 +84,7 @@ export function createSupabaseAdapter(): Repository {
     markAllRead: () => stub("markAllRead"),
     subscribeToUser: () => stubSync("subscribeToUser"),
 
-    listCategories: () => stub("listCategories"),
-    listAreas: () => stub("listAreas"),
+    ...categories,
+    ...areas,
   };
 }

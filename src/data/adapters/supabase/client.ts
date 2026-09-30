@@ -21,7 +21,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import { AppState } from "react-native";
-import type { Database } from "./database.types";
 
 const SecureStoreAdapter = {
   getItem: (key: string) => SecureStore.getItemAsync(key),
@@ -29,7 +28,9 @@ const SecureStoreAdapter = {
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
-function createRealClient(): SupabaseClient<Database> {
+/** Untyped on purpose — see database.types.ts's header comment for why
+    the schema generic isn't wired in here. */
+function createRealClient(): SupabaseClient {
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -39,7 +40,7 @@ function createRealClient(): SupabaseClient<Database> {
         "No live Supabase project exists yet; this scaffold has never been run against one."
     );
   }
-  const client = createClient<Database>(url, anonKey, {
+  const client = createClient(url, anonKey, {
     auth: {
       storage: SecureStoreAdapter,
       autoRefreshToken: true,
@@ -54,12 +55,12 @@ function createRealClient(): SupabaseClient<Database> {
   return client;
 }
 
-let cached: SupabaseClient<Database> | null = null;
+let cached: SupabaseClient | null = null;
 
 /** Every adapters/supabase/*.ts port file calls this instead of importing
     createClient directly — one client, one auth session, shared across
     every table/RPC/realtime-channel call the adapter makes. */
-export function supabase(): SupabaseClient<Database> {
+export function supabase(): SupabaseClient {
   if (!cached) cached = createRealClient();
   return cached;
 }

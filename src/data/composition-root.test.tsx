@@ -24,7 +24,13 @@ describe("composition root", () => {
     const { result } = await renderHook(() => useRepository(), {
       wrapper: ({ children }) => <RepositoryProvider>{children}</RepositoryProvider>,
     });
-    await expect(result.current.getUser("x")).rejects.toThrow(/M7/);
+    expect(typeof result.current.getUser).toBe("function");
+    // getSession (auth.ts) is still a stub as of M7 Phase 2 — see
+    // adapters/supabase/__tests__ for the ports real by now (users,
+    // categories, areas), each tested there against a mocked client
+    // rather than here, since real methods need real request/response
+    // shapes, not just "it rejects".
+    await expect(result.current.getSession()).rejects.toThrow(/M7/);
   });
 
   it("useRepository throws outside a provider", async () => {
