@@ -4,6 +4,7 @@ import { createSupabaseUsersPort } from "./users";
 import { createSupabaseCategoriesPort } from "./categories";
 import { createSupabaseAreasPort } from "./areas";
 import { createSupabaseQuestsPort } from "./quests";
+import { createSupabaseOffersPort } from "./offers";
 
 /* Proves the adapter-selection seam in composition-root.tsx actually
    exists (ADR-004) — wiring a real Supabase client, schema and realtime
@@ -29,6 +30,7 @@ export function createSupabaseAdapter(): Repository {
   const categories = createSupabaseCategoriesPort();
   const areas = createSupabaseAreasPort();
   const quests = createSupabaseQuestsPort();
+  const offers = createSupabaseOffersPort();
 
   return {
     getSession: () => stub("getSession"),
@@ -39,13 +41,7 @@ export function createSupabaseAdapter(): Repository {
 
     ...users,
     ...quests,
-
-    listOffersForQuest: () => stub("listOffersForQuest"),
-    myOfferOnQuest: () => stub("myOfferOnQuest"),
-    sendOffer: () => stub("sendOffer"),
-    withdrawOffer: () => stub("withdrawOffer"),
-    declineOffer: () => stub("declineOffer"),
-    acceptOffer: () => stub("acceptOffer"),
+    ...offers,
 
     listThreadsForUser: () => stub("listThreadsForUser"),
     getThread: () => stub("getThread"),

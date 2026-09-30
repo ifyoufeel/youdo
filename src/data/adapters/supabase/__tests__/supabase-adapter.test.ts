@@ -10,12 +10,6 @@ describe("supabase adapter stub", () => {
       () => adapter.sendOtp("x", "email"),
       () => adapter.verifyOtp("x", "x"),
       () => adapter.signOut(),
-      () => adapter.startQuest("x", "u", { idempotencyKey: "k" }),
-      () => adapter.markDone("x", "u", { idempotencyKey: "k" }),
-      () => adapter.confirmDone("x", "u", { idempotencyKey: "k" }),
-      () => adapter.cancelQuest("x", "u", "reason", { idempotencyKey: "k" }),
-      () => adapter.disputeQuest("x", "u", "reason", { idempotencyKey: "k" }),
-      () => adapter.listOffersForQuest("x"),
       () => adapter.listThreadsForUser("x"),
       () => adapter.listEntriesForUser("x"),
       () => adapter.listPaymentsForUser("x"),
@@ -23,8 +17,10 @@ describe("supabase adapter stub", () => {
       () => adapter.listForUser("x"),
       // getUser/listUsers/updateProfile/deleteAccount/listCategories/
       // listAreas are real as of M7 Phase 2, listQuests/getQuest/
-      // postQuest/listMyQuests/listSavedQuestIds/saveQuest/unsaveQuest
-      // as of Phase 3 — covered by their own *.test.ts files instead.
+      // postQuest/listMyQuests/listSavedQuestIds/saveQuest/unsaveQuest as
+      // of Phase 3, and every offers.ts method plus quests.ts's five
+      // lifecycle mutations as of Phase 4 — covered by their own
+      // *.test.ts files instead.
     ];
 
     for (const call of calls) {

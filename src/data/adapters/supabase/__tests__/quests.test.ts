@@ -171,12 +171,55 @@ describe("supabase quests port (mocked client — no live project)", () => {
     expect(() => sub.unsubscribe()).not.toThrow();
   });
 
-  it("startQuest/markDone/confirmDone/cancelQuest/disputeQuest stay NotImplementedYet until Phase 4", async () => {
+  it("startQuest/markDone/confirmDone call their own RPCs, ignoring the actorId param (server trusts auth.uid())", async () => {
     const port = createSupabaseQuestsPort();
-    await expect(port.startQuest("q1", "u0", { idempotencyKey: "k" })).rejects.toThrow(/M7/);
-    await expect(port.markDone("q1", "u0", { idempotencyKey: "k" })).rejects.toThrow(/M7/);
-    await expect(port.confirmDone("q1", "u0", { idempotencyKey: "k" })).rejects.toThrow(/M7/);
-    await expect(port.cancelQuest("q1", "u0", "reason", { idempotencyKey: "k" })).rejects.toThrow(/M7/);
-    await expect(port.disputeQuest("q1", "u0", "reason", { idempotencyKey: "k" })).rejects.toThrow(/M7/);
+
+    const { client: c1, calls: calls1 } = createFakeClient([fakeOk({ ...QUEST_ROW, status: "in_progress" })]);
+    mockState.client = c1;
+    const started = await port.startQuest("q1", "ignored", { idempotencyKey: "k" });
+    expect(started.status).toBe("in_progress");
+    expect(calls1[0]).toMatchObject({ rpc: "start_quest", args: { p_quest_id: "q1", p_idempotency_key: "k" } });
+
+    const { client: c2, calls: calls2 } = createFakeClient([fakeOk({ ...QUEST_ROW, status: "completed" })]);
+    mockState.client = c2;
+    const done = await port.markDone("q1", "ignored", { idempotencyKey: "k" });
+    expect(done.status).toBe("completed");
+    expect(calls2[0]).toMatchObject({ rpc: "mark_done", args: { p_quest_id: "q1", p_idempotency_key: "k" } });
+
+    const { client: c3, calls: calls3 } = createFakeClient([fakeOk({ ...QUEST_ROW, status: "paid" })]);
+    mockState.client = c3;
+    const paid = await port.confirmDone("q1", "ignored", { idempotencyKey: "k" });
+    expect(paid.status).toBe("paid");
+    expect(calls3[0]).toMatchObject({ rpc: "confirm_done", args: { p_quest_id: "q1", p_idempotency_key: "k" } });
+  });
+
+  it("cancelQuest/disputeQuest pass the reason through to their RPC", async () => {
+    const port = createSupabaseQuestsPort();
+
+    const { client: c1, calls: calls1 } = createFakeClient([fakeOk({ ...QUEST_ROW, status: "cancelled" })]);
+    mockState.client = c1;
+    const cancelled = await port.cancelQuest("q1", "ignored", "Changed my mind", { idempotencyKey: "k" });
+    expect(cancelled.status).toBe("cancelled");
+    expect(calls1[0]).toMatchObject({
+      rpc: "cancel_quest",
+      args: { p_quest_id: "q1", p_reason: "Changed my mind", p_idempotency_key: "k" },
+    });
+
+    const { client: c2, calls: calls2 } = createFakeClient([fakeOk({ ...QUEST_ROW, status: "disputed" })]);
+    mockState.client = c2;
+    const disputed = await port.disputeQuest("q1", "ignored", "Not done right", { idempotencyKey: "k" });
+    expect(disputed.status).toBe("disputed");
+    expect(calls2[0]).toMatchObject({
+      rpc: "dispute_quest",
+      args: { p_quest_id: "q1", p_reason: "Not done right", p_idempotency_key: "k" },
+    });
+  });
+
+  it("propagates a lifecycle RPC's guard rejection rather than swallowing it", async () => {
+    const { client } = createFakeClient([fakeError("A doer can't move this from open")]);
+    mockState.client = client;
+    await expect(
+      createSupabaseQuestsPort().startQuest("q1", "u0", { idempotencyKey: "k" })
+    ).rejects.toBeTruthy();
   });
 });

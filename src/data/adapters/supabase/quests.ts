@@ -1,9 +1,11 @@
-/* Real as of M7 (scaffold — never run against a live project) for every
-   QuestsPort method except the five lifecycle mutations
-   (startQuest/markDone/confirmDone/cancelQuest/disputeQuest) and
-   subscribeToQuest, which stay NotImplementedYet until Phase 4 (lifecycle
-   RPCs, alongside offers — they share hold/release/refund SQL helpers)
-   and Phase 6 (realtime) respectively.
+/* Real as of M7 (scaffold — never run against a live project). The five
+   lifecycle mutations (startQuest/markDone/confirmDone/cancelQuest/
+   disputeQuest) go through SECURITY DEFINER RPCs
+   (supabase/migrations/..._offers_lifecycle_functions.sql), same file
+   offers.ts's mutations come from — they share the hold/release/refund
+   escrow helpers, which is why lifecycle and offers landed in one
+   migration together. subscribeToQuest's real payload stays Phase 6
+   (realtime).
 
    listQuests and listMyQuests both go through SECURITY DEFINER RPCs
    (supabase/migrations/..._quests_functions.sql) rather than a plain
@@ -16,11 +18,10 @@
 import type { QuestsPort, PostQuestInput, ListQuestsParams } from "../../ports/quests";
 import type { Quest } from "../../contracts";
 import { supabase } from "./client";
-import { NotImplementedYet } from "../memory/not-implemented";
 
 const DEFAULT_LIMIT = 20;
 
-interface QuestRowLike {
+export interface QuestRowLike {
   id: string;
   poster_id: string;
   title: string;
@@ -79,10 +80,6 @@ export function toQuest(row: QuestRowLike): Quest {
     disputedAt: row.disputed_at ?? undefined,
     disputeReason: row.dispute_reason ?? undefined,
   };
-}
-
-async function stub(method: string): Promise<never> {
-  throw new NotImplementedYet(method, "M7");
 }
 
 function offsetOf(cursor: string | null | undefined): number {
@@ -149,11 +146,52 @@ export function createSupabaseQuestsPort(): QuestsPort {
       return ((data ?? []) as QuestRowLike[]).map(toQuest);
     },
 
-    startQuest: () => stub("startQuest"),
-    markDone: () => stub("markDone"),
-    confirmDone: () => stub("confirmDone"),
-    cancelQuest: () => stub("cancelQuest"),
-    disputeQuest: () => stub("disputeQuest"),
+    async startQuest(questId, _actorId, idempotency) {
+      const { data, error } = await supabase().rpc("start_quest", {
+        p_quest_id: questId,
+        p_idempotency_key: idempotency.idempotencyKey,
+      });
+      if (error) throw error;
+      return toQuest(data as QuestRowLike);
+    },
+
+    async markDone(questId, _actorId, idempotency) {
+      const { data, error } = await supabase().rpc("mark_done", {
+        p_quest_id: questId,
+        p_idempotency_key: idempotency.idempotencyKey,
+      });
+      if (error) throw error;
+      return toQuest(data as QuestRowLike);
+    },
+
+    async confirmDone(questId, _actorId, idempotency) {
+      const { data, error } = await supabase().rpc("confirm_done", {
+        p_quest_id: questId,
+        p_idempotency_key: idempotency.idempotencyKey,
+      });
+      if (error) throw error;
+      return toQuest(data as QuestRowLike);
+    },
+
+    async cancelQuest(questId, _actorId, reason, idempotency) {
+      const { data, error } = await supabase().rpc("cancel_quest", {
+        p_quest_id: questId,
+        p_reason: reason,
+        p_idempotency_key: idempotency.idempotencyKey,
+      });
+      if (error) throw error;
+      return toQuest(data as QuestRowLike);
+    },
+
+    async disputeQuest(questId, _actorId, reason, idempotency) {
+      const { data, error } = await supabase().rpc("dispute_quest", {
+        p_quest_id: questId,
+        p_reason: reason,
+        p_idempotency_key: idempotency.idempotencyKey,
+      });
+      if (error) throw error;
+      return toQuest(data as QuestRowLike);
+    },
 
     async listSavedQuestIds(userId) {
       const { data, error } = await supabase().from("saved_quests").select("quest_id").eq("user_id", userId);
