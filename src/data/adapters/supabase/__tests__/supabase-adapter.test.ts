@@ -1,7 +1,7 @@
 import { createSupabaseAdapter } from "../index";
 
 describe("supabase adapter stub", () => {
-  it("AuthPort's five methods reject with NotImplementedYet('M7') — the only surface left stubbed after Phase 6; every other port is real, covered by its own *.test.ts file (each mocking the client — no live project exists to test against)", async () => {
+  it("AuthPort's five methods reject with NotImplementedYet('M7') — the only surface left stubbed after Phase 7; every other port is real, covered by its own *.test.ts file (each mocking the client — no live project exists to test against)", async () => {
     const adapter = createSupabaseAdapter();
 
     const calls: (() => Promise<unknown>)[] = [

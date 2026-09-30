@@ -8,6 +8,8 @@ import { createSupabaseOffersPort } from "./offers";
 import { createSupabaseLedgerPort } from "./ledger";
 import { createSupabaseThreadsPort } from "./threads";
 import { createSupabaseNotificationsPort } from "./notifications";
+import { createSupabaseReviewsPort } from "./reviews";
+import { createSupabaseTrustPort } from "./trust";
 
 /* Proves the adapter-selection seam in composition-root.tsx actually
    exists (ADR-004) — wiring a real Supabase client, schema and realtime
@@ -17,9 +19,9 @@ import { createSupabaseNotificationsPort } from "./notifications";
    composition-root.tsx typechecks today); the ones not yet ported fail
    the moment anything actually calls them — as a rejected Promise for
    every Promise-returning port method (so a caller's .catch()/await-try
-   still works, matching the port's real type). Every subscribe*()
-   method is real as of Phase 6 — the only remaining stubs are
-   AuthPort's five methods, Phase 8's job. */
+   still works, matching the port's real type). AuthPort's five methods
+   are the only remaining stub — every other port is real as of
+   Phase 7, Phase 8's job. */
 async function stub(method: string): Promise<never> {
   throw new NotImplementedYet(method, "M7");
 }
@@ -33,6 +35,8 @@ export function createSupabaseAdapter(): Repository {
   const ledger = createSupabaseLedgerPort();
   const threads = createSupabaseThreadsPort();
   const notifications = createSupabaseNotificationsPort();
+  const reviews = createSupabaseReviewsPort();
+  const trust = createSupabaseTrustPort();
 
   return {
     getSession: () => stub("getSession"),
@@ -47,15 +51,8 @@ export function createSupabaseAdapter(): Repository {
 
     ...threads,
     ...ledger,
-
-    listReviewsForUser: () => stub("listReviewsForUser"),
-    myReviewOnQuest: () => stub("myReviewOnQuest"),
-    submitReview: () => stub("submitReview"),
-
-    reportUser: () => stub("reportUser"),
-    blockUser: () => stub("blockUser"),
-    listBlockedUserIds: () => stub("listBlockedUserIds"),
-
+    ...reviews,
+    ...trust,
     ...notifications,
 
     ...categories,
