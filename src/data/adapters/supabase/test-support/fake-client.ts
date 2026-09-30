@@ -11,6 +11,10 @@
 export interface FakeResponse<T = unknown> {
   data: T | null;
   error: { message: string; code?: string } | null;
+  /** postgrest's `{ count: 'exact', head: true }` option resolves with
+      this alongside data/error — only threads.ts's unreadCountForThread
+      needs it today. */
+  count?: number;
 }
 
 export interface RecordedCall {
@@ -21,12 +25,20 @@ export interface RecordedCall {
   params: unknown[];
 }
 
+export interface RecordedSubscription {
+  channelName: string;
+  event: string;
+  filter: Record<string, unknown>;
+  callback: (payload: { new: unknown; old?: unknown }) => void;
+}
+
 function ok<T>(data: T): FakeResponse<T> {
   return { data, error: null };
 }
 
 export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
   const calls: RecordedCall[] = [];
+  const subscriptions: RecordedSubscription[] = [];
   const queue = [...responses];
   function nextResponse(): FakeResponse {
     return queue.length > 1 ? queue.shift()! : queue[0];
@@ -83,9 +95,16 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
     return b;
   }
 
-  function channelStub() {
+  function channelStub(channelName: string) {
     const c: Record<string, unknown> = {};
-    c.on = () => c;
+    // Real supabase-js signature: .on("postgres_changes", { event, schema,
+    // table, filter }, callback) — the postgres_changes event type
+    // (INSERT/UPDATE/DELETE/*) lives inside the filter object's own
+    // `event` field, not the first argument.
+    c.on = (_topic: string, filter: Record<string, unknown>, callback: RecordedSubscription["callback"]) => {
+      subscriptions.push({ channelName, event: String(filter.event), filter, callback });
+      return c;
+    };
     c.subscribe = () => c;
     return c;
   }
@@ -106,7 +125,7 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
       ) => Promise.resolve(nextResponse()).then(onfulfilled, onrejected);
       return b;
     },
-    channel: () => channelStub(),
+    channel: (name: string) => channelStub(name),
     removeChannel: () => {},
     auth: {
       getSession: () => Promise.resolve(ok({ session: null })),
@@ -114,7 +133,7 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
     },
   };
 
-  return { client, calls };
+  return { client, calls, subscriptions };
 }
 
 export function fakeOk<T>(data: T): FakeResponse<T> {
@@ -123,4 +142,8 @@ export function fakeOk<T>(data: T): FakeResponse<T> {
 
 export function fakeError(message: string, code?: string): FakeResponse {
   return { data: null, error: { message, code } };
+}
+
+export function fakeCount(count: number): FakeResponse<null> {
+  return { data: null, error: null, count };
 }

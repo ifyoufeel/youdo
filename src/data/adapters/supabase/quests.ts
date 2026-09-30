@@ -86,6 +86,16 @@ function offsetOf(cursor: string | null | undefined): number {
   return cursor ? Number(cursor) : 0;
 }
 
+/** Shared by getQuest and subscribeToQuest's realtime handler — both
+    need the address-safe view, never the raw table (see this file's own
+    subscribeToQuest for why a realtime payload can't be trusted for
+    address_line). */
+async function fetchQuest(id: string): Promise<Quest | null> {
+  const { data, error } = await supabase().from("quests_with_address").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? toQuest(data as QuestRowLike) : null;
+}
+
 export function createSupabaseQuestsPort(): QuestsPort {
   return {
     async listQuests(params: ListQuestsParams) {
@@ -114,9 +124,7 @@ export function createSupabaseQuestsPort(): QuestsPort {
     },
 
     async getQuest(id) {
-      const { data, error } = await supabase().from("quests_with_address").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data ? toQuest(data as QuestRowLike) : null;
+      return fetchQuest(id);
     },
 
     async postQuest(input: PostQuestInput, idempotency) {
@@ -216,10 +224,33 @@ export function createSupabaseQuestsPort(): QuestsPort {
       if (error) throw error;
     },
 
-    /** Real payload once Phase 6 wires realtime — a typed no-op until
-        then, same as the memory adapter's own subscribeToQuest today. */
-    subscribeToQuest() {
-      return { unsubscribe() {} };
+    /** Real as of Phase 6 — but deliberately never trusts the realtime
+        payload's own row data. postgres_changes' WAL-based decoding
+        happens below the SQL privilege layer, so there's no guarantee
+        Phase 1's address_line column-grant restriction applies to it the
+        way it does to a plain select or an RPC return value — trusting
+        the pushed row directly could leak an address that shouldn't be
+        visible to this viewer. Every change event instead triggers a
+        refetch through fetchQuest() (the same address-safe view getQuest
+        uses), at the cost of one extra round trip per change. */
+    subscribeToQuest(questId, onChange) {
+      const channel = supabase()
+        .channel(`quest:${questId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "quests", filter: `id=eq.${questId}` },
+          () => {
+            void fetchQuest(questId).then((quest) => {
+              if (quest) onChange(quest);
+            });
+          }
+        )
+        .subscribe();
+      return {
+        unsubscribe() {
+          supabase().removeChannel(channel);
+        },
+      };
     },
   };
 }

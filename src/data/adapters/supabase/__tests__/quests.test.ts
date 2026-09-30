@@ -166,8 +166,23 @@ describe("supabase quests port (mocked client — no live project)", () => {
     ).rejects.toBeTruthy();
   });
 
-  it("subscribeToQuest is still a synchronous no-op (realtime lands in Phase 6)", () => {
-    const sub = createSupabaseQuestsPort().subscribeToQuest("q1", () => {});
+  it("subscribeToQuest never trusts the realtime payload's own row — a change event refetches via quests_with_address instead", async () => {
+    const { client, subscriptions } = createFakeClient([fakeOk(QUEST_ROW)]);
+    mockState.client = client;
+
+    const onChange = jest.fn();
+    const sub = createSupabaseQuestsPort().subscribeToQuest("q1", onChange);
+
+    expect(subscriptions).toHaveLength(1);
+    expect(subscriptions[0]).toMatchObject({ channelName: "quest:q1", event: "UPDATE" });
+
+    // Simulate a raw realtime payload carrying an address_line this
+    // viewer shouldn't see — the handler must ignore it and refetch.
+    subscriptions[0].callback({ new: { ...QUEST_ROW, address_line: "LEAKED ADDRESS" } });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ id: "q1", addressLine: "12 Some Rd" }));
     expect(() => sub.unsubscribe()).not.toThrow();
   });
 
