@@ -357,3 +357,129 @@ persisted `Report` record that nothing in the product reads back — the same
 accepted shape a disputed quest's unreachable admin-resolution half already
 has in this codebase: a frozen record with no resolution UI is a known,
 intentional end state here, not an oversight.
+
+---
+
+## ADR-015 · M7 is a real Supabase scaffold, never run against a live project
+
+**Decision.** M7 ("Supabase") was built end to end — schema, RLS, every RPC,
+the full `adapters/supabase` implementation, realtime, real Google OAuth +
+OTP — as a **scaffold only**, per explicit direction: no live Supabase
+project exists, and nothing under `supabase/migrations/*.sql` or
+`src/data/adapters/supabase/*.ts` has ever been run against a real Postgres
+instance. Every file's own header comment says so. This ADR is the one place
+that scope, and the real architecture decisions made while building under
+it, are recorded together.
+
+**Why a scaffold, not a wait.** The alternative — waiting for a live project
+before writing any of this — would have left M7 entirely undemonstrated
+until someone provisions one. Building the real thing now, honestly labeled
+as unverified, means the moment a project exists, turning the scaffold on is
+config and one seed-script run (`npm run db:seed`), not a second M7. The
+cost is real and stated plainly rather than glossed over: **verification
+here is structural, not integration.** Every `adapters/supabase/*.ts` file
+has a matching `*.test.ts` that mocks `@supabase/supabase-js`'s client
+(`src/data/adapters/supabase/test-support/fake-client.ts`) and asserts which
+table/column/RPC-name/args an adapter method actually sends — real signal
+that the code is shaped correctly, never proof that a query executes, that
+an RLS policy actually blocks what it's supposed to, or that a migration
+even applies cleanly. `docs/ROADMAP.md`'s M7 checklist is marked accordingly:
+items this scaffold satisfies for real are checked; the ones that
+categorically need a live project to satisfy are left open, with why.
+
+**Real architecture decisions this milestone made, not left for later:**
+
+- **Flat-grid geo → real PostGIS.** `geo.ts`'s own header comment named this
+  M7 work from M0. `quests.location` is a generated `geography(Point,4326)`
+  column, derived from the existing `point_x`/`point_y` via
+  `taipei_grid_to_geog()` — a plain equirectangular projection anchored at
+  Taipei Main Station's real coordinates. `listQuests`' radius/sort logic
+  moved into a `list_quests()` SQL function (`ST_DWithin`/`ST_Distance`),
+  since PostGIS operators aren't expressible through postgrest's query
+  builder. `todayOnly` compares against the real server clock, not a
+  seed-anchored one — ADR-013 already flagged that the memory adapter's
+  clock is adapter-specific and wouldn't carry forward.
+- **`quests.address_line` is hidden by revoking column privilege, not by
+  RLS.** RLS filters rows, not columns, and `quests`' own visibility is
+  otherwise unconditional (any authenticated user can see any quest by id,
+  matching `getQuest`'s real unconditional lookup today). `address_line` is
+  excluded from the column grant entirely and exposed only through
+  `quest_address_line()`, a `SECURITY DEFINER` function porting
+  `addressVisibleTo()` server-side, surfaced through a `quests_with_address`
+  view every read goes through. Realtime's `postgres_changes` payload gets
+  no such guarantee — its WAL-based decoding happens below the SQL privilege
+  layer — so `subscribeToQuest` deliberately never trusts its own pushed
+  row for `address_line`, refetching through the same safe view on every
+  change instead.
+- **Guarded mutations are RPCs; guard-free ones are plain RLS-protected
+  writes.** Every mutation with real cross-row logic (accept an offer,
+  confirm done, submit a review, cancel with a refund, ...) is a
+  `SECURITY DEFINER` function porting the memory adapter's exact guard
+  order — never a direct client table write. The handful with no guard
+  beyond "your own row" (saved quests, blocking, marking a thread read,
+  updating your own editable profile fields) get a plain RLS policy
+  instead, deliberately, once per table (recorded at each one's own
+  migration).
+- **Idempotency ports `isFirstUse(method, key)` as-is, backed by a real
+  constraint instead of an in-process `Map`.** `idempotency_keys(method,
+  key)` plus `idempotency_claim`/`store_result`/`result` are the direct
+  translation; `common.ts`'s own comment ("Supabase's will likely use a
+  unique constraint instead") anticipated this. Mutations that create a row
+  with no natural post-hoc lookup (`post_quest`, `send_message`, `deposit`,
+  `cash_out`, `report_user`) use the dedicated jsonb result cache; every
+  other mutating RPC calls `idempotency_claim` alone and re-derives its
+  replay value from the row's current state, matching the memory adapter's
+  own split exactly.
+- **Every RPC checks the caller actually owns the role they're acting
+  as — a real tightening the memory adapter's single-process trust model
+  never needed.** `ports/offers.ts`'s own header comment notes
+  `withdrawOffer`/`declineOffer`/`acceptOffer` take no `actorId` in the real
+  port; a single mock user has no one else who could call them with a
+  forged id, but a real multi-tenant database does. Every lifecycle/offer
+  RPC verifies ownership via `auth.uid()` before doing anything, the same
+  posture as the address-hiding fix above.
+- **Payment settlement is client-driven, not server-scheduled, and that is
+  named as a real trust-boundary simplification, not glossed over.** There
+  is no live project to attach a webhook or `pg_cron` job to. `deposit`/
+  `cash_out` return a `pending` `Payment`; the client schedules a jittered
+  delay (mirroring the memory adapter's own `payment-settlement.ts`) and
+  then calls `settle_payment()`, which re-validates ownership, pending
+  state, and — for a cash-out — the balance again before writing a single
+  ledger entry. A client that never calls it just leaves a payment pending
+  forever; it can never corrupt the ledger. A real deployment replaces the
+  client-side timer with a server-side one and nothing else changes.
+- **The 72-hour auto-release `system` actor (`completed -> paid`) is not
+  reachable here.** The memory adapter's clock-sweep (`advance-clock.ts`)
+  performs it against a seed-anchored clock that is itself explicitly
+  memory-adapter-only (ADR-013). A real auto-release needs a real
+  scheduler with nothing to attach it to yet — `confirm_done` is reachable
+  by the poster only, and this gap is named here rather than silently
+  dropped.
+- **Storage for quest photos and avatars was not built.** No `photos` field
+  exists anywhere in the real `Quest` contract, and no photo-picker UI
+  exists anywhere in the app — M3's own scope notes deferred it and no
+  later milestone revisited it. Building Supabase Storage buckets and RLS
+  for a feature with zero real callers would be exactly the "infrastructure
+  nothing calls" this codebase has consistently avoided since M1
+  (`ADR-014`'s `unblockUser`, `ports/ledger.ts`'s missing general
+  `postTransaction`, ...). Left unchecked on the M7 checklist, honestly,
+  rather than built and orphaned.
+- **`supabase gen types` was never run — there's nothing to generate types
+  from.** `database.types.ts` is hand-authored and deliberately *not* wired
+  into `createClient<Database>()`'s schema generic: postgrest-js's
+  select-string parser needs full `Relationships`/`Functions` metadata a
+  hand-maintained file would have to fake, for a schema no live instance has
+  ever validated it against. Each `adapters/supabase/*.ts` file defines its
+  own narrow `*Row` interface and casts its query results instead — the
+  same "trust the shape, verify it once there's a real project" posture the
+  rest of this scaffold takes.
+
+**Cost / what turning this on actually requires**, recorded once here
+rather than scattered: provision a Supabase project; run
+`supabase db push` (or apply `supabase/migrations/*.sql` in order); enable
+Google as an auth provider with a matching Google Cloud Console OAuth
+client, and (if phone OTP matters at launch) a configured SMS provider; run
+`npm run db:seed` against it with a service-role key; set
+`EXPO_PUBLIC_DATA_ADAPTER=supabase` plus the two `EXPO_PUBLIC_SUPABASE_*`
+vars (`.env.example`). Nothing in feature code changes — that is ADR-004's
+whole promise, and this milestone is the first real test of whether it held.

@@ -53,6 +53,7 @@
     "test": "jest --forceExit",
     "tokens:gen": "tsx scripts/gen-tokens.ts",
     "tokens:check": "tsx scripts/gen-tokens.ts --check",
+    "db:seed": "tsx scripts/seed-supabase.ts",
     "web:export": "expo export -p web"
   },
   "private": true,

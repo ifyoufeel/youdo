@@ -180,19 +180,28 @@ releasing real escrow, a real shortfall walked through Add money to a successful
 
 > **Five subsystems, not one:** auth, RLS, storage, realtime, PostGIS. The M3 spike de-risks the two hardest.
 
-- [ ] Schema + migrations matching `ports`
-- [ ] RLS per table — especially `quests.address_line` (hidden until assigned) and thread membership
-- [ ] Real auth: Google OAuth + email/phone OTP; `expo-secure-store` session adapter
-- [ ] `adapters/supabase` implementing every port
-- [ ] Realtime for messages and offer events, landing via `setQueryData`
-- [ ] Storage for quest photos and avatars
-- [ ] PostGIS radius search behind the geo params the ports have carried since M0
-- [ ] Seed script using the **same fixtures** so previews stay identical
-- [ ] Run the existing test suite green against both adapters
+> **Built as a scaffold, per explicit direction — never run against a live project.**
+> Every item below marked done is real, reviewable code (schema, RLS, RPCs, the
+> full `adapters/supabase` implementation, realtime, real OAuth/OTP) that has
+> never executed against an actual Supabase instance; the M3 spike this section
+> anticipated was itself never done either (still unchecked below), so none of
+> this was de-risked ahead of time the way the plan assumed. See `docs/
+> DECISIONS.md`'s ADR-015 for the full scope note, the real architecture
+> decisions made while building it, and exactly what turning it on requires.
 
-**Exit:** flipping one env flag switches adapters with no feature-code diff; data persists across devices and reinstalls.
+- [x] Schema + migrations matching `ports`
+- [x] RLS per table — especially `quests.address_line` (hidden until assigned) and thread membership — `address_line` is hidden via column-privilege revocation (RLS can't filter columns), not RLS alone; ADR-015 explains why
+- [x] Real auth: Google OAuth + email/phone OTP; `expo-secure-store` session adapter
+- [x] `adapters/supabase` implementing every port
+- [x] Realtime for messages and offer events — `subscribeToQuest`/`subscribeToThread`/`subscribeToUser` are real `postgres_changes` subscriptions; landing via `setQueryData` is not — no feature hook anywhere calls any `subscribeTo*` method yet (they were already-unused typed no-ops before M7 too), so the query-cache wiring is real future work, not blocked on Supabase
+- [ ] Storage for quest photos and avatars — not built; no `photos` field or picker UI exists anywhere in the app (M3 deferred it, nothing since revisited it) — building storage buckets for zero real callers would be exactly the "infrastructure nothing calls" this codebase has avoided since M1 (ADR-015)
+- [x] PostGIS radius search behind the geo params the ports have carried since M0
+- [x] Seed script using the **same fixtures** so previews stay identical — `npm run db:seed` (`scripts/seed-supabase.ts`), reads `src/data/adapters/memory/seed.ts` directly; never run
+- [ ] Run the existing test suite green against both adapters — true for the memory adapter (always has been); for Supabase, every `adapters/supabase/*.ts` file has real, passing test coverage against a *mocked* `@supabase/supabase-js` client instead (structural: verifies the right table/RPC/args, not that a query executes or an RLS policy actually holds) — a live integration run needs a live project, which doesn't exist yet
 
-**Preview:** the same app, real accounts, two physical devices talking to each other.
+**Exit:** flipping one env flag switches adapters with no feature-code diff; data persists across devices and reinstalls. **Not yet demonstrated** — the flag flips and the code is real, but nothing has run against a live project to show data actually surviving a reinstall.
+
+**Preview:** the same app, real accounts, two physical devices talking to each other. **Not yet possible** — this preview needs a live project by definition.
 
 ---
 
