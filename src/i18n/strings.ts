@@ -96,6 +96,7 @@ export const strings = {
 
   "common.loading": "Loading…",
   "common.errorGeneric": "We couldn't reach the server. Check your connection and try again.",
+  "common.appCrashed": "Something went wrong on this screen. Try again — it's just this screen, not your account.",
   "common.retry": "Try again",
 
   "questDetail.requirementsTitle": "What's needed",
