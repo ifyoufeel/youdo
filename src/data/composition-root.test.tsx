@@ -25,12 +25,16 @@ describe("composition root", () => {
       wrapper: ({ children }) => <RepositoryProvider>{children}</RepositoryProvider>,
     });
     expect(typeof result.current.getUser).toBe("function");
-    // getSession (auth.ts) is still a stub as of M7 Phase 2 — see
-    // adapters/supabase/__tests__ for the ports real by now (users,
-    // categories, areas), each tested there against a mocked client
-    // rather than here, since real methods need real request/response
-    // shapes, not just "it rejects".
-    await expect(result.current.getSession()).rejects.toThrow(/M7/);
+    // Every Supabase port method is real as of M7 Phase 8 (see
+    // adapters/supabase/__tests__ for real request/response coverage
+    // against a mocked client) — there's nothing left to reject with
+    // NotImplementedYet. What this test can still prove without a real
+    // Supabase project is that the *right* adapter got selected: calling
+    // through hits client.ts's real "not configured" error (no
+    // EXPO_PUBLIC_SUPABASE_URL/ANON_KEY in this test environment), which
+    // only the supabase adapter's client can throw — the memory adapter
+    // has no such error path at all.
+    await expect(result.current.getSession()).rejects.toThrow(/EXPO_PUBLIC_SUPABASE_URL/);
   });
 
   it("useRepository throws outside a provider", async () => {

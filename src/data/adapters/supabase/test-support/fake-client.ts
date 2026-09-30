@@ -128,8 +128,34 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
     channel: (name: string) => channelStub(name),
     removeChannel: () => {},
     auth: {
-      getSession: () => Promise.resolve(ok({ session: null })),
-      signOut: () => Promise.resolve(ok(null)),
+      getSession: (...params: unknown[]) => {
+        calls.push({ method: "auth.getSession", params });
+        return Promise.resolve(nextResponse());
+      },
+      signInWithOAuth: (...params: unknown[]) => {
+        calls.push({ method: "auth.signInWithOAuth", params });
+        return Promise.resolve(nextResponse());
+      },
+      setSession: (...params: unknown[]) => {
+        calls.push({ method: "auth.setSession", params });
+        return Promise.resolve(nextResponse());
+      },
+      exchangeCodeForSession: (...params: unknown[]) => {
+        calls.push({ method: "auth.exchangeCodeForSession", params });
+        return Promise.resolve(nextResponse());
+      },
+      signInWithOtp: (...params: unknown[]) => {
+        calls.push({ method: "auth.signInWithOtp", params });
+        return Promise.resolve(nextResponse());
+      },
+      verifyOtp: (...params: unknown[]) => {
+        calls.push({ method: "auth.verifyOtp", params });
+        return Promise.resolve(nextResponse());
+      },
+      signOut: (...params: unknown[]) => {
+        calls.push({ method: "auth.signOut", params });
+        return Promise.resolve(nextResponse());
+      },
     },
   };
 

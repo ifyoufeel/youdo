@@ -1,19 +1,64 @@
 import { createSupabaseAdapter } from "../index";
 
-describe("supabase adapter stub", () => {
-  it("AuthPort's five methods reject with NotImplementedYet('M7') — the only surface left stubbed after Phase 7; every other port is real, covered by its own *.test.ts file (each mocking the client — no live project exists to test against)", async () => {
+const EXPECTED_METHODS = [
+  "getSession",
+  "signInWithGoogle",
+  "sendOtp",
+  "verifyOtp",
+  "signOut",
+  "getUser",
+  "listUsers",
+  "updateProfile",
+  "deleteAccount",
+  "listQuests",
+  "getQuest",
+  "postQuest",
+  "listMyQuests",
+  "startQuest",
+  "markDone",
+  "confirmDone",
+  "cancelQuest",
+  "disputeQuest",
+  "listSavedQuestIds",
+  "saveQuest",
+  "unsaveQuest",
+  "subscribeToQuest",
+  "listOffersForQuest",
+  "myOfferOnQuest",
+  "sendOffer",
+  "withdrawOffer",
+  "declineOffer",
+  "acceptOffer",
+  "listThreadsForUser",
+  "getThread",
+  "listMessages",
+  "unreadCountForThread",
+  "sendMessage",
+  "markThreadRead",
+  "subscribeToThread",
+  "listEntriesForUser",
+  "balanceOf",
+  "listPaymentsForUser",
+  "deposit",
+  "cashOut",
+  "listReviewsForUser",
+  "myReviewOnQuest",
+  "submitReview",
+  "reportUser",
+  "blockUser",
+  "listBlockedUserIds",
+  "listForUser",
+  "markAllRead",
+  "subscribeToUser",
+  "listCategories",
+  "listAreas",
+] as const;
+
+describe("supabase adapter (structural — no live project to test against)", () => {
+  it("implements every Repository method as a real function — nothing stubbed as of M7 Phase 8", () => {
     const adapter = createSupabaseAdapter();
-
-    const calls: (() => Promise<unknown>)[] = [
-      () => adapter.getSession(),
-      () => adapter.signInWithGoogle(),
-      () => adapter.sendOtp("x", "email"),
-      () => adapter.verifyOtp("x", "x"),
-      () => adapter.signOut(),
-    ];
-
-    for (const call of calls) {
-      await expect(call()).rejects.toThrow(/M7/);
+    for (const method of EXPECTED_METHODS) {
+      expect(typeof adapter[method]).toBe("function");
     }
   });
 });
