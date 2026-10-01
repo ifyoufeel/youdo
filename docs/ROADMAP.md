@@ -209,16 +209,21 @@ releasing real escrow, a real shortfall walked through Add money to a successful
 
 **Goal:** publicly available on both stores and the web.
 
-- [ ] **Sign in with Apple** — mandatory for App Store review once Google sign-in ships
-- [ ] Offline queueing, retry, error boundaries
-- [ ] Analytics + crash reporting
-- [ ] EAS build profiles; app icons, splash, adaptive icons
-- [ ] Store listings, screenshots, privacy nutrition labels, age rating, support URL
-- [ ] Account deletion flow exposed as Apple requires
-- [ ] Web app promoted from preview surface to production deployment with its own domain
-- [ ] Legal: terms, privacy policy, and the escrow regulatory review (PRD §14.2) **resolved before real money is enabled**
+> **Built as a code-only slice, per explicit direction.** Most of this
+> milestone is store accounts, money, and legal review, not code — see
+> `docs/DECISIONS.md`'s ADR-016 for the scope note and the real decisions
+> made while building the slice that genuinely is code.
 
-**Exit:** installable from both stores; the web app serves the same product at a public URL.
+- [x] **Sign in with Apple** — the native `expo-apple-authentication` flow on iOS (Apple App Store Review Guideline 4.8 requires it once a third-party social login ships), falling back to the shared browser-OAuth flow everywhere else; ADR-016
+- [x] Offline queueing, retry, error boundaries — TanStack Query's `networkMode: "offlineFirst"` + `onlineManager` wired to `@react-native-community/netinfo`, AsyncStorage cache persistence (wallet/ledger queries excluded, unencrypted storage), one `ErrorBoundary` at the app shell; ADR-016
+- [ ] Analytics + crash reporting — needs a service chosen (e.g. Sentry, Firebase Crashlytics) and a real account; not a code decision this session can make
+- [x] EAS build profiles; app icons, splash, adaptive icons — `eas.json`'s development/preview/production profiles; `app.json`'s bundle identifier and `expo-splash-screen` config are real, honest placeholders; `extra.eas.projectId`/`updates.url` are deliberately **not** fabricated — those only exist after a real `eas init` against a real EAS account; ADR-016
+- [ ] Store listings, screenshots, privacy nutrition labels, age rating, support URL — needs real Apple/Google Developer accounts and product decisions (support URL, age rating answers) only the product's owner can make
+- [x] Account deletion flow exposed as Apple requires — landed in M6 (Settings → `DeleteAccountDialog`), already satisfies this item
+- [ ] Web app promoted from preview surface to production deployment with its own domain — needs a purchased domain and a hosting decision
+- [ ] Legal: terms, privacy policy, and the escrow regulatory review (PRD §14.2) **resolved before real money is enabled** — out-of-band legal work, not a coding task; still gates real money regardless of how complete the code is
+
+**Exit:** installable from both stores; the web app serves the same product at a public URL. **Not yet reachable** — the open items above (store accounts, a purchased domain, legal review) are all prerequisites no amount of further code can substitute for.
 
 ---
 
@@ -318,5 +323,14 @@ the artifact):
 - The `disputed` → `paid` / `cancelled` edges exist in the transition table and
   are rejected for everyone, because they need an admin actor the product does
   not have yet. The frozen-escrow state itself is reachable and designed.
-- Supabase (M7) is untouched, as planned. The store's shape is what the ports
-  have to match; nothing in the screens reaches past it into a table.
+- ~~Supabase (M7) is untouched, as planned~~ — landed as a real scaffold
+  (schema, RLS, every RPC, the full `adapters/supabase` implementation,
+  realtime, real Google OAuth + OTP), never run against a live project —
+  ADR-015 has the full scope note and what turning it on actually
+  requires.
+- M8's code-only slice (offline queueing/retry, the app-shell error
+  boundary, EAS build profiles, Sign in with Apple) has landed —
+  ADR-016. Everything else M8 names — store accounts, a purchased domain,
+  an analytics/crash-reporting service, and the legal/escrow review — is
+  still genuinely open, each for a reason only the product's owner can
+  resolve, not a coding gap.

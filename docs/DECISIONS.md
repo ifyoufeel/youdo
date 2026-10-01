@@ -483,3 +483,73 @@ client, and (if phone OTP matters at launch) a configured SMS provider; run
 `EXPO_PUBLIC_DATA_ADAPTER=supabase` plus the two `EXPO_PUBLIC_SUPABASE_*`
 vars (`.env.example`). Nothing in feature code changes — that is ADR-004's
 whole promise, and this milestone is the first real test of whether it held.
+
+## ADR-016 · M8's code-only slice, and why Sign in with Apple went native
+
+**Decision.** M8 ("Public app + web app") is categorically different from
+M0-M7: most of its checklist is store accounts, money, domains, and legal
+review — not code. Per explicit direction, M8 built only the slice that is
+genuinely code and needs no real account, payment, or legal decision:
+offline queueing with retry and persistence, an error boundary around the
+app shell, EAS build profiles with icon/splash wiring, and Sign in with
+Apple. Store submission, a purchased domain, an analytics/crash-reporting
+service choice, and the legal/escrow review (PRD §14.2) are explicitly
+**not** built here — each needs a decision or an account only the product's
+owner can make, and `docs/ROADMAP.md`'s M8 checklist leaves them open with
+why, the same honesty ADR-015 applied to M7's "never run against a live
+project" scope.
+
+**Offline queueing is TanStack Query's own mechanism, not a bespoke
+queue.** `src/data/query-client.ts`'s `createAppQueryClient()` sets
+`networkMode: "offlineFirst"` on both queries and mutations and wires
+`onlineManager` to `@react-native-community/netinfo` (React Native has no
+`navigator.onLine` for react-query's web-default listener to use) — a
+mutation fired while offline parks in `pending` state and resumes
+automatically the moment `onlineManager` reports back online, with no
+queue data structure of our own to get wrong. `persistAppQueryClient()`
+layers `@tanstack/react-query-persist-client` + an AsyncStorage persister
+on top for cold-start recovery, with one deliberate exclusion: any query
+whose key starts with `"ledger"` is never persisted, since AsyncStorage is
+unencrypted and wallet balances/entries/payments are the one class of data
+in this app actually worth protecting from a stolen, unlocked device.
+
+**The error boundary is the app's first, placed once, at the root.**
+`src/design/components/ErrorBoundary.tsx` wraps `<Slot/>` in
+`app/_layout.tsx` — a single boundary at the shell, not one per screen,
+because nothing in this codebase has needed finer-grained recovery and a
+screen-level crash with no boundary above it would otherwise white-screen
+the whole app. It reuses `Screen`/`ErrorState` for its fallback, matching
+every other error surface in the product instead of inventing a second
+one.
+
+**EAS profiles are real config; the project identity inside them is not
+invented.** `eas.json`'s development/preview/production profiles and
+`app.json`'s `ios.bundleIdentifier`/`android.package`
+(`com.youdo.app`) are honest placeholders — a real app needs *some*
+identifier, and this one is clearly a placeholder, not a deployed
+product's real id. What is deliberately **not** fabricated: `extra.eas.
+projectId` and `updates.url` only exist after a real `eas init` against a
+real EAS account, and inventing plausible-looking values for either would
+be actively misleading rather than honestly incomplete — the same
+distinction ADR-015 drew between a real scaffold and a live integration.
+
+**Sign in with Apple went native on iOS, not a third call to the shared
+browser-OAuth helper — because Apple requires it, not by preference.**
+ADR-007 already named this as a forward-looking consequence: "Sign in
+with Apple becomes mandatory for App Store review once any third-party
+social login ships. Budgeted into M8 as a blocker, not an enhancement."
+Apple's own App Store Review Guideline 4.8 requires the native, officially
+branded button wherever a third-party social sign-in is offered on iOS —
+this is that guideline executed, not a new independent design choice.
+`src/data/adapters/supabase/auth.ts`'s `signInWithApple` branches on
+`Platform.OS`: off iOS it falls through to the same `browserOAuthSignIn`
+helper Google already uses (now parameterized by provider instead of
+hardcoded to Google); on iOS it calls `expo-apple-authentication`'s native
+`signInAsync` directly, rendering Apple's own `AppleAuthenticationButton`
+in `SignInScreen.tsx` rather than a custom-styled `Button` matching the
+screen's other two. The native flow's nonce handshake follows Apple and
+Supabase's documented pairing exactly: a raw nonce (`expo-crypto`'s
+`randomUUID()`) is sent to Supabase's `signInWithIdToken`, while its
+SHA256 hash is sent to Apple's `signInAsync` — the two systems compare
+against each other to prevent token replay, so the two values sent must
+never be the same one.
