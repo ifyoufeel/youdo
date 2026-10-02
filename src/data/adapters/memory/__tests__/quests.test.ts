@@ -94,6 +94,14 @@ describe("memory quests adapter", () => {
       expect(quest.durationLabel).toBe("6+ hr");
     });
 
+    it("defaults photos to [] when the input omits it, and preserves it when given", async () => {
+      const withoutPhotos = await port.postQuest(BASE_INPUT, key());
+      expect(withoutPhotos.photos).toEqual([]);
+
+      const withPhotos = await port.postQuest({ ...BASE_INPUT, photos: ["file:///tmp/a.jpg"] }, key());
+      expect(withPhotos.photos).toEqual(["file:///tmp/a.jpg"]);
+    });
+
     it("replaying the same idempotency key returns the identical quest, not a duplicate", async () => {
       const k = key();
       const first = await port.postQuest(BASE_INPUT, k);

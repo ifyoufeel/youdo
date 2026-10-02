@@ -13,6 +13,7 @@ export interface UpdateProfileInput {
   home?: Point;
   phone?: string;
   email?: string;
+  avatarUrl?: string | null;
 }
 
 export interface UsersPort {
@@ -23,7 +24,7 @@ export interface UsersPort {
   listUsers(params: PageParams): Promise<Page<User>>;
   updateProfile(userId: string, patch: UpdateProfileInput, idempotency: Idempotent): Promise<User>;
   /** PRD §7.9's account deletion: anonymizes the account's own PII fields
-      (name/bio/phone/email/bank) — naturally idempotent, no result to
+      (name/bio/phone/email/bank/avatarUrl) — naturally idempotent, no result to
       replay. Every past quest/offer only ever stores this user's id, so
       anonymizing the User record is enough to anonymize "the quests you
       were part of" everywhere that record gets resolved — no separate

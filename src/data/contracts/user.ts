@@ -15,6 +15,13 @@ export const UserSchema = z.object({
   email: z.string(),
   bank: z.string(),
   joined: z.string(), // ISO instant
+  /** A public URL (a local device URI from the memory adapter, a
+      Supabase Storage public URL for real), or null — most seeded users
+      have none. PRD §4 calls a profile photo a requirement to post or
+      offer; that gate is deliberately not enforced (ADR-018), so this
+      stays nullable rather than becoming a non-null field the whole
+      fixture would need backfilling to satisfy. */
+  avatarUrl: z.string().nullable(),
 });
 
 export type User = z.infer<typeof UserSchema>;

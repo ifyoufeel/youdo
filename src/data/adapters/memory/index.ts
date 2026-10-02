@@ -10,6 +10,7 @@ import { createMemoryTrustPort } from "./trust";
 import { createMemoryNotificationsPort } from "./notifications";
 import { createMemoryCategoriesPort } from "./categories";
 import { createMemoryAreasPort } from "./areas";
+import { createMemoryUploadsPort } from "./uploads";
 
 export { setFaultInjectionRate, getFaultInjectionRate } from "./fault-injection";
 
@@ -26,5 +27,6 @@ export function createMemoryAdapter(): Repository {
     ...createMemoryNotificationsPort(),
     ...createMemoryCategoriesPort(),
     ...createMemoryAreasPort(),
+    ...createMemoryUploadsPort(),
   };
 }

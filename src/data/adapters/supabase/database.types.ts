@@ -63,6 +63,7 @@ export interface ProfileRow {
   email: string;
   bank: string;
   joined: string;
+  avatar_url: string | null;
 }
 
 export interface CategoryRow {

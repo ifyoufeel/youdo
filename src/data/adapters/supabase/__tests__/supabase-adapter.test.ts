@@ -54,6 +54,7 @@ const EXPECTED_METHODS = [
   "subscribeToUser",
   "listCategories",
   "listAreas",
+  "uploadPhoto",
 ] as const;
 
 describe("supabase adapter (structural — no live project to test against)", () => {

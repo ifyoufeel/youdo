@@ -41,6 +41,7 @@ export interface QuestRowLike {
   area: string;
   details: string;
   requirements: string[];
+  photos: string[] | null;
   started_at: string | null;
   completed_at: string | null;
   paid_at: string | null;
@@ -71,6 +72,7 @@ export function toQuest(row: QuestRowLike): Quest {
     area: row.area,
     details: row.details,
     requirements: row.requirements ?? [],
+    photos: row.photos ?? [],
     startedAt: row.started_at ?? undefined,
     completedAt: row.completed_at ?? undefined,
     paidAt: row.paid_at ?? undefined,
@@ -142,6 +144,7 @@ export function createSupabaseQuestsPort(): QuestsPort {
         p_scheduled_for: input.scheduledFor,
         p_expires_at: input.expiresAt,
         p_requirements: input.requirements,
+        p_photos: input.photos ?? [],
         p_idempotency_key: idempotency.idempotencyKey,
       });
       if (error) throw error;

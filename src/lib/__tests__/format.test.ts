@@ -43,6 +43,7 @@ describe("questDuration", () => {
     area: "Da'an",
     details: "",
     requirements: [],
+    photos: [],
   };
 
   it("falls back to formatDuration when there's no durationLabel", () => {

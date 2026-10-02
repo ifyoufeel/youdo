@@ -141,6 +141,7 @@ export function createMemoryQuestsPort(): QuestsPort {
         area: input.area,
         details: input.details,
         requirements: input.requirements,
+        photos: input.photos ?? [],
       };
       quests.push(quest);
       postedByKey.set(idempotency.idempotencyKey, quest);

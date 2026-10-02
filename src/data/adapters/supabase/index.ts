@@ -10,6 +10,7 @@ import { createSupabaseThreadsPort } from "./threads";
 import { createSupabaseNotificationsPort } from "./notifications";
 import { createSupabaseReviewsPort } from "./reviews";
 import { createSupabaseTrustPort } from "./trust";
+import { createSupabaseUploadsPort } from "./uploads";
 
 /* Proves the adapter-selection seam in composition-root.tsx actually
    exists (ADR-004) — a real Supabase client, schema, RLS, RPCs and
@@ -32,5 +33,6 @@ export function createSupabaseAdapter(): Repository {
     ...createSupabaseNotificationsPort(),
     ...createSupabaseCategoriesPort(),
     ...createSupabaseAreasPort(),
+    ...createSupabaseUploadsPort(),
   };
 }

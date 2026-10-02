@@ -9,6 +9,7 @@ import type { TrustPort } from "./ports/trust";
 import type { NotificationsPort } from "./ports/notifications";
 import type { CategoriesPort } from "./ports/categories";
 import type { AreasPort } from "./ports/areas";
+import type { UploadsPort } from "./ports/uploads";
 
 /** The full surface every adapter (memory today, Supabase at M7) must
     satisfy identically — the one type composition-root.tsx hands out via
@@ -23,4 +24,5 @@ export type Repository = AuthPort &
   TrustPort &
   NotificationsPort &
   CategoriesPort &
-  AreasPort;
+  AreasPort &
+  UploadsPort;

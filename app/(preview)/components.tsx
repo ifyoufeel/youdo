@@ -316,6 +316,7 @@ const CONFIRM_WINDOW_QUEST: Quest = {
   area: "Da'an",
   details: "",
   requirements: [],
+  photos: [],
   completedAt: "2026-09-16T19:00:00+08:00",
 };
 const CONFIRM_WINDOW_NOW = Date.parse("2026-09-16T20:00:00+08:00"); // 1h in — still well within the 72h window

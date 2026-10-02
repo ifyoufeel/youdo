@@ -20,6 +20,7 @@ const BASE: Quest = {
   area: "Da'an",
   details: "",
   requirements: [],
+  photos: [],
 };
 
 const HOUR_MS = 60 * 60 * 1000;

@@ -36,6 +36,7 @@ function quest(overrides: Partial<Quest> = {}): Quest {
     area: "Da'an",
     details: "",
     requirements: [],
+    photos: [],
     ...overrides,
   };
 }

@@ -18,6 +18,12 @@ export interface PostQuestInput {
   scheduledFor: string;
   expiresAt: string;
   requirements: string[];
+  /** Public URLs, already uploaded by the time postQuest is called — the
+      wizard uploads each photo eagerly on pick (uploadPhoto), not at
+      submit time. Optional only because every existing call site
+      predates this field; defaults to `[]`, matching requirements'
+      shape above. */
+  photos?: string[];
 }
 
 /** "closest" is the default when omitted — PRD §7.2's feed is ordered by

@@ -21,6 +21,7 @@ const BASE_QUEST: Quest = {
   area: "Da'an",
   details: "",
   requirements: [],
+  photos: [],
   completedAt: "2026-09-16T19:00:00+08:00",
 };
 

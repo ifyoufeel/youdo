@@ -21,6 +21,7 @@ const QUEST: Quest = {
   area: "Da'an",
   details: "",
   requirements: [],
+  photos: [],
 };
 
 const POSTER: User = {
@@ -37,6 +38,7 @@ const POSTER: User = {
   email: "",
   bank: "",
   joined: "2025-11-04T10:00:00+08:00",
+  avatarUrl: null,
 };
 
 const NOW = Date.parse("2026-09-16T09:00:00+08:00");

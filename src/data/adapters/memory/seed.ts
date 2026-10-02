@@ -54,6 +54,7 @@ export const seed = {
       email: "alex.l@example.tw",
       bank: "CTBC •••• 4417",
       joined: "2025-11-04T10:00:00+08:00",
+      avatarUrl: null,
     },
     u1: {
       id: "u1",
@@ -72,6 +73,7 @@ export const seed = {
       email: "weiting.c@example.tw",
       bank: "Fubon •••• 8820",
       joined: "2025-06-12T10:00:00+08:00",
+      avatarUrl: null,
     },
     u2: {
       id: "u2",
@@ -90,6 +92,7 @@ export const seed = {
       email: "jason.h@example.tw",
       bank: "E.SUN •••• 1102",
       joined: "2026-02-01T10:00:00+08:00",
+      avatarUrl: null,
     },
     u3: {
       id: "u3",
@@ -108,6 +111,7 @@ export const seed = {
       email: "meiling.w@example.tw",
       bank: "Cathay •••• 7731",
       joined: "2026-08-20T10:00:00+08:00",
+      avatarUrl: null,
     },
     u4: {
       id: "u4",
@@ -126,6 +130,7 @@ export const seed = {
       email: "kuanyu.t@example.tw",
       bank: "Taishin •••• 2094",
       joined: "2025-09-30T10:00:00+08:00",
+      avatarUrl: null,
     },
     u5: {
       id: "u5",
@@ -144,6 +149,7 @@ export const seed = {
       email: "yichen.l@example.tw",
       bank: "Mega •••• 6618",
       joined: "2026-01-15T10:00:00+08:00",
+      avatarUrl: null,
     },
   },
   categories: [
@@ -203,6 +209,7 @@ export const seed = {
         "Comfortable with medium dogs",
         "Send one photo mid-walk",
       ],
+      photos: [],
     },
     {
       id: "q2",
@@ -228,6 +235,7 @@ export const seed = {
       requirements: [
         "Bring a bag",
       ],
+      photos: [],
     },
     {
       id: "q3",
@@ -254,6 +262,7 @@ export const seed = {
         "Own drill",
         "Two hands free on Saturday",
       ],
+      photos: [],
     },
     {
       id: "q4",
@@ -279,6 +288,7 @@ export const seed = {
       requirements: [
         "Can lift 30 kg",
       ],
+      photos: [],
     },
     {
       id: "q5",
@@ -304,6 +314,7 @@ export const seed = {
       requirements: [
         "Patient explainer",
       ],
+      photos: [],
     },
     {
       id: "q6",
@@ -327,6 +338,7 @@ export const seed = {
       area: "Da'an",
       details: "Two bags of cardboard and one of glass, already sorted. The point is a five-minute walk from my door.",
       requirements: [],
+      photos: [],
     },
     {
       id: "q7",
@@ -354,6 +366,7 @@ export const seed = {
       requirements: [
         "Gentle with the fern",
       ],
+      photos: [],
     },
     {
       id: "q8",
@@ -380,6 +393,7 @@ export const seed = {
       area: "Zhongshan",
       details: "Two loaves of the milk bread if they still have it, anything else if they don't.",
       requirements: [],
+      photos: [],
     },
     {
       id: "q9",
@@ -406,6 +420,7 @@ export const seed = {
       area: "Xinyi",
       details: "One large suitcase, wheels work. Drop at the west-side left luggage counter.",
       requirements: [],
+      photos: [],
     },
     {
       id: "q10",
@@ -429,6 +444,7 @@ export const seed = {
       area: "Songshan",
       details: "Six or seven clear photos of a road bike, outdoors, for a resale listing.",
       requirements: [],
+      photos: [],
     },
     {
       id: "q11",
@@ -452,6 +468,7 @@ export const seed = {
       area: "Songshan",
       details: "A library book is due back this morning — just needs dropping at the return slot near the station.",
       requirements: [],
+      photos: [],
     },
   ],
   offers: [

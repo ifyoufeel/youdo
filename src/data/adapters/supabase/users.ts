@@ -31,10 +31,12 @@ function toUser(row: ProfileRow): User {
     email: row.email,
     bank: row.bank,
     joined: row.joined,
+    avatarUrl: row.avatar_url,
   };
 }
 
-const PROFILE_COLUMNS = "id, name, rating, quests_completed, verified, area, home_x, home_y, cancel_rate, bio, phone, email, bank, joined";
+const PROFILE_COLUMNS =
+  "id, name, rating, quests_completed, verified, area, home_x, home_y, cancel_rate, bio, phone, email, bank, joined, avatar_url";
 
 function patchToRow(patch: UpdateProfileInput): Record<string, unknown> {
   const row: Record<string, unknown> = {};
@@ -47,6 +49,7 @@ function patchToRow(patch: UpdateProfileInput): Record<string, unknown> {
   }
   if (patch.phone !== undefined) row.phone = patch.phone;
   if (patch.email !== undefined) row.email = patch.email;
+  if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
   return row;
 }
 

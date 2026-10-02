@@ -118,6 +118,19 @@ describe("memory adapter — real slice", () => {
       await adapter.registerPushToken("u3", null);
       expect(pushTokens.has("u3")).toBe(false);
     });
+
+    it("deleteAccount also clears avatarUrl, same PII treatment as name/bio/phone/email/bank", async () => {
+      const adapter = createMemoryAdapter();
+      await adapter.updateProfile("u4", { avatarUrl: "file:///tmp/photo.jpg" }, { idempotencyKey: "av-1" });
+      await adapter.deleteAccount("u4", { idempotencyKey: "del-3" });
+      expect((await adapter.getUser("u4"))?.avatarUrl).toBeNull();
+    });
+
+    it("uploadPhoto returns the local URI unchanged — there's no server to round-trip through", async () => {
+      const adapter = createMemoryAdapter();
+      const url = await adapter.uploadPhoto("file:///tmp/photo.jpg", "avatar");
+      expect(url).toBe("file:///tmp/photo.jpg");
+    });
   });
 
   describe("quests", () => {
@@ -225,6 +238,7 @@ describe("memory adapter — real slice", () => {
         area: "Da'an",
         details: "Test details",
         requirements: [],
+        photos: [],
       };
       questsStore.push(todayQuest);
       try {

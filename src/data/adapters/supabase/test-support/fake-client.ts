@@ -109,6 +109,21 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
     return c;
   }
 
+  function storageBucketStub(bucket: string) {
+    return {
+      upload: (path: string, body: unknown, options?: unknown) => {
+        calls.push({ method: "storage.upload", params: [bucket, path, body, options] });
+        return Promise.resolve(nextResponse());
+      },
+      // getPublicUrl is synchronous in the real client (pure string
+      // construction, no request) — this stub matches that shape.
+      getPublicUrl: (path: string) => {
+        calls.push({ method: "storage.getPublicUrl", params: [bucket, path] });
+        return { data: { publicUrl: `https://fake.supabase.co/storage/v1/object/public/${bucket}/${path}` } };
+      },
+    };
+  }
+
   const client = {
     from: (table: string) => {
       calls.push({ table, method: "from", params: [] });
@@ -127,9 +142,14 @@ export function createFakeClient(responses: FakeResponse[] = [ok(null)]) {
     },
     channel: (name: string) => channelStub(name),
     removeChannel: () => {},
+    storage: { from: (bucket: string) => storageBucketStub(bucket) },
     auth: {
       getSession: (...params: unknown[]) => {
         calls.push({ method: "auth.getSession", params });
+        return Promise.resolve(nextResponse());
+      },
+      getUser: (...params: unknown[]) => {
+        calls.push({ method: "auth.getUser", params });
         return Promise.resolve(nextResponse());
       },
       signInWithOAuth: (...params: unknown[]) => {

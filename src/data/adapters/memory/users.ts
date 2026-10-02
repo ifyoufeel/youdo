@@ -37,7 +37,7 @@ export function createMemoryUsersPort(): UsersPort {
       if (!existing) {
         throw new Error(`deleteAccount: no user ${userId}`);
       }
-      users.set(userId, { ...existing, name: "Deleted user", bio: "", phone: "", email: "", bank: "" });
+      users.set(userId, { ...existing, name: "Deleted user", bio: "", phone: "", email: "", bank: "", avatarUrl: null });
     },
 
     async registerPushToken(userId, token) {

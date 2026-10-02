@@ -17,6 +17,7 @@ const COUNTERPART: User = {
   email: "wei@example.com",
   bank: "Bank of Taiwan",
   joined: "2025-01-01T00:00:00+08:00",
+  avatarUrl: null,
 };
 
 function Harness() {

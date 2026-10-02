@@ -22,14 +22,22 @@ function extractFixture(): unknown {
 describe("memory adapter seed stays in sync with preview/data.taiwan.js", () => {
   it("seed is byte-for-byte the same fixture the preview ships", () => {
     const live = extractFixture();
-    // durationLabel (M3) is a real-port-only addition to QuestSchema — the
-    // prototype's static fixture never carries it (it's only ever set by
-    // the posting wizard at runtime, for open-ended duration picks like
-    // "6+ hr"), so it's the one deliberate, justified divergence this
-    // strict byte-for-byte comparison excludes.
+    // durationLabel (M3) and photos (the photo-upload feature) are
+    // real-port-only additions to QuestSchema — the prototype's static
+    // fixture never carries either (durationLabel is only ever set by
+    // the posting wizard at runtime; photos only by a real upload), so
+    // they're the deliberate, justified divergences this strict
+    // byte-for-byte comparison excludes. avatarUrl (same feature) is the
+    // equivalent divergence on UserSchema.
     const seedForComparison = {
       ...seed,
-      quests: seed.quests.map(({ durationLabel: _durationLabel, ...rest }) => rest),
+      users: Object.fromEntries(
+        Object.entries(seed.users).map(([id, u]) => {
+          const { avatarUrl: _avatarUrl, ...rest } = u;
+          return [id, rest];
+        })
+      ),
+      quests: seed.quests.map(({ durationLabel: _durationLabel, photos: _photos, ...rest }) => rest),
     };
     expect(seedForComparison).toEqual(live);
   });

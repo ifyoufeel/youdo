@@ -46,6 +46,12 @@ export const QuestSchema = z.object({
   area: z.string(),
   details: z.string(),
   requirements: z.array(z.string()),
+  /** PRD §9's `photos[]` — public URLs (a local device URI from the
+      memory adapter, a Supabase Storage public URL for real). Never a
+      requirement to post (see docs/DECISIONS.md's ADR-018 for why the
+      PRD's literal "requires a photo" gate isn't enforced), so always
+      `[]`, not nullable, exactly like requirements above. */
+  photos: z.array(z.string()),
 
   // Lifecycle timestamps — present only once the quest has reached the
   // state that sets them (PRD §8's transition table, ported verbatim in
