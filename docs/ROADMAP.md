@@ -97,7 +97,7 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 - [x] Multi-step wizard: what → details/photos → where → when → budget → review
 - [x] Validation that **blocks** submit, with errors written as fixes
 - [x] Draft autosave surviving app restart
-- [ ] Photo picker (`expo-image-picker`), date/time picker, currency input, address entry
+- [x] Photo picker (`expo-image-picker`) — landed later, after M3 itself shipped (ADR-018); date/time picker is a curated `Select` list rather than the prototype's bespoke calendar/wheel widgets (a documented simplification, not a gap); currency input and address entry are plain `Input` fields
 - [x] ~~Fixed vs hourly budget~~ — one agreed amount per quest (ADR-011)
 - [x] Fee disclosure before submission
 - [x] Posted quest appears in the feed and My quests immediately
@@ -306,7 +306,10 @@ the artifact):
 - **The default quest expiry is undecided** (PRD §14.4). The wizard offers an
   hour before it starts / in 24 hours / when it starts, and ships with the
   first. One line in `EXPIRY_OPTIONS`.
-- Photo picker on the posting wizard (M3) — no image handling anywhere yet.
+- ~~Photo picker on the posting wizard (M3) — no image handling anywhere
+  yet~~ — landed: a profile avatar and a quest's photos can both be
+  picked and uploaded for real (ADR-018), the PRD requirement neither
+  the real app nor the original prototype had ever built.
 - ~~Deposits and cash-outs settle instantly~~ — landed in the real app (M5):
   both pass through a real `pending` state, settling asynchronously on a
   jittered timer like a real webhook (ADR-005/ADR-013). `preview/app.js`

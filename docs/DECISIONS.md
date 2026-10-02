@@ -629,3 +629,71 @@ honor them would need the preference itself to live somewhere a server
 trigger could read it (a `profiles` column, not AsyncStorage) — a second
 real gap, left for whenever the Supabase send side above actually gets
 built against a live project.
+
+## ADR-018 · Photo upload is real; PRD's "photo required to post" gate is not
+
+**Decision.** PRD §4 calls for photos in two places — a profile avatar,
+and a quest's own `photos[]` — and says a profile needs a display name
+and photo before its owner may post a quest or send an offer. Neither
+the real app nor the original prototype (`preview/app.js`) ever built
+any of this: no `photos` field existed on either contract, and the
+ROADMAP's own M3 checklist carried an unchecked "Photo picker" line
+from the start. This closes the picking-and-uploading half for real —
+`User.avatarUrl`, `Quest.photos[]`, a new `UploadsPort.uploadPhoto`
+implemented in both adapters, Settings' avatar upload, and the post
+wizard's photo step — and makes one explicit, deliberate choice: **the
+"photo required to post/offer" gate is not enforced.** Every seeded
+user has no photo at all; enforcing the gate literally would block
+every existing post/offer flow — every test, every gallery specimen,
+every flows frame — the moment it shipped, for a requirement that was
+never built or demonstrated at any point in this product's history.
+Building the upload pipeline without inventing a disruptive gate on top
+of it is the real, incremental step; the gate itself is a product
+decision (whether to require it, and what happens to every account that
+predates it) left to whoever owns that call next, not something this
+session should decide unilaterally.
+
+**Why a local device URI is a real value, not a stub.** The memory
+adapter's `uploadPhoto` returns the picked photo's local URI unchanged.
+This is deliberate, not a placeholder: a `file://`/content URI is
+already something `<Image source={{uri}}>` can render directly, and
+there is no server for the memory adapter to round-trip through in the
+first place — the entire mock lives in one process's memory. The real,
+named limitation this doesn't paper over: that URI only resolves on the
+device that picked it, so a photo won't survive a reinstall or appear
+on a second device. That's a fundamental property of the memory
+adapter, not something a smarter implementation here could fix.
+
+**Why Supabase's upload path reads the file as an ArrayBuffer, not a
+Blob.** supabase-js's own `upload()` doc comment says plainly: "For
+React Native, using either Blob, File or FormData does not work as
+intended. Upload file using ArrayBuffer from base64 file data instead."
+`expo-file-system`'s SDK 57 `File` class (a real class implementing the
+web `Blob` interface) exposes `arrayBuffer()` directly, so this skips
+the base64 round-trip supabase-js's own docs describe (no
+`base64-arraybuffer` dependency needed) and gets the same real bytes
+more directly.
+
+**Why `avatar_url` is public and `push_token` (ADR-017) is not, in the
+same migration file's shape.** `profiles_select` already lets any
+authenticated user read any profile's name/bio/rating — a profile photo
+is exactly as public as those fields, so `avatar_url` is included in
+the column grant rather than excluded from it. A push token is
+different in kind: it's not a profile attribute a stranger has any
+legitimate reason to see, and reading someone else's would let anyone
+push arbitrary content to their device through Expo's public send
+endpoint. Same migration shape (a column-scoped grant, additive to
+Phase 1's own), opposite inclusion/exclusion call, for a reason specific
+to each field.
+
+**A pre-existing gap fixed in passing.** While extending
+`quests_with_address`/`list_quests`/`list_my_quests`/`post_quest` to
+carry `photos`, a real Postgres constraint surfaced that this scaffold
+hadn't hit before: `CREATE OR REPLACE FUNCTION` refuses to change a
+function's declared return type, and adding an output column counts as
+one. Each of those three needed an explicit `DROP FUNCTION` (exact
+existing signature) before being recreated, rather than the
+`CREATE OR REPLACE` every earlier Supabase migration had been able to
+use so far — recorded here since it's the first migration in this
+scaffold that needed it, and the next one that extends any `returns
+table (...)` function's output will need the same treatment.
