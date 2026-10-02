@@ -128,3 +128,10 @@ export const reports: Report[] = [];
     same Map<userId, Set<id>> shape as savedQuestIds above. No seed data:
     nobody in the fixture has blocked anyone. */
 export const blockedUserIds: Map<string, Set<string>> = new Map();
+
+/** Mutable — users.ts's registerPushToken (M8) writes through this
+    directly. Deliberately its own private Map, not a field on the User
+    record: nothing reads it back through getUser/listUsers (see
+    UsersPort's own doc comment on registerPushToken for why). No seed
+    data: nobody in the fixture has a registered device. */
+export const pushTokens: Map<string, string> = new Map();

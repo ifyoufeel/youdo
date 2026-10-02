@@ -103,4 +103,21 @@ describe("supabase users port (mocked client — no live project)", () => {
 
     expect(calls[0]).toMatchObject({ rpc: "delete_account", args: { p_idempotency_key: "k-1" } });
   });
+
+  it("registerPushToken updates only push_token on the caller's own row, token or null", async () => {
+    const { client, calls } = createFakeClient([fakeOk(null)]);
+    mockState.client = client;
+
+    await createSupabaseUsersPort().registerPushToken("u0", "ExponentPushToken[abc]");
+
+    const updateCall = calls.find((c) => c.method === "update");
+    expect(updateCall?.params[0]).toEqual({ push_token: "ExponentPushToken[abc]" });
+    expect(calls.some((c) => c.method === "eq" && c.params[0] === "id" && c.params[1] === "u0")).toBe(true);
+  });
+
+  it("registerPushToken propagates an error rather than swallowing it", async () => {
+    const { client } = createFakeClient([fakeError("permission denied for column push_token")]);
+    mockState.client = client;
+    await expect(createSupabaseUsersPort().registerPushToken("u0", "tok")).rejects.toBeTruthy();
+  });
 });

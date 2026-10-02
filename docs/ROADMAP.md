@@ -160,7 +160,7 @@ releasing real escrow, a real shortfall walked through Add money to a successful
 - [x] **Ratings capture** after `paid` — today the system only displays them
 - [x] Saved-quests list (saves are tracked today but never listed)
 - [x] Notification inbox + per-category toggles, persisted for real
-- [ ] Push registration — no push pipeline exists yet; M7/M8 work
+- [x] Push registration — a device obtains and persists an Expo push token on sign-in, cleared on sign-out, in both adapters; ADR-017. Actually *sending* a push stays open: it needs a live Supabase project (a trigger or Edge Function calling Expo's push API) with no equivalent in the memory adapter, where there's no second device to send to
 - [x] Report / block on users — real records/filtering now, not the
       prototype's toast-only report and no-op block. Quest-level report
       stays out: no real trigger site for it exists in the prototype
@@ -312,10 +312,12 @@ the artifact):
   jittered timer like a real webhook (ADR-005/ADR-013). `preview/app.js`
   itself is untouched and still settles synchronously — that file is frozen,
   not a second implementation to keep in sync.
-- Notification *delivery* (M6): the inbox and the per-category toggles are
-  built, and the toggles are now a real, persisted device preference (M6
-  Phase 4) — but there is still no push registration or anything that
-  actually sends a push. That is M7/M8 work.
+- Notification *delivery*: the inbox and the per-category toggles are
+  built, the toggles are a real, persisted device preference (M6 Phase 4),
+  and device-token registration is now real too (ADR-017) — but nothing
+  actually *sends* a push yet, and the toggles stay client-side-only,
+  unread by any sender. Both need a live Supabase project (a trigger or
+  Edge Function, plus moving the toggles server-side) that doesn't exist.
 - Auth and onboarding (M1) are built but not the default: the preview still
   boots signed in (ADR-012), reachable via Settings → Sign out. A real i18n
   library, and `FlashList`/cursor pagination/pull-to-refresh for the feed

@@ -3,6 +3,7 @@ import { createSupabaseAdapter } from "../index";
 const EXPECTED_METHODS = [
   "getSession",
   "signInWithGoogle",
+  "signInWithApple",
   "sendOtp",
   "verifyOtp",
   "signOut",
@@ -10,6 +11,7 @@ const EXPECTED_METHODS = [
   "listUsers",
   "updateProfile",
   "deleteAccount",
+  "registerPushToken",
   "listQuests",
   "getQuest",
   "postQuest",

@@ -1,7 +1,7 @@
 import { setFaultInjectionRate } from "../fault-injection";
 import { resetIdempotencyForTests } from "../idempotency";
 import { createMemoryAdapter } from "../index";
-import { quests as questsStore } from "../store";
+import { quests as questsStore, pushTokens } from "../store";
 import { nowIso, nowMs } from "../clock";
 import { seed } from "../seed";
 import { InvalidOtpError } from "../../../ports/auth";
@@ -107,6 +107,16 @@ describe("memory adapter — real slice", () => {
     it("deleteAccount throws for an unknown user", async () => {
       const adapter = createMemoryAdapter();
       await expect(adapter.deleteAccount("no-such-user", { idempotencyKey: "del-2" })).rejects.toThrow();
+    });
+
+    it("registerPushToken sets a token, and null clears it — never surfaced through getUser", async () => {
+      const adapter = createMemoryAdapter();
+      await adapter.registerPushToken("u3", "ExponentPushToken[abc]");
+      expect(pushTokens.get("u3")).toBe("ExponentPushToken[abc]");
+      expect(await adapter.getUser("u3")).not.toHaveProperty("pushToken");
+
+      await adapter.registerPushToken("u3", null);
+      expect(pushTokens.has("u3")).toBe(false);
     });
   });
 

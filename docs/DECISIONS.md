@@ -553,3 +553,79 @@ Supabase's documented pairing exactly: a raw nonce (`expo-crypto`'s
 SHA256 hash is sent to Apple's `signInAsync` — the two systems compare
 against each other to prevent token replay, so the two values sent must
 never be the same one.
+
+## ADR-017 · Push registration is real; push sending stays a named gap
+
+**Decision.** The ROADMAP's M6 checklist named "push registration" and
+deferred it to M7/M8 ("no push pipeline exists yet"). This closes the
+registration half for real — a device obtains and persists an Expo push
+token the moment it signs in, and the token is cleared on sign-out — in
+both adapters. **Actually sending a push from the data layer is
+deliberately not built.** The reasoning splits by adapter:
+
+- **The memory adapter has no second device to send to.** It's a
+  single-process mock; the only "other user" data it ever shows is
+  reached through the dev actor switcher (ADR-008), which is itself
+  inert outside the preview. There is no real scenario, in the shipped
+  app, where the memory adapter needs to wake a device that isn't the
+  one currently running the code that would send the push. Building a
+  send call site here would be exactly the "infrastructure nothing
+  calls" this codebase has avoided since M1 (ADR-014's `unblockUser`,
+  ADR-015's Supabase Storage, ...) — so `notify()` (`src/data/adapters/
+  memory/notify.ts`) is unchanged.
+- **Supabase is where a real send would eventually live, and it
+  genuinely needs a live project.** A `notifications` row created for a
+  user who isn't looking at the app needs something outside any
+  client's own process to notice it and call Expo's push-send endpoint —
+  a Postgres trigger calling `pg_net.http_post`, or a Supabase Edge
+  Function, triggered on insert. Both need a live instance to enable the
+  extension/deploy the function against, and neither has any test
+  harness this scaffold could give it even structurally: every other
+  `adapters/supabase/*.ts` file's real coverage comes from mocking
+  `@supabase/supabase-js`'s client (`test-support/fake-client.ts`), which
+  has nothing to say about a database trigger. Writing untestable SQL
+  with zero reviewable signal, for a milestone whose whole discipline
+  (ADR-015) is "real code, honestly labeled as unverified," would be
+  worse than naming the gap plainly — so it's named here instead of
+  built.
+
+**What's real.** `UsersPort.registerPushToken(userId, token | null)` —
+naturally idempotent, no replay cache, same reasoning `markThreadRead`'s
+own doc comment gives for skipping an `Idempotent` param. The token is
+deliberately never exposed through `getUser`/`listUsers`: it isn't part
+of `User` at all, matching the memory adapter's own private `pushTokens`
+Map (`store.ts`) — adapter-internal state, not a port-level read. Any
+user who could read another user's token could push arbitrary content
+straight to their phone through Expo's public send endpoint, which needs
+no credential beyond the token itself; the Supabase migration
+(`20261002000000_push_tokens.sql`) excludes `push_token` from the column
+grant entirely, the same column-exclusion move ADR-015 already used for
+`quests.address_line`.
+
+The client hook (`src/features/notifications/usePushRegistration.ts`,
+mounted once at the app root in `app/_layout.tsx`) never fabricates
+`extra.eas.projectId` — ADR-016 already decided that value only exists
+after a real `eas init`, and it's still absent today. Without it, the
+hook never even calls `getExpoPushTokenAsync`; it stops after checking
+for the project id, honestly incomplete rather than invented. It also
+never runs on web — `expo-notifications`' web push is a materially
+different flow (VAPID keys, a service worker) this slice doesn't build.
+
+**A pre-existing gap found and fixed along the way.** Phase 1's RLS
+migration (`20260930000100_rls.sql`) revokes all privileges on
+`profiles` and never re-grants `SELECT` — every other table in that
+migration either re-grants it directly or exposes a view
+(`quests_with_address`); `profiles` did neither. Read literally, this
+would make `getUser`/`listUsers` fail outright against a real instance.
+Fixed in the same migration this feature already needed to touch
+`profiles`' grants for, in the same column-scoped-grant shape Phase 1's
+own `UPDATE` grant already used.
+
+**What's still open, named rather than silently dropped.** The
+per-category notification toggles (`useNotificationPrefs`, M6) stay
+exactly what they were: a real, persisted, but purely client-side,
+device-local preference that nothing downstream reads. Making a sender
+honor them would need the preference itself to live somewhere a server
+trigger could read it (a `profiles` column, not AsyncStorage) — a second
+real gap, left for whenever the Supabase send side above actually gets
+built against a live project.

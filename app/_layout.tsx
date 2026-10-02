@@ -8,7 +8,10 @@
    wraps only <Slot/> (M8) — a feature-screen render error shows a real
    retry action; a provider itself failing to initialize is a much rarer
    case with no sensible fallback UI to show before fonts/repository/auth
-   exist anyway, so it's left to crash rather than papered over. */
+   exist anyway, so it's left to crash rather than papered over.
+   AppShell (M8) is the thinnest possible component just to give
+   usePushRegistration() somewhere inside AuthSessionProvider to run
+   from — it renders nothing of its own. */
 import { useState, useEffect } from "react";
 import { Slot } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +20,16 @@ import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider } from "@data/auth-session";
 import { createAppQueryClient, persistAppQueryClient } from "@data/query-client";
 import { ErrorBoundary } from "@design/components/ErrorBoundary";
+import { usePushRegistration } from "@features/notifications/usePushRegistration";
+
+function AppShell() {
+  usePushRegistration();
+  return (
+    <ErrorBoundary>
+      <Slot />
+    </ErrorBoundary>
+  );
+}
 
 export default function RootLayout() {
   const [queryClient] = useState(() => createAppQueryClient());
@@ -27,9 +40,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <RepositoryProvider>
           <AuthSessionProvider>
-            <ErrorBoundary>
-              <Slot />
-            </ErrorBoundary>
+            <AppShell />
           </AuthSessionProvider>
         </RepositoryProvider>
       </QueryClientProvider>

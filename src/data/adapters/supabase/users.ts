@@ -85,5 +85,10 @@ export function createSupabaseUsersPort(): UsersPort {
       const { error } = await supabase().rpc("delete_account", { p_idempotency_key: idempotency.idempotencyKey });
       if (error) throw error;
     },
+
+    async registerPushToken(userId, token) {
+      const { error } = await supabase().from("profiles").update({ push_token: token }).eq("id", userId);
+      if (error) throw error;
+    },
   };
 }

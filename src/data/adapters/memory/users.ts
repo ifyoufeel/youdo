@@ -2,7 +2,7 @@ import type { UsersPort } from "../../ports/users";
 import { paginate } from "./pagination";
 import { simulateLatency } from "./simulate-latency";
 import { maybeInjectFault } from "./fault-injection";
-import { users } from "./store";
+import { users, pushTokens } from "./store";
 
 export function createMemoryUsersPort(): UsersPort {
   return {
@@ -38,6 +38,16 @@ export function createMemoryUsersPort(): UsersPort {
         throw new Error(`deleteAccount: no user ${userId}`);
       }
       users.set(userId, { ...existing, name: "Deleted user", bio: "", phone: "", email: "", bank: "" });
+    },
+
+    async registerPushToken(userId, token) {
+      await simulateLatency();
+      maybeInjectFault("registerPushToken");
+      if (token) {
+        pushTokens.set(userId, token);
+      } else {
+        pushTokens.delete(userId);
+      }
     },
   };
 }
