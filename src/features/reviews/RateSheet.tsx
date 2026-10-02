@@ -70,6 +70,7 @@ export function RateSheet({ open, onClose, counterpart, onConfirm, submitting = 
       {counterpart ? (
         <UserChip
           name={counterpart.name}
+          photoUrl={counterpart.avatarUrl}
           rating={counterpart.rating}
           questsCompleted={counterpart.questsCompleted}
           verified={counterpart.verified}

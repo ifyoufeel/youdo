@@ -144,7 +144,7 @@ export function OfferInboxScreen({ questId }: OfferInboxScreenProps) {
             return (
               <Card key={offer.id} variant="flat" padding="sm">
                 <View style={styles.decidedRow}>
-                  {doer ? <Avatar name={doer.name} size="sm" verified={doer.verified} /> : null}
+                  {doer ? <Avatar name={doer.name} photoUrl={doer.avatarUrl} size="sm" verified={doer.verified} /> : null}
                   <Text style={styles.decidedName} numberOfLines={1}>
                     {doer?.name ?? ""}
                   </Text>

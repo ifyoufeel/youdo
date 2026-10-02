@@ -99,7 +99,7 @@ export function PublicProfileScreen({ userId }: PublicProfileScreenProps) {
 
       <Card padding="lg">
         <View style={styles.headerRow}>
-          <Avatar name={user.name} size="lg" verified={user.verified} />
+          <Avatar name={user.name} photoUrl={user.avatarUrl} size="lg" verified={user.verified} />
           <View style={styles.identity}>
             <Text style={styles.name}>{user.name}</Text>
             <Text style={styles.meta}>
@@ -140,7 +140,12 @@ export function PublicProfileScreen({ userId }: PublicProfileScreenProps) {
         </Card>
       ) : (
         profile.visibleReviews.map((r) => (
-          <ReviewCard key={r.id} review={r} raterName={profile.raters.get(r.raterId)?.name} />
+          <ReviewCard
+            key={r.id}
+            review={r}
+            raterName={profile.raters.get(r.raterId)?.name}
+            raterPhotoUrl={profile.raters.get(r.raterId)?.avatarUrl}
+          />
         ))
       )}
 

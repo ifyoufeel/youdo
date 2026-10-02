@@ -119,7 +119,7 @@ export function ProfileScreen() {
     >
       <Card padding="lg">
         <View style={styles.identityRow}>
-          <Avatar name={me.name} size="lg" verified={me.verified} />
+          <Avatar name={me.name} photoUrl={me.avatarUrl} size="lg" verified={me.verified} />
           <View style={styles.identityText}>
             <Text style={styles.name}>{me.name}</Text>
             <Text style={styles.meta}>
@@ -163,7 +163,12 @@ export function ProfileScreen() {
         <>
           <Text style={styles.sectionLabel}>{t("profile.whatPeopleSaid")}</Text>
           {myReviews.map((r) => (
-            <ReviewCard key={r.id} review={r} raterName={raters.get(r.raterId)?.name} />
+            <ReviewCard
+              key={r.id}
+              review={r}
+              raterName={raters.get(r.raterId)?.name}
+              raterPhotoUrl={raters.get(r.raterId)?.avatarUrl}
+            />
           ))}
         </>
       ) : null}

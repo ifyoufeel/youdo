@@ -61,7 +61,17 @@ export function SavedQuestsScreen() {
               duration={questDuration(q)}
               when={formatWhenAt(q.scheduledFor, now)}
               badges={gone ? [{ label: meta.label, tone: meta.tone }] : questBadges(q, now)}
-              poster={poster ? { name: poster.name, rating: poster.rating, questsCompleted: poster.questsCompleted, verified: poster.verified } : undefined}
+              poster={
+                poster
+                  ? {
+                      name: poster.name,
+                      photoUrl: poster.avatarUrl,
+                      rating: poster.rating,
+                      questsCompleted: poster.questsCompleted,
+                      verified: poster.verified,
+                    }
+                  : undefined
+              }
               saved
               onSave={() => toggleSave(q.id, true)}
               onPress={() => router.push(`/quest/${q.id}`)}

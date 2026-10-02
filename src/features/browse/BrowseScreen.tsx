@@ -114,7 +114,13 @@ export function BrowseScreen() {
           badges={questBadges(item, now)}
           poster={
             !mine && poster
-              ? { name: poster.name, rating: poster.rating, questsCompleted: poster.questsCompleted, verified: poster.verified }
+              ? {
+                  name: poster.name,
+                  photoUrl: poster.avatarUrl,
+                  rating: poster.rating,
+                  questsCompleted: poster.questsCompleted,
+                  verified: poster.verified,
+                }
               : undefined
           }
           saved={saved}

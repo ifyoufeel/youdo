@@ -98,7 +98,14 @@ function ThreadRow({
     <Card padding="sm" interactive onPress={onOpen} testID={`thread-row-${thread.id}`}>
       <View style={styles.headerRow}>
         {other ? (
-          <UserChip name={other.name} rating={other.rating} questsCompleted={other.questsCompleted} verified={other.verified} style={styles.userChip} />
+          <UserChip
+            name={other.name}
+            photoUrl={other.avatarUrl}
+            rating={other.rating}
+            questsCompleted={other.questsCompleted}
+            verified={other.verified}
+            style={styles.userChip}
+          />
         ) : (
           <View style={styles.userChip} />
         )}

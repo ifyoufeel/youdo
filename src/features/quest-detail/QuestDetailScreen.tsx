@@ -311,6 +311,7 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
           <View style={styles.trustPanelRow}>
             <UserChip
               name={poster.name}
+              photoUrl={poster.avatarUrl}
               rating={poster.rating}
               questsCompleted={poster.questsCompleted}
               verified={poster.verified}

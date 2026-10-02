@@ -137,6 +137,7 @@ export function EngagementCard({
         {counterpart ? (
           <UserChip
             name={counterpart.name}
+            photoUrl={counterpart.avatarUrl}
             rating={counterpart.rating}
             questsCompleted={counterpart.questsCompleted}
             verified={counterpart.verified}

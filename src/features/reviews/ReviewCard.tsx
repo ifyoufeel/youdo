@@ -20,13 +20,14 @@ const COMMENT_FONT = fontFamilyName(raw.font.text, raw.fontWeight.regular);
 export interface ReviewCardProps {
   review: Review;
   raterName: string | undefined;
+  raterPhotoUrl?: string | null;
 }
 
-export function ReviewCard({ review, raterName }: ReviewCardProps) {
+export function ReviewCard({ review, raterName, raterPhotoUrl }: ReviewCardProps) {
   return (
     <Card variant="sunken" padding="md">
       <View style={styles.row}>
-        <Avatar name={raterName ?? "?"} size="sm" />
+        <Avatar name={raterName ?? "?"} photoUrl={raterPhotoUrl} size="sm" />
         <Text style={styles.name}>{raterName ?? "—"}</Text>
         <Badge label={String(review.rating)} tone="money" icon="star" size="sm" />
       </View>

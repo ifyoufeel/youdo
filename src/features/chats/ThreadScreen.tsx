@@ -128,7 +128,7 @@ export function ThreadScreen({ threadId }: ThreadScreenProps) {
             const mine = m.senderId === myUserId;
             return (
               <View key={m.id} style={[styles.bubbleRow, { justifyContent: mine ? "flex-end" : "flex-start" }]}>
-                {!mine && other ? <Avatar name={other.name} size="sm" /> : null}
+                {!mine && other ? <Avatar name={other.name} photoUrl={other.avatarUrl} size="sm" /> : null}
                 <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
                   <Text style={styles.bubbleText}>{m.body}</Text>
                   <Text style={styles.bubbleStamp}>{formatStamp(m.at, now)}</Text>

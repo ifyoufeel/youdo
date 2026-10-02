@@ -23,4 +23,17 @@ describe("Avatar", () => {
     const { queryByText } = await render(<Avatar name="Wei-Ting C." />);
     expect(queryByText("Wei-Ting C.")).toBeNull();
   });
+
+  it("renders the photo instead of initials when photoUrl is set", async () => {
+    const { queryByText, getByTestId } = await render(
+      <Avatar name="Wei-Ting C." photoUrl="https://example.com/a.jpg" testID="avatar" />
+    );
+    expect(queryByText("WC")).toBeNull();
+    expect(getByTestId("avatar-photo").props.source).toEqual({ uri: "https://example.com/a.jpg" });
+  });
+
+  it("falls back to initials when photoUrl is null", async () => {
+    const { getByText } = await render(<Avatar name="Wei-Ting C." photoUrl={null} />);
+    expect(getByText("WC")).toBeTruthy();
+  });
 });

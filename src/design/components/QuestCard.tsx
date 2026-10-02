@@ -36,6 +36,7 @@ export interface QuestCardBadge {
 
 export interface QuestCardPoster {
   name: string;
+  photoUrl?: string | null;
   rating?: number;
   questsCompleted?: number;
   verified?: boolean;
@@ -140,7 +141,7 @@ export function QuestCard({
                 <View />
               )
             ) : poster ? (
-              <UserChip name={poster.name} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
+              <UserChip name={poster.name} photoUrl={poster.photoUrl} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
             ) : category ? (
               <Badge label={category} tone="neutral" />
             ) : (
@@ -175,7 +176,7 @@ export function QuestCard({
       {category || poster ? (
         <View style={styles.footerRow}>
           {poster ? (
-            <UserChip name={poster.name} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
+            <UserChip name={poster.name} photoUrl={poster.photoUrl} rating={poster.rating} questsCompleted={poster.questsCompleted} verified={poster.verified} size="sm" />
           ) : category ? (
             <Badge label={category} tone="neutral" />
           ) : (

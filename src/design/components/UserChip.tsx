@@ -17,6 +17,7 @@ export type UserChipSize = AvatarSize;
 
 export interface UserChipProps {
   name: string;
+  photoUrl?: string | null;
   rating?: number;
   questsCompleted?: number;
   verified?: boolean;
@@ -29,6 +30,7 @@ export interface UserChipProps {
 
 export function UserChip({
   name,
+  photoUrl,
   rating,
   questsCompleted,
   verified = false,
@@ -40,7 +42,7 @@ export function UserChip({
   const lg = size === "lg";
   return (
     <View style={[styles.row, style]} testID={testID}>
-      <Avatar name={name} size={size} verified={verified} />
+      <Avatar name={name} photoUrl={photoUrl} size={size} verified={verified} />
       <View style={styles.textColumn}>
         <Text style={[styles.name, { fontSize: lg ? raw.fontSize.lg : raw.fontSize.sm }]} numberOfLines={1}>
           {name}

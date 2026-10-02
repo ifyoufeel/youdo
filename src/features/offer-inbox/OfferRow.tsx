@@ -44,6 +44,7 @@ export function OfferRow({ offer, doer, askingPriceMinor, now, onAccept, onDecli
         {doer ? (
           <UserChip
             name={doer.name}
+            photoUrl={doer.avatarUrl}
             rating={doer.rating}
             questsCompleted={doer.questsCompleted}
             verified={doer.verified}

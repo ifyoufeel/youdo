@@ -4,9 +4,13 @@
    same "promote once a second consumer needs it" threshold this codebase
    already applied to Badge/RewardPill/UserChip (M2) and InfoRow (M3).
    UserChip imports this back for its own use, so its own rendering is
-   unchanged. No `src`/photo support — there's no image/asset pipeline yet,
-   so this is always the initials-circle path. */
-import { View, Text, StyleSheet } from "react-native";
+   unchanged.
+
+   `photoUrl` (the photo-upload feature) renders a real `<Image>` inside
+   the same circular frame instead of the initials — initials stay the
+   fallback for the (still common) case of no uploaded photo, not
+   something this replaces outright. */
+import { View, Text, Image, StyleSheet } from "react-native";
 import { Icon } from "./Icon";
 import { raw } from "../tokens/raw";
 import { semantic } from "../tokens/semantic";
@@ -35,12 +39,13 @@ function tintFor(name: string): string {
 
 export interface AvatarProps {
   name: string;
+  photoUrl?: string | null;
   size?: AvatarSize;
   verified?: boolean;
   testID?: string;
 }
 
-export function Avatar({ name, size = "md", verified = false, testID }: AvatarProps) {
+export function Avatar({ name, photoUrl, size = "md", verified = false, testID }: AvatarProps) {
   const d = AVATAR_SIZES[size];
   const badgeSize = Math.max(14, Math.round(d * 0.34));
   return (
@@ -51,7 +56,11 @@ export function Avatar({ name, size = "md", verified = false, testID }: AvatarPr
           { width: d, height: d, borderRadius: raw.radius.avatar, backgroundColor: tintFor(name) },
         ]}
       >
-        <Text style={[styles.initials, { fontSize: Math.round(d * 0.38) }]}>{initialsFor(name)}</Text>
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={{ width: d, height: d }} resizeMode="cover" testID={testID ? `${testID}-photo` : undefined} />
+        ) : (
+          <Text style={[styles.initials, { fontSize: Math.round(d * 0.38) }]}>{initialsFor(name)}</Text>
+        )}
       </View>
       {verified ? (
         <View
