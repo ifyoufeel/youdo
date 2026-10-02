@@ -28,6 +28,7 @@ import { Select } from "@design/components/Select";
 import { Button } from "@design/components/Button";
 import { Card } from "@design/components/Card";
 import { Icon } from "@design/components/Icon";
+import { Avatar } from "@design/components/Avatar";
 import { Badge } from "@design/components/Badge";
 import { InfoRow } from "@design/components/InfoRow";
 import type { User } from "@data/contracts";
@@ -39,6 +40,7 @@ import { useAreas } from "@features/post-quest/useAreas";
 import { useAuthSession } from "@data/auth-session";
 import { useNotificationPrefs } from "./useNotificationPrefs";
 import { useUpdateProfile } from "./useUpdateProfile";
+import { useUploadAvatar } from "./useUploadAvatar";
 import { useDeleteAccount } from "./useDeleteAccount";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
@@ -57,6 +59,7 @@ export function SettingsSheet({ open, onClose, user }: SettingsSheetProps) {
   const { data: areas = [] } = useAreas();
   const notifications = useNotificationPrefs();
   const updateProfile = useUpdateProfile(user.id);
+  const uploadAvatar = useUploadAvatar(user.id);
   const deleteAccount = useDeleteAccount();
 
   const [phone, setPhone] = useState(user.phone);
@@ -123,6 +126,20 @@ export function SettingsSheet({ open, onClose, user }: SettingsSheetProps) {
         disabled
         onChange={() => {}}
       />
+
+      <Text style={styles.eyebrow}>{t("settings.photo")}</Text>
+      <View style={styles.photoRow}>
+        <Avatar name={user.name} photoUrl={user.avatarUrl} size="lg" verified={user.verified} />
+        <Button
+          variant="secondary"
+          icon="image"
+          disabled={uploadAvatar.isPending}
+          onPress={() => uploadAvatar.mutate()}
+          testID="settings-change-photo"
+        >
+          {uploadAvatar.isPending ? t("settings.uploadingPhoto") : t("settings.changePhoto")}
+        </Button>
+      </View>
 
       <Text style={styles.eyebrow}>{t("settings.account")}</Text>
       <Input label={t("settings.phoneLabel")} icon="message-square" value={phone} onChangeText={setPhone} testID="settings-phone" />
@@ -243,6 +260,11 @@ const styles = StyleSheet.create({
     fontFamily: BODY_FONT,
     fontSize: raw.fontSize["2xs"],
     color: semantic.color.text.secondary,
+  },
+  photoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   verifyRow: {
     flexDirection: "row",
