@@ -282,6 +282,10 @@ export const strings = {
   "post.what.detailsLabel": "Details",
   "post.what.detailsPlaceholder": "Anything a stranger would need to know: access, tools, timing.",
   "post.what.categoryLabel": "Category",
+  "post.what.photosLabel": "Photos",
+  "post.what.addPhoto": "Add photo",
+  "post.what.uploadingPhoto": "Uploading…",
+  "post.what.removePhoto": "Remove photo",
 
   "post.where.heading": "Where",
   "post.where.addressLabel": "Address",

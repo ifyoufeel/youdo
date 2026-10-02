@@ -25,6 +25,11 @@ export interface PostQuestForm {
   minutes: string; // DURATIONS value
   expiry: string; // EXPIRY_OPTIONS value
   budget: string; // decimal NTD string, as typed
+  /** Already-uploaded public URLs — each is added the moment its upload
+      resolves (PostQuestScreen's "what" step), never a local URI
+      waiting to be uploaded at submit time. Never a requirement to post
+      (ADR-018), so no error key exists for it in WizardErrors below. */
+  photos: string[];
 }
 
 export function emptyForm(defaultArea: string): PostQuestForm {
@@ -39,6 +44,7 @@ export function emptyForm(defaultArea: string): PostQuestForm {
     minutes: "60",
     expiry: "before",
     budget: "",
+    photos: [],
   };
 }
 

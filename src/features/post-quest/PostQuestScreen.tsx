@@ -10,9 +10,10 @@
    never has to guess at a default and then patch it in later; Wizard
    holds every step's real UI and only mounts once that data is ready. */
 import { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 import { useAuthSession } from "@data/auth-session";
 import { useRepository, useNow } from "@data/composition-root";
 import { Screen } from "@design/components/Screen";
@@ -26,6 +27,7 @@ import { Input } from "@design/components/Input";
 import { Select } from "@design/components/Select";
 import { Button } from "@design/components/Button";
 import { Icon } from "@design/components/Icon";
+import { IconButton } from "@design/components/IconButton";
 import { FeeBreakdown } from "@design/components/FeeBreakdown";
 import { money, formatMoney, type Category } from "@data/contracts";
 import type { Area } from "@data/ports/areas";
@@ -51,6 +53,8 @@ import {
   EXPIRY_OPTIONS,
   type PostQuestForm,
 } from "./wizardForm";
+
+const MAX_PHOTOS = 5;
 
 const STEP_LABELS: Record<(typeof POST_STEPS)[number], string> = {
   what: t("post.step.what"),
@@ -122,16 +126,44 @@ interface WizardProps {
 
 function Wizard({ posterId, defaultArea, defaultCategoryId, areas, categories }: WizardProps) {
   const router = useRouter();
+  const repository = useRepository();
   const draft = usePostDraft(defaultArea);
   const postQuest = usePostQuest();
   const [step, setStep] = useState(0);
   const [tried, setTried] = useState<Record<string, boolean>>({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const now = useNow();
 
   const form = draft.hydrated && !draft.form.categoryId ? { ...draft.form, categoryId: defaultCategoryId } : draft.form;
 
   function set<K extends keyof PostQuestForm>(key: K, value: PostQuestForm[K]) {
     draft.setForm({ ...form, [key]: value });
+  }
+
+  async function addPhoto() {
+    let permission = await ImagePicker.getMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    }
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploadingPhoto(true);
+    try {
+      const url = await repository.uploadPhoto(result.assets[0].uri, "quest");
+      set("photos", [...form.photos, url]);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function removePhoto(url: string) {
+    set(
+      "photos",
+      form.photos.filter((p) => p !== url)
+    );
   }
 
   const errors = computeErrors(form);
@@ -173,6 +205,7 @@ function Wizard({ posterId, defaultArea, defaultCategoryId, areas, categories }:
         scheduledFor: scheduled,
         expiresAt: expiryISO(scheduled, form.expiry, now),
         requirements: [],
+        photos: form.photos,
       },
       {
         onSuccess: () => {
@@ -251,6 +284,36 @@ function Wizard({ posterId, defaultArea, defaultCategoryId, areas, categories }:
             options={categories.map((c) => ({ value: c.id, label: c.label }))}
             onChange={(v) => set("categoryId", v)}
           />
+
+          <Text style={styles.photosLabel}>{t("post.what.photosLabel")}</Text>
+          <View style={styles.photosRow}>
+            {form.photos.map((url) => (
+              <View key={url} style={styles.photoThumb}>
+                <Image source={{ uri: url }} style={styles.photoImage} resizeMode="cover" testID={`photo-${url}`} />
+                <IconButton
+                  icon="x"
+                  size="sm"
+                  variant="primary"
+                  accessibilityLabel={t("post.what.removePhoto")}
+                  style={styles.photoRemove}
+                  onPress={() => removePhoto(url)}
+                  testID={`remove-photo-${url}`}
+                />
+              </View>
+            ))}
+            {form.photos.length < MAX_PHOTOS ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="image"
+                disabled={uploadingPhoto}
+                onPress={addPhoto}
+                testID="post-add-photo"
+              >
+                {uploadingPhoto ? t("post.what.uploadingPhoto") : t("post.what.addPhoto")}
+              </Button>
+            ) : null}
+          </View>
         </Card>
       ) : null}
 
@@ -407,6 +470,34 @@ const styles = StyleSheet.create({
     letterSpacing: raw.letterSpacing.caps,
     textTransform: "uppercase",
     color: semantic.color.text.secondary,
+  },
+  photosLabel: {
+    fontFamily: EYEBROW_FONT,
+    fontSize: raw.fontSize["2xs"],
+    letterSpacing: raw.letterSpacing.caps,
+    textTransform: "uppercase",
+    color: semantic.color.text.secondary,
+    marginTop: 8,
+  },
+  photosRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  photoThumb: {
+    width: 64,
+    height: 64,
+  },
+  photoImage: {
+    width: 64,
+    height: 64,
+    borderRadius: raw.radius.md,
+  },
+  photoRemove: {
+    position: "absolute",
+    top: -6,
+    right: -6,
   },
   privacyRow: {
     flexDirection: "row",

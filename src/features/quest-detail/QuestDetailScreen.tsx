@@ -8,7 +8,7 @@
    already covers "completed" informationally in the body regardless of
    role. */
 import { useState, type ReactNode } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Image, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthSession } from "@data/auth-session";
 import { useNow } from "@data/composition-root";
@@ -247,6 +247,13 @@ export function QuestDetailScreen({ questId }: QuestDetailScreenProps) {
         <Text style={styles.title}>{quest.title}</Text>
         <RewardPill amount={formatMoney(money(quest.payoutMinor))} size="lg" style={styles.rewardPill} />
         {quest.details ? <Text style={styles.description}>{quest.details}</Text> : null}
+        {quest.photos.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
+            {quest.photos.map((url, i) => (
+              <Image key={url} source={{ uri: url }} style={styles.photoImage} resizeMode="cover" testID={`quest-photo-${i}`} />
+            ))}
+          </ScrollView>
+        ) : null}
       </Card>
 
       <Card padding="md">
@@ -429,6 +436,15 @@ const styles = StyleSheet.create({
     fontSize: raw.fontSize.md,
     lineHeight: raw.fontSize.md * raw.lineHeight.normal,
     color: semantic.color.text.primary,
+  },
+  photosRow: {
+    marginTop: 8,
+  },
+  photoImage: {
+    width: 96,
+    height: 96,
+    borderRadius: raw.radius.md,
+    marginRight: 8,
   },
   addressRow: {
     flexDirection: "row",

@@ -1,11 +1,22 @@
 import React, { useEffect } from "react";
-import { render, fireEvent } from "@testing-library/react-native";
+import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositoryProvider } from "@data/composition-root";
 import { AuthSessionProvider, useAuthSession } from "@data/auth-session";
 import { PostQuestScreen } from "../PostQuestScreen";
 
 const LONG_TIMEOUT = { timeout: 5000 };
+
+const mockGetMediaLibraryPermissionsAsync = jest.fn().mockResolvedValue({ granted: true });
+const mockRequestMediaLibraryPermissionsAsync = jest.fn().mockResolvedValue({ granted: true });
+const mockLaunchImageLibraryAsync = jest
+  .fn()
+  .mockResolvedValue({ canceled: false, assets: [{ uri: "file:///tmp/a.jpg" }] });
+jest.mock("expo-image-picker", () => ({
+  getMediaLibraryPermissionsAsync: (...args: unknown[]) => mockGetMediaLibraryPermissionsAsync(...args),
+  requestMediaLibraryPermissionsAsync: (...args: unknown[]) => mockRequestMediaLibraryPermissionsAsync(...args),
+  launchImageLibraryAsync: (...args: unknown[]) => mockLaunchImageLibraryAsync(...args),
+}));
 
 // Mirrors app/index.tsx's real cold-start gate: a screen behind auth
 // never mounts until status is "signedIn" — same fix QuestDetailScreen's
@@ -48,6 +59,21 @@ describe("PostQuestScreen", () => {
     expect(warn).not.toHaveBeenCalled();
     error.mockRestore();
     warn.mockRestore();
+  });
+
+  it("adds a picked photo as a thumbnail, and removing it clears it again", async () => {
+    const { findByText, findByTestId, getByTestId, queryByTestId } = await render(<PostQuestScreen />, {
+      wrapper: Providers,
+    });
+    await findByText("What needs doing?", {}, LONG_TIMEOUT);
+
+    await fireEvent.press(getByTestId("post-add-photo"));
+    await waitFor(() => expect(mockLaunchImageLibraryAsync).toHaveBeenCalled());
+    const photo = await findByTestId("photo-file:///tmp/a.jpg", {}, LONG_TIMEOUT);
+    expect(photo.props.source).toEqual({ uri: "file:///tmp/a.jpg" });
+
+    await fireEvent.press(getByTestId("remove-photo-file:///tmp/a.jpg"));
+    expect(queryByTestId("photo-file:///tmp/a.jpg")).toBeNull();
   });
 
   it("blocks advancing past What on a too-short title, showing the error only after trying", async () => {

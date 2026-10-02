@@ -24,7 +24,10 @@ export function usePostDraft(defaultArea: string) {
     getItem<PostQuestForm>(STORAGE_KEY).then((stored) => {
       if (cancelled) return;
       if (stored && draftHasContent(stored)) {
-        setForm(stored);
+        // Merged over the empty defaults, not used as-is — a draft
+        // stored before `photos` (or any future field) existed would
+        // otherwise come back missing it entirely.
+        setForm({ ...emptyForm(defaultArea), ...stored });
         setResumed(true);
       }
       setHydrated(true);
@@ -32,6 +35,10 @@ export function usePostDraft(defaultArea: string) {
     return () => {
       cancelled = true;
     };
+    // Mount-only, same as before this effect also needed defaultArea for
+    // its merge-defaults fallback — it's the initial area a fresh draft
+    // gets, not something a later prop change should re-hydrate against.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Every form change re-saves, same plain (no debounce) effect app.js's

@@ -25,6 +25,15 @@ function forceQuestStatus(id: string, status: QuestStatus) {
   };
 }
 
+function forceQuestPhotos(id: string, photos: string[]) {
+  const quest = questStore.find((q) => q.id === id)!;
+  const original = quest.photos;
+  quest.photos = photos;
+  return () => {
+    quest.photos = original;
+  };
+}
+
 // Mirrors app/index.tsx's real cold-start gate: a screen behind auth
 // never mounts until status is "signedIn", so children only render once
 // sign-in actually resolves — matching production, not just racing it.
@@ -66,6 +75,17 @@ describe("QuestDetailScreen", () => {
     expect(warn).not.toHaveBeenCalled();
     error.mockRestore();
     warn.mockRestore();
+  });
+
+  it("renders a photo row when the quest has photos, and none when it doesn't", async () => {
+    const restore = forceQuestPhotos("q2", ["https://example.com/a.jpg", "https://example.com/b.jpg"]);
+    const { findByText, findByTestId, queryByTestId } = await render(<QuestDetailScreen questId="q2" />, {
+      wrapper: Providers,
+    });
+    await findByText("Ask", {}, LONG_TIMEOUT);
+    expect(await findByTestId("quest-photo-0", {}, LONG_TIMEOUT)).toBeTruthy();
+    expect(queryByTestId("quest-photo-1")).toBeTruthy();
+    restore();
   });
 
   it(

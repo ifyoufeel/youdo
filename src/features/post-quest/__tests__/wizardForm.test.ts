@@ -109,6 +109,7 @@ describe("computeErrors / isStepValid", () => {
     minutes: "60",
     expiry: "before",
     budget: "400",
+    photos: [],
   };
 
   it("a fully valid form has no errors and every step is valid", () => {
