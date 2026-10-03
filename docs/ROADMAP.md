@@ -42,20 +42,34 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** a new user can sign in, grant location, and browse real (mock) quests near them.
 
-- [ ] Auth screens behind `AuthPort` (mocked): Google button + 6-digit OTP entry for email/phone
-- [ ] First-run explainer (both sides of the market) + justified location permission request; graceful degradation if denied
+- [x] Auth screens behind `AuthPort` (mocked): Google button + 6-digit OTP entry for email/phone
+- [x] First-run explainer (both sides of the market) + justified location permission request; graceful degradation if denied
 - [ ] i18n layer wired — **no hardcoded user-facing strings from here on**
-- [ ] Tab shell with the five tabs
+- [x] Tab shell with the five tabs
 - [ ] Browse feed on FlashList, cursor pagination, pull-to-refresh
-- [ ] Search (title + description substring)
-- [ ] **Working filter sheet** — radius, minimum pay, time window, verified-only; persists; composes with search
-- [ ] **Working sort control** — closest, best paid, ending soonest, newest
-- [ ] Save / unsave with optimistic update
+- [x] Search (title + description substring)
+- [x] **Working filter sheet** — radius, minimum pay, time window, verified-only; persists; composes with search
+- [x] **Working sort control** — closest, best paid, ending soonest, newest
+- [x] Save / unsave with optimistic update
 - [ ] Empty, loading and error states (loading is a sunken card with text — the system bans shimmer)
 
 **Exit:** filters and sort demonstrably change the result set; every list state is reachable from the preview gallery.
 
 **Preview:** sign-in → browse → filter → save.
+
+> The tab shell, browse, search, filter, sort and save were already built —
+> they came with the original prototype this repo was seeded from, before the
+> milestone checklist existed to track them. What M1 actually added: the
+> sign-in and first-run screens (ADR-012 — reachable via Settings → Sign out,
+> since the preview still boots signed in, same as the actor switcher's
+> chosen identity always has). `FlashList`, cursor pagination, pull-to-refresh
+> and a real i18n library are Expo-scaffold concerns — this is still the
+> plain-script preview M0 hasn't replaced yet, and a synchronous local array
+> has nothing to page or pull against, so all four wait for that milestone.
+> Loading and error states exist as components (`LoadingState`, `ErrorState`)
+> and are demoed in the States gallery, but nothing in this synchronous mock
+> actually resolves asynchronously yet to trigger one for real — that is
+> ADR-004's jittered latency, still M5/M7 work.
 
 ---
 
@@ -83,7 +97,7 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 - [x] Multi-step wizard: what → details/photos → where → when → budget → review
 - [x] Validation that **blocks** submit, with errors written as fixes
 - [x] Draft autosave surviving app restart
-- [ ] Photo picker (`expo-image-picker`), date/time picker, currency input, address entry
+- [x] Photo picker (`expo-image-picker`) — landed later, after M3 itself shipped (ADR-018); date/time picker is a curated `Select` list rather than the prototype's bespoke calendar/wheel widgets (a documented simplification, not a gap); currency input and address entry are plain `Input` fields
 - [x] ~~Fixed vs hourly budget~~ — one agreed amount per quest (ADR-011)
 - [x] Fee disclosure before submission
 - [x] Posted quest appears in the feed and My quests immediately
@@ -118,18 +132,23 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** money is real arithmetic, even though no real money moves.
 
-- [ ] `Money` type + `formatMoney` boundary; lint-ban `Intl.NumberFormat` elsewhere
-- [ ] Append-only ledger across the five named accounts
-- [ ] Hold on acceptance · release on confirm minus fee · refund on cancel · payout on cash-out
-- [ ] Balances derived by summation — never stored
-- [ ] Wallet: available, held, full ledger with real running effects
-- [ ] Cash-out flow; payment methods screen (simulated) behind `PaymentsPort`
-- [ ] Every payment passes through `pending`, mirroring Stripe's webhook-driven reality
-- [ ] Tests: entries sum to zero per transaction; each lifecycle transition emits the expected entries
+- [x] `Money` type + `formatMoney` boundary; lint-ban `Intl.NumberFormat` elsewhere
+- [x] Append-only ledger across the five named accounts
+- [x] Hold on acceptance · release on confirm minus fee · refund on cancel · payout on cash-out
+- [x] Balances derived by summation — never stored
+- [x] Wallet: available, held, full ledger with real running effects
+- [x] Cash-out flow — no separate payment-methods screen or `PaymentsPort`; ADR-013 records why
+  (`deposit`/`cashOut` live on the existing `LedgerPort`, and the bank string on `User` is display-only)
+- [x] Deposit/cash-out pass through `pending`, settling asynchronously like a real webhook (ADR-013
+  scopes this to the two transactions that cross the `external_bank` boundary — hold/release/refund
+  settle atomically with their lifecycle transition, same as the prototype)
+- [x] Tests: entries sum to zero per transaction; each lifecycle transition emits the expected entries
 
 **Exit:** complete a quest and watch the exact amount move poster → held → doer, fee deducted, balances reconciling.
 
-**Preview:** wallet before/after a completed quest.
+**Preview:** wallet before/after a completed quest, live in the flows gallery — confirm-and-pay
+releasing real escrow, a real shortfall walked through Add money to a successful accept, and the
+72-hour window swept for real via the dev clock.
 
 ---
 
@@ -140,8 +159,12 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 - [x] Profile: own and public; ratings, quests completed, verification, cancellation rate
 - [x] **Ratings capture** after `paid` — today the system only displays them
 - [x] Saved-quests list (saves are tracked today but never listed)
-- [ ] Notification inbox + push registration; per-category toggles
-- [x] Report / block on users and quests
+- [x] Notification inbox + per-category toggles, persisted for real
+- [x] Push registration — a device obtains and persists an Expo push token on sign-in, cleared on sign-out, in both adapters; ADR-017. Actually *sending* a push stays open: it needs a live Supabase project (a trigger or Edge Function calling Expo's push API) with no equivalent in the memory adapter, where there's no second device to send to
+- [x] Report / block on users — real records/filtering now, not the
+      prototype's toast-only report and no-op block. Quest-level report
+      stays out: no real trigger site for it exists in the prototype
+      either, only the profile's report-a-person flow does
 - [x] Settings, including account deletion
 - [ ] Decision point: does Chinese localisation block launch?
 
@@ -157,19 +180,28 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 > **Five subsystems, not one:** auth, RLS, storage, realtime, PostGIS. The M3 spike de-risks the two hardest.
 
-- [ ] Schema + migrations matching `ports`
-- [ ] RLS per table — especially `quests.address_line` (hidden until assigned) and thread membership
-- [ ] Real auth: Google OAuth + email/phone OTP; `expo-secure-store` session adapter
-- [ ] `adapters/supabase` implementing every port
-- [ ] Realtime for messages and offer events, landing via `setQueryData`
-- [ ] Storage for quest photos and avatars
-- [ ] PostGIS radius search behind the geo params the ports have carried since M0
-- [ ] Seed script using the **same fixtures** so previews stay identical
-- [ ] Run the existing test suite green against both adapters
+> **Built as a scaffold, per explicit direction — never run against a live project.**
+> Every item below marked done is real, reviewable code (schema, RLS, RPCs, the
+> full `adapters/supabase` implementation, realtime, real OAuth/OTP) that has
+> never executed against an actual Supabase instance; the M3 spike this section
+> anticipated was itself never done either (still unchecked below), so none of
+> this was de-risked ahead of time the way the plan assumed. See `docs/
+> DECISIONS.md`'s ADR-015 for the full scope note, the real architecture
+> decisions made while building it, and exactly what turning it on requires.
 
-**Exit:** flipping one env flag switches adapters with no feature-code diff; data persists across devices and reinstalls.
+- [x] Schema + migrations matching `ports`
+- [x] RLS per table — especially `quests.address_line` (hidden until assigned) and thread membership — `address_line` is hidden via column-privilege revocation (RLS can't filter columns), not RLS alone; ADR-015 explains why
+- [x] Real auth: Google OAuth + email/phone OTP; `expo-secure-store` session adapter
+- [x] `adapters/supabase` implementing every port
+- [x] Realtime for messages and offer events — `subscribeToQuest`/`subscribeToThread`/`subscribeToUser` are real `postgres_changes` subscriptions; landing via `setQueryData` is not — no feature hook anywhere calls any `subscribeTo*` method yet (they were already-unused typed no-ops before M7 too), so the query-cache wiring is real future work, not blocked on Supabase
+- [ ] Storage for quest photos and avatars — not built; no `photos` field or picker UI exists anywhere in the app (M3 deferred it, nothing since revisited it) — building storage buckets for zero real callers would be exactly the "infrastructure nothing calls" this codebase has avoided since M1 (ADR-015)
+- [x] PostGIS radius search behind the geo params the ports have carried since M0
+- [x] Seed script using the **same fixtures** so previews stay identical — `npm run db:seed` (`scripts/seed-supabase.ts`), reads `src/data/adapters/memory/seed.ts` directly; never run
+- [ ] Run the existing test suite green against both adapters — true for the memory adapter (always has been); for Supabase, every `adapters/supabase/*.ts` file has real, passing test coverage against a *mocked* `@supabase/supabase-js` client instead (structural: verifies the right table/RPC/args, not that a query executes or an RLS policy actually holds) — a live integration run needs a live project, which doesn't exist yet
 
-**Preview:** the same app, real accounts, two physical devices talking to each other.
+**Exit:** flipping one env flag switches adapters with no feature-code diff; data persists across devices and reinstalls. **Not yet demonstrated** — the flag flips and the code is real, but nothing has run against a live project to show data actually surviving a reinstall.
+
+**Preview:** the same app, real accounts, two physical devices talking to each other. **Not yet possible** — this preview needs a live project by definition.
 
 ---
 
@@ -177,16 +209,21 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 
 **Goal:** publicly available on both stores and the web.
 
-- [ ] **Sign in with Apple** — mandatory for App Store review once Google sign-in ships
-- [ ] Offline queueing, retry, error boundaries
-- [ ] Analytics + crash reporting
-- [ ] EAS build profiles; app icons, splash, adaptive icons
-- [ ] Store listings, screenshots, privacy nutrition labels, age rating, support URL
-- [ ] Account deletion flow exposed as Apple requires
-- [ ] Web app promoted from preview surface to production deployment with its own domain
-- [ ] Legal: terms, privacy policy, and the escrow regulatory review (PRD §14.2) **resolved before real money is enabled**
+> **Built as a code-only slice, per explicit direction.** Most of this
+> milestone is store accounts, money, and legal review, not code — see
+> `docs/DECISIONS.md`'s ADR-016 for the scope note and the real decisions
+> made while building the slice that genuinely is code.
 
-**Exit:** installable from both stores; the web app serves the same product at a public URL.
+- [x] **Sign in with Apple** — the native `expo-apple-authentication` flow on iOS (Apple App Store Review Guideline 4.8 requires it once a third-party social login ships), falling back to the shared browser-OAuth flow everywhere else; ADR-016
+- [x] Offline queueing, retry, error boundaries — TanStack Query's `networkMode: "offlineFirst"` + `onlineManager` wired to `@react-native-community/netinfo`, AsyncStorage cache persistence (wallet/ledger queries excluded, unencrypted storage), one `ErrorBoundary` at the app shell; ADR-016
+- [ ] Analytics + crash reporting — needs a service chosen (e.g. Sentry, Firebase Crashlytics) and a real account; not a code decision this session can make
+- [x] EAS build profiles; app icons, splash, adaptive icons — `eas.json`'s development/preview/production profiles; `app.json`'s bundle identifier and `expo-splash-screen` config are real, honest placeholders; `extra.eas.projectId`/`updates.url` are deliberately **not** fabricated — those only exist after a real `eas init` against a real EAS account; ADR-016
+- [ ] Store listings, screenshots, privacy nutrition labels, age rating, support URL — needs real Apple/Google Developer accounts and product decisions (support URL, age rating answers) only the product's owner can make
+- [x] Account deletion flow exposed as Apple requires — landed in M6 (Settings → `DeleteAccountDialog`), already satisfies this item
+- [ ] Web app promoted from preview surface to production deployment with its own domain — needs a purchased domain and a hosting decision
+- [ ] Legal: terms, privacy policy, and the escrow regulatory review (PRD §14.2) **resolved before real money is enabled** — out-of-band legal work, not a coding task; still gates real money regardless of how complete the code is
+
+**Exit:** installable from both stores; the web app serves the same product at a public URL. **Not yet reachable** — the open items above (store accounts, a purchased domain, legal review) are all prerequisites no amount of further code can substitute for.
 
 ---
 
@@ -203,7 +240,8 @@ Nine milestones. Each is a **vertical slice** that ends in something you can cli
 ## Where this actually stands
 
 M4 is built and previewable; M3 and M6 came along with it, because the loop
-could not be reviewed with holes on either side of it.
+could not be reviewed with holes on either side of it. M1's sign-in and
+first-run flow has since landed too.
 
 **Landed.** The §8 state machine with per-actor guards in the store · poster-side
 offer inbox with accept, decline and auto-decline of the rest · escrow held on
@@ -213,6 +251,15 @@ with auto-release · dispute · expiry · per-thread messages that go read-only
 when the quest closes · address revealed only on acceptance · ratings capture ·
 saved list · notification inbox · report and block · the posting wizard with
 blocking validation and draft autosave.
+
+**Sign-in and first run (M1).** A welcome screen pitching both sides in one
+look, a location-permission ask with a reason that degrades gracefully on
+"Not now", and mocked Google / 6-digit-OTP sign-in — including both of its
+failure paths: an invalid contact, and the mock's one deliberately-wrong code,
+`000000`. The preview itself still boots signed in (ADR-012), the same way
+the actor switcher's chosen identity always has, so the two-sided lifecycle
+above stays one tap away; "Sign out", in Settings, is how the flow is reached,
+and every screen and failure state is also in the States gallery.
 
 **Money moves both ways.** The wallet had cash-out and no way in, which made
 the accept sheet's "add NT$X to hold this offer" a dead end. Adding money is now
@@ -259,16 +306,36 @@ the artifact):
 - **The default quest expiry is undecided** (PRD §14.4). The wizard offers an
   hour before it starts / in 24 hours / when it starts, and ships with the
   first. One line in `EXPIRY_OPTIONS`.
-- Photo picker on the posting wizard (M3) — no image handling anywhere yet.
-- Deposits and cash-outs settle instantly. ADR-005 requires every payment to
-  pass through `pending` even in the mock, because Stripe's transitions are
-  webhook-driven; that is M5 and applies to both directions.
-- Notification *delivery* (M6): the inbox and the per-category toggles are
-  built, but the toggles are screen state, not stored preference, and there is
-  no push registration. That is M7/M8 work.
-- Auth and onboarding (M1) are still absent — the preview starts signed in.
+- ~~Photo picker on the posting wizard (M3) — no image handling anywhere
+  yet~~ — landed: a profile avatar and a quest's photos can both be
+  picked and uploaded for real (ADR-018), the PRD requirement neither
+  the real app nor the original prototype had ever built.
+- ~~Deposits and cash-outs settle instantly~~ — landed in the real app (M5):
+  both pass through a real `pending` state, settling asynchronously on a
+  jittered timer like a real webhook (ADR-005/ADR-013). `preview/app.js`
+  itself is untouched and still settles synchronously — that file is frozen,
+  not a second implementation to keep in sync.
+- Notification *delivery*: the inbox and the per-category toggles are
+  built, the toggles are a real, persisted device preference (M6 Phase 4),
+  and device-token registration is now real too (ADR-017) — but nothing
+  actually *sends* a push yet, and the toggles stay client-side-only,
+  unread by any sender. Both need a live Supabase project (a trigger or
+  Edge Function, plus moving the toggles server-side) that doesn't exist.
+- Auth and onboarding (M1) are built but not the default: the preview still
+  boots signed in (ADR-012), reachable via Settings → Sign out. A real i18n
+  library, and `FlashList`/cursor pagination/pull-to-refresh for the feed
+  (also M1), are Expo-scaffold concerns still waiting on M0.
 - The `disputed` → `paid` / `cancelled` edges exist in the transition table and
   are rejected for everyone, because they need an admin actor the product does
   not have yet. The frozen-escrow state itself is reachable and designed.
-- Supabase (M7) is untouched, as planned. The store's shape is what the ports
-  have to match; nothing in the screens reaches past it into a table.
+- ~~Supabase (M7) is untouched, as planned~~ — landed as a real scaffold
+  (schema, RLS, every RPC, the full `adapters/supabase` implementation,
+  realtime, real Google OAuth + OTP), never run against a live project —
+  ADR-015 has the full scope note and what turning it on actually
+  requires.
+- M8's code-only slice (offline queueing/retry, the app-shell error
+  boundary, EAS build profiles, Sign in with Apple) has landed —
+  ADR-016. Everything else M8 names — store accounts, a purchased domain,
+  an analytics/crash-reporting service, and the legal/escrow review — is
+  still genuinely open, each for a reason only the product's owner can
+  resolve, not a coding gap.

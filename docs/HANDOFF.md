@@ -3,8 +3,8 @@
 Read this first, then `PRD.md` for what the product must do and `DECISIONS.md`
 for what is already settled. This file is the state of play, not a spec.
 
-**Repo:** `github.com/ifyoufeel/youdo`, branch `claude/lucid-hawking-mpwjz0`
-**Preview:** https://claude.ai/artifact/6FhfwuyCdugQ69wvK9eTvD (v23)
+**Repo:** `github.com/ifyoufeel/youdo`, branch `claude/gallant-bohr-af4om8`
+**Preview:** https://claude.ai/artifact/6FhfwuyCdugQ69wvK9eTvD (v24)
 
 ---
 
@@ -19,7 +19,7 @@ preview/
   tokens/*.css      design tokens — the only source of colour and size
   ds-bundle.js      the exported design system, loaded as published
   data.taiwan.js    seed fixture: Taipei, TWD, integer minor units
-  app.js            the store, the screens, the preview galleries  (~5,400 lines)
+  app.js            the store, the screens, the preview galleries  (~5,800 lines)
 test/               jsdom suites + a browser layout check
 docs/               PRD, roadmap, decision log, self-check, this file
 ```
@@ -27,7 +27,8 @@ docs/               PRD, roadmap, decision log, self-check, this file
 `app.js` is one file in loose sections, in this order: shared helpers and
 formatters · the store · lifecycle UI parts · browse · quest detail · pickers ·
 post wizard · offer inbox, my quests, chats · profile, saved, notifications ·
-the shell · the galleries. Search for `/* ---------------- ` to find a section.
+onboarding · the shell · the galleries. Search for `/* ---------------- ` to
+find a section.
 
 ### The four preview surfaces
 
@@ -70,7 +71,7 @@ React comes from a CDN, so a sandbox without egress renders a blank page — tha
 is the network, not the app. `test/README.md` has the offline swap.
 
 ```
-cd test && npm install && npm test          # 152 checks, jsdom
+cd test && npm install && npm test          # 189 checks, jsdom
 ```
 
 The layout check is separate because it needs a server and a browser:
@@ -105,19 +106,25 @@ late cancellation costs anything beyond a visible rate.
 
 The roadmap's milestone order still holds. Realistically:
 
-1. **M1 — auth and onboarding.** The only wholly missing milestone. The preview
-   starts signed in; there is no sign-in screen, no first-run explainer, no
-   location permission request. Everything else assumes an identity that the
-   actor switcher currently supplies.
-2. **M5 — `pending` payments.** ADR-005 says every payment passes through
+1. **M5 — `pending` payments.** ADR-005 says every payment passes through
    `pending` even in the mock, because Stripe's transitions are webhook-driven.
    Nothing does yet. It applies to the hold, the release, the refund, the
    deposit and the cash-out.
-3. **M3 leftovers.** The photo picker — there is no image handling anywhere.
-4. **M7 — Supabase.** Untouched by design. The store's shape is what the ports
+2. **M3 leftovers.** The photo picker — there is no image handling anywhere.
+3. **M7 — Supabase.** Untouched by design. The store's shape is what the ports
    have to match; no screen reaches past it into a table, so the swap should
    touch no feature code. The M3 spike (PostGIS radius query, chat RLS policy)
    has not been done and was meant to de-risk this.
+
+**M1 — auth and onboarding** landed: a welcome screen, a justified
+location-permission ask with graceful decline, and mocked Google / 6-digit-OTP
+sign-in with both its failure paths. The preview still boots signed in though
+(ADR-012) — same as the actor switcher's chosen identity always has, and for
+the same reason: every other suite depends on landing straight in the tab
+shell. Settings → Sign out is how the flow is reached, and every screen and
+failure state is also in the States gallery. What M1 left for later: a real
+i18n library and `FlashList`/cursor pagination/pull-to-refresh for the feed —
+both Expo-scaffold concerns still waiting on M0.
 
 ### One known gap with no owner
 
@@ -130,8 +137,9 @@ have. The frozen-escrow state is reachable and designed; resolving it is not.
 ## How the review loop has been working
 
 Comments on the artifact come back as threads; each one gets a fix, a reply
-saying what changed and why, and a resolve. Twenty-three versions so far. Two
-things that kept being worth doing:
+saying what changed and why, and a resolve. Twenty-four versions so far — v24
+is M1, built rather than review-driven. Two things that kept being worth
+doing:
 
 - **Measure before fixing.** "The buttons don't fit" became "the slab has 346px
   of inner width and the money button overflows by 38px", which made the fix

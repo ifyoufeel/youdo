@@ -177,6 +177,18 @@ window.YOUDO_DATA = (function () {
       status: "expired", acceptedOfferId: null,
       addressLine: "1F, No. 15, Lane 90, Bade Rd Sec 4", area: "Songshan",
       details: "Six or seven clear photos of a road bike, outdoors, for a resale listing.",
+      requirements: [] },
+
+    /* Accepted, not yet started — the one status the header comment above
+       claimed for years without a fixture backing it (M4). */
+    { id: "q11", posterId: "u3", title: "Drop off a library book before it's due",
+      payoutMinor: 15000, payoutUnit: "fixed", categoryId: "delivery",
+      point: at("Songshan", 50, 50), estimatedMinutes: 15,
+      scheduledFor: "2026-09-16T11:00:00+08:00", expiresAt: "2026-09-16T10:00:00+08:00",
+      createdAt: "2026-09-15T22:00:00+08:00",
+      status: "assigned", acceptedOfferId: "o15",
+      addressLine: "3F, No. 5, Bade Rd Sec 3", area: "Songshan",
+      details: "A library book is due back this morning — just needs dropping at the return slot near the station.",
       requirements: [] }
   ];
 
@@ -241,7 +253,12 @@ window.YOUDO_DATA = (function () {
     { id: "o13", questId: "q8", doerId: "u3", amountMinor: 40000, status: "declined",
       note: "", createdAt: "2026-09-12T10:20:00+08:00", respondedAt: "2026-09-12T10:50:00+08:00" },
     { id: "o14", questId: "q10", doerId: "u2", amountMinor: 20000, status: "withdrawn",
-      note: "", createdAt: "2026-09-14T10:00:00+08:00", respondedAt: "2026-09-14T13:10:00+08:00" }
+      note: "", createdAt: "2026-09-14T10:00:00+08:00", respondedAt: "2026-09-14T13:10:00+08:00" },
+
+    /* q11's accepted offer — the actor is the doer this time, not the poster. */
+    { id: "o15", questId: "q11", doerId: "u0", amountMinor: 15000, status: "accepted",
+      note: "I'm heading that way this morning anyway.",
+      createdAt: "2026-09-15T22:10:00+08:00", respondedAt: "2026-09-15T22:30:00+08:00" }
   ];
 
   /* One thread per (quest, doer), created when the offer is sent. Never shared. */
@@ -259,7 +276,9 @@ window.YOUDO_DATA = (function () {
     { id: "t-q7-u5", questId: "q7", posterId: "u0", doerId: "u5",
       lastMessageAt: "2026-09-15T10:02:00+08:00" },
     { id: "t-q8-u0", questId: "q8", posterId: "u2", doerId: "u0",
-      lastMessageAt: "2026-09-13T09:12:00+08:00" }
+      lastMessageAt: "2026-09-13T09:12:00+08:00" },
+    { id: "t-q11-u0", questId: "q11", posterId: "u3", doerId: "u0",
+      lastMessageAt: "2026-09-15T22:30:00+08:00" }
   ];
 
   /* Per-thread, never shared — the prototype's single global thread was a bug.
@@ -290,6 +309,9 @@ window.YOUDO_DATA = (function () {
     ],
     "t-q8-u0": [
       { id: "m11", senderId: "u2", body: "You're a hero, thank you", at: "2026-09-13T09:12:00+08:00" }
+    ],
+    "t-q11-u0": [
+      { id: "m12", senderId: "u3", body: "Great, thank you! It's at the front desk.", at: "2026-09-15T22:30:00+08:00" }
     ]
   };
 
@@ -362,7 +384,13 @@ window.YOUDO_DATA = (function () {
     { id: "e26", txnId: "tx-cash-1", account: "user_available", userId: "u0", questId: null,
       amountMinor: -150000, at: "2026-09-10T16:00:00+08:00", memo: "Cash out to CTBC •••• 4417" },
     { id: "e27", txnId: "tx-cash-1", account: "external_bank", userId: "u0", questId: null,
-      amountMinor: 150000, at: "2026-09-10T16:00:00+08:00", memo: "Cash out to CTBC •••• 4417" }
+      amountMinor: 150000, at: "2026-09-10T16:00:00+08:00", memo: "Cash out to CTBC •••• 4417" },
+
+    /* q11 — assigned, not yet started, money already held by the poster. */
+    { id: "e28", txnId: "tx-q11-hold", account: "user_available", userId: "u3", questId: "q11",
+      amountMinor: -15000, at: "2026-09-15T22:30:00+08:00", memo: "Held for a quest" },
+    { id: "e29", txnId: "tx-q11-hold", account: "user_held", userId: "u3", questId: "q11",
+      amountMinor: 15000, at: "2026-09-15T22:30:00+08:00", memo: "Held for a quest" }
   ];
 
   /* Ratings unlock only after `paid`, and show after both sides submit or 14
@@ -404,7 +432,8 @@ window.YOUDO_DATA = (function () {
     "u0:t-q8-u0": "2026-09-13T10:00:00+08:00",
     "u1:t-q1-u0": "2026-09-16T08:45:00+08:00",
     "u5:t-q6-u5": "2026-09-16T07:25:00+08:00",
-    "u5:t-q7-u5": "2026-09-15T10:05:00+08:00"
+    "u5:t-q7-u5": "2026-09-15T10:05:00+08:00",
+    "u0:t-q11-u0": "2026-09-15T22:35:00+08:00"
   };
 
   var savedByUser = { u0: ["q4"], u1: [], u2: [], u3: [], u4: [], u5: [] };

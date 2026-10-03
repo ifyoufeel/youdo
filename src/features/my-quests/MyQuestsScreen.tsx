@@ -1,0 +1,164 @@
+/* Ports preview/app.js's MyQuestsScreen (2940-3087): three tabs (Active/
+   Offers/Done) over engagementsFor(), each item a real EngagementCard.
+   The post-submit confirmation toast (app.js:4134's onPosted switching
+   to this tab) surfaces here via the "posted" query param usePostQuest's
+   onSuccess navigates with — same per-screen toast-state pattern
+   QuestDetailScreen's own offer-sent confirmation already uses, no
+   auto-dismiss there either. */
+import { useState } from "react";
+import { StyleSheet } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Screen } from "@design/components/Screen";
+import { EmptyState } from "@design/components/EmptyState";
+import { LoadingState } from "@design/components/LoadingState";
+import { ErrorState } from "@design/components/ErrorState";
+import { Toast } from "@design/components/Toast";
+import { Tabs } from "@design/components/Tabs";
+import { IconButton } from "@design/components/IconButton";
+import type { Bucket } from "@data/domain/lifecycle";
+import { useAuthSession } from "@data/auth-session";
+import { useNow } from "@data/composition-root";
+import { useUnreadNotificationCount } from "@features/notifications/useNotifications";
+import { t } from "../../i18n/t";
+import { useMyQuests, type MyQuestEngagement } from "./useMyQuests";
+import { EngagementCard } from "./EngagementCard";
+import { useStartQuest } from "../quest-detail/useStartQuest";
+import { useMarkDone } from "../quest-detail/useMarkDone";
+import { useConfirmDone } from "../quest-detail/useConfirmDone";
+import { RateSheet } from "@features/reviews/RateSheet";
+import { useSubmitReview } from "@features/reviews/useSubmitReview";
+
+const EMPTY_COPY: Record<Bucket, { title: string; action: string }> = {
+  active: { title: t("myQuests.empty.active.title"), action: t("myQuests.empty.active.action") },
+  offers: { title: t("myQuests.empty.offers.title"), action: t("myQuests.empty.offers.action") },
+  done: { title: t("myQuests.empty.done.title"), action: t("myQuests.empty.done.action") },
+};
+
+export function MyQuestsScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ posted?: string }>();
+  const myQuests = useMyQuests();
+  const { session } = useAuthSession();
+  const startQuest = useStartQuest();
+  const markDone = useMarkDone();
+  const confirmDone = useConfirmDone();
+  const submitReview = useSubmitReview();
+  const unreadNotifications = useUnreadNotificationCount();
+  const [tab, setTab] = useState<Bucket>("active");
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [rateFor, setRateFor] = useState<MyQuestEngagement | null>(null);
+  const now = useNow();
+
+  // Adjusted during render, not a useEffect — the "posted" param only
+  // ever needs consuming once, the same shape OfferSheet's own draft-
+  // reseeding uses rather than a setState-in-effect.
+  const [consumedPosted, setConsumedPosted] = useState(false);
+  if (params.posted === "1" && !consumedPosted) {
+    setConsumedPosted(true);
+    setConfirmation(t("post.postedToast"));
+  }
+
+  if (myQuests.isLoading) {
+    return (
+      <Screen title={t("tabs.quests")}>
+        <LoadingState />
+      </Screen>
+    );
+  }
+  if (myQuests.isError) {
+    return (
+      <Screen title={t("tabs.quests")}>
+        <ErrorState onRetry={myQuests.refetch} />
+      </Screen>
+    );
+  }
+
+  const list = myQuests.buckets[tab];
+
+  return (
+    <Screen
+      title={t("tabs.quests")}
+      topBarActions={
+        <IconButton
+          icon="bell"
+          accessibilityLabel={t("notifications.title")}
+          size="sm"
+          badge={unreadNotifications || undefined}
+          onPress={() => router.push("/notifications")}
+        />
+      }
+    >
+      {confirmation ? (
+        <Toast tone="success" style={styles.confirmationToast}>
+          {confirmation}
+        </Toast>
+      ) : null}
+      <Tabs
+        value={tab}
+        onChange={(v) => setTab(v as Bucket)}
+        items={[
+          { value: "active", label: t("myQuests.tab.active"), count: myQuests.buckets.active.length },
+          { value: "offers", label: t("myQuests.tab.offers"), count: myQuests.buckets.offers.length },
+          { value: "done", label: t("myQuests.tab.done"), count: myQuests.buckets.done.length },
+        ]}
+      />
+      {list.length === 0 ? (
+        <EmptyState
+          title={EMPTY_COPY[tab].title}
+          action={EMPTY_COPY[tab].action}
+          onAction={() => router.push("/")}
+        />
+      ) : (
+        list.map((e) => (
+          <EngagementCard
+            key={e.quest.id}
+            quest={e.quest}
+            role={e.role}
+            amountMinor={e.amountMinor}
+            counterpart={e.counterpart}
+            pendingOfferCount={e.pendingOfferCount}
+            now={now}
+            onOpen={() => router.push(`/quest/${e.quest.id}`)}
+            onReviewOffers={() => router.push(`/offers/${e.quest.id}`)}
+            onStartQuest={
+              session ? () => startQuest.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
+            onMarkAsDone={
+              session ? () => markDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
+            onConfirmDone={
+              session ? () => confirmDone.mutate({ questId: e.quest.id, actorId: session.userId }) : undefined
+            }
+            onRate={session ? () => setRateFor(e) : undefined}
+          />
+        ))
+      )}
+
+      <RateSheet
+        open={rateFor !== null}
+        onClose={() => setRateFor(null)}
+        counterpart={rateFor?.counterpart ?? null}
+        submitting={submitReview.isPending}
+        onConfirm={(rating, comment) => {
+          const counterpart = rateFor?.counterpart;
+          if (!session || !rateFor || !counterpart) return;
+          submitReview.mutate(
+            { questId: rateFor.quest.id, raterId: session.userId, rateeId: counterpart.id, rating, comment },
+            {
+              onSuccess: () => {
+                setRateFor(null);
+                setConfirmation(t("questDetail.ratedToast", { name: counterpart.name }));
+              },
+            }
+          );
+        }}
+      />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  confirmationToast: {
+    marginBottom: 8,
+  },
+});
